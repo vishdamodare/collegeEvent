@@ -1,0 +1,186 @@
+// ─── Data Source ─────────────────────────────────────────────────────────────
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Generator ──────────────────────────────────────────────────────────────
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ─── Enums ──────────────────────────────────────────────────────────────────
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+enum EventStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+  CANCELLED
+  COMPLETED
+  ARCHIVED
+}
+
+enum RegistrationStatus {
+  REGISTERED
+  ATTENDED
+  CANCELLED
+}
+
+// ─── Auth Models (Better Auth compatible) ───────────────────────────────────
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  name          String
+  role          Role     @default(STUDENT)
+  emailVerified Boolean  @default(false)
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Profile relations
+  studentProfile StudentProfile?
+  adminProfile   AdminProfile?
+
+  // Auth relations
+  sessions Session[]
+  accounts Account[]
+
+  // Events created by this user (when role = ADMIN)
+  events Event[]
+
+  @@index([email])
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  id                    String    @id @default(uuid())
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  idToken               String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+}
+
+// ─── Profile Models ─────────────────────────────────────────────────────────
+
+model StudentProfile {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  collegeName String
+  department  String
+  year        Int
+  rollNumber  String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  registrations Registration[]
+}
+
+model AdminProfile {
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  department String
+  position   String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── Core Domain Models ─────────────────────────────────────────────────────
+
+model Category {
+  id     String  @id @default(uuid())
+  name   String  @unique
+  slug   String  @unique
+  icon   String? // Emoji or icon identifier
+  events Event[]
+}
+
+model Event {
+  id          String      @id @default(uuid())
+  title       String
+  description String      @db.Text
+  date        DateTime
+  location    String
+  capacity    Int
+  isClosed    Boolean     @default(false)
+  status      EventStatus @default(DRAFT)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // ── Architectural change: Event → User (not AdminProfile) ──
+  // The organizer is a User with role = ADMIN.
+  // This simplifies queries and avoids requiring an AdminProfile to exist
+  // before an admin user can create events.
+  organizerId String
+  organizer   User   @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  images        EventImage[]
+  registrations Registration[]
+
+  @@index([date])
+  @@index([status])
+  @@index([categoryId])
+  @@index([organizerId])
+}
+
+model EventImage {
+  id        String   @id @default(uuid())
+  eventId   String
+  url       String
+  isHero    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+}
+
+model Registration {
+  id        String             @id @default(uuid())
+  eventId   String
+  studentId String
+  status    RegistrationStatus @default(REGISTERED)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  event   Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, studentId]) // Prevents double-registration
+  @@index([eventId])
+  @@index([studentId])
+}
