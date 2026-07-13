@@ -15,12 +15,17 @@ import { EventDetailModal } from "@/components/shared/EventDetailModal";
 import { RegistrationModal } from "@/components/shared/RegistrationModal";
 import { Event } from "@/types";
 import { useRouter } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
+import { AboutSection } from "@/components/home/AboutSection";
+import { ContactSection } from "@/components/home/ContactSection";
 
 export default function Home() {
   const router = useRouter();
   const [detailEventId, setDetailEventId] = useState<string | null>(null);
   const [registerEventId, setRegisterEventId] = useState<string | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  const { data: session } = authClient.useSession();
+  const isAuthenticated = !!session;
 
   const detailEvent = detailEventId ? EVENTS.find((e) => e.id === detailEventId) || null : null;
   const registerEvent = registerEventId ? EVENTS.find((e) => e.id === registerEventId) || null : null;
@@ -37,8 +42,9 @@ export default function Home() {
     }
   };
 
-  const handleLogout = () => {
-    setIsAuthenticated(false);
+  const handleLogout = async () => {
+    await authClient.signOut();
+    router.refresh();
   };
 
   return (
@@ -71,6 +77,10 @@ export default function Home() {
       <Testimonials testimonials={TESTIMONIALS} />
       
       <StatsSection />
+
+      <AboutSection />
+      
+      <ContactSection />
 
       <Footer />
 

@@ -30,7 +30,7 @@ export function EventCard({ event, isFirst, onClick, index }: EventCardProps) {
       )}
     >
       <Image
-        src={event.images[0].url}
+        src={event.img}
         alt={event.title}
         fill
         className="object-cover transition-transform duration-700 group-hover:scale-105"
@@ -42,10 +42,10 @@ export function EventCard({ event, isFirst, onClick, index }: EventCardProps) {
       {/* Card Content */}
       <div className="absolute bottom-0 left-0 right-0 p-5 flex flex-col gap-2">
         <span className={cn(
-          "px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide w-fit border backdrop-blur-md",
-          event.category.color || 'bg-white/10 text-white border-white/20'
+          "px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide w-fit border backdrop-blur-md bg-white/10 text-white border-white/20",
+          event.badge
         )}>
-          {event.category.name}
+          {event.cat}
         </span>
         <h3 className="text-white font-bold text-lg md:text-xl leading-tight line-clamp-2">
           {event.title}

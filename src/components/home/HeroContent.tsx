@@ -51,10 +51,10 @@ export function HeroContent({ event, onRegisterClick, onDetailsClick }: HeroCont
       </AnimatePresence>
 
       <div className="flex flex-col sm:flex-row gap-[14px]">
-        <button className="btn btn-primary w-full sm:w-auto" onClick={onRegisterClick}>
+        <button suppressHydrationWarning className="btn btn-primary w-full sm:w-auto" onClick={onRegisterClick}>
           Register now
         </button>
-        <button className="btn btn-glass w-full sm:w-auto" onClick={onDetailsClick}>
+        <button suppressHydrationWarning className="btn btn-glass w-full sm:w-auto" onClick={onDetailsClick}>
           View details
         </button>
       </div>

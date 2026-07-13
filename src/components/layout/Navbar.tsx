@@ -3,15 +3,32 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { cn } from "@/utils/cn";
+import { authClient } from "@/lib/auth-client";
 
 interface NavbarProps {
   isAuthenticated?: boolean;
   onLogout?: () => void;
 }
 
-export function Navbar({ isAuthenticated, onLogout }: NavbarProps) {
+export function Navbar({ isAuthenticated: propIsAuthenticated, onLogout: propOnLogout }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const { data: session } = authClient.useSession();
+  const isAuthenticated = propIsAuthenticated !== undefined ? propIsAuthenticated : !!session;
+
+  const handleLogout = async () => {
+    if (propOnLogout) {
+      propOnLogout();
+    } else {
+      await authClient.signOut();
+      window.location.reload();
+    }
+  };
+
+  const name = session?.user?.name || "User";
+  const avatar = session?.user?.image;
+  const initial = name[0]?.toUpperCase() || "U";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -72,14 +89,18 @@ export function Navbar({ isAuthenticated, onLogout }: NavbarProps) {
               {isAuthenticated ? (
                 <div className="hidden md:flex items-center gap-4">
                   <div className="flex items-center gap-3 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-[var(--color-lime)] to-[var(--color-coral)] flex items-center justify-center text-black font-bold text-[12px]">
-                      A
-                    </div>
-                    <span className="text-[13px] font-medium mr-2">Aarav Mehta</span>
+                    {avatar ? (
+                      <img src={avatar} alt={name} className="w-7 h-7 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-[var(--color-lime)] to-[var(--color-coral)] flex items-center justify-center text-black font-bold text-[12px]">
+                        {initial}
+                      </div>
+                    )}
+                    <span className="text-[13px] font-medium mr-2">{name}</span>
                   </div>
                   <button 
-                    onClick={onLogout}
-                    className="text-[13.5px] font-medium text-[var(--color-text-muted)] hover:text-white transition-colors duration-300"
+                    onClick={handleLogout}
+                    className="text-[13.5px] font-medium text-[var(--color-text-muted)] hover:text-white transition-colors duration-300 cursor-pointer"
                   >
                     Log out
                   </button>
@@ -157,12 +178,39 @@ export function Navbar({ isAuthenticated, onLogout }: NavbarProps) {
           </Link>
         ))}
         <div className="h-[1px] bg-[var(--color-border)] my-[6px]"></div>
-        <Link href="#" onClick={closeMenu} className="text-[19px] font-medium">
-          Log in
-        </Link>
-        <button className="w-full flex items-center justify-center gap-2 px-[28px] py-[15px] rounded-full font-semibold text-[15px] bg-[var(--color-lime)] text-[#0B0B08] shadow-[4px_4px_0_var(--color-coral)] transition-all duration-350 ease-[var(--ease-custom)] whitespace-nowrap">
-          Sign up
-        </button>
+        {isAuthenticated ? (
+          <>
+            <div className="flex items-center gap-3 px-3 py-2 rounded-full bg-white/5 border border-white/10 w-fit">
+              {avatar ? (
+                <img src={avatar} alt={name} className="w-7 h-7 rounded-full object-cover" />
+              ) : (
+                <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-[var(--color-lime)] to-[var(--color-coral)] flex items-center justify-center text-black font-bold text-[12px]">
+                  {initial}
+                </div>
+              )}
+              <span className="text-[14px] font-medium text-white">{name}</span>
+            </div>
+            <button 
+              onClick={() => { closeMenu(); handleLogout(); }}
+              className="w-full flex items-center justify-center gap-2 px-[28px] py-[15px] rounded-full font-semibold text-[15px] bg-white/5 border border-white/10 text-white transition-all duration-350 cursor-pointer"
+            >
+              Log out
+            </button>
+          </>
+        ) : (
+          <>
+            <Link href="/login" onClick={closeMenu} className="text-[19px] font-medium">
+              Log in
+            </Link>
+            <Link 
+              href="/signup"
+              onClick={closeMenu}
+              className="w-full flex items-center justify-center gap-2 px-[28px] py-[15px] rounded-full font-semibold text-[15px] bg-[var(--color-lime)] text-[#0B0B08] shadow-[4px_4px_0_var(--color-coral)] transition-all duration-350 ease-[var(--ease-custom)] whitespace-nowrap text-center"
+            >
+              Sign up
+            </Link>
+          </>
+        )}
       </div>
     </>
   );
