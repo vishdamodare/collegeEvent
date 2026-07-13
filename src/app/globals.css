@@ -35,6 +35,7 @@
   font-weight: 300;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+  scroll-behavior: smooth;
 }
 
 body::before {
