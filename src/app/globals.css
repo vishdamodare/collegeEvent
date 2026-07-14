@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@theme inline {
+@theme {
   --color-background: #0B0B08;
   --color-foreground: #F5F3EA;
   
@@ -36,6 +36,22 @@
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
   scroll-behavior: smooth;
+  transition: background-color 0.4s cubic-bezier(.16,1,.3,1), color 0.4s cubic-bezier(.16,1,.3,1);
+}
+
+[data-theme="light"] {
+  --color-background: #F5F3EA !important;
+  --color-foreground: #0B0B08 !important;
+  
+  --color-bg-elevated: #E5E3D5 !important;
+  --color-card: rgba(11, 11, 8, 0.05) !important;
+  --color-card-hover: rgba(11, 11, 8, 0.08) !important;
+  --color-border: rgba(11, 11, 8, 0.12) !important;
+  --color-border-bright: rgba(11, 11, 8, 0.25) !important;
+  
+  --color-text-main: #0B0B08 !important;
+  --color-text-muted: #3D3D37 !important;
+  --color-text-faint: #707067 !important;
 }
 
 body::before {
@@ -204,5 +220,39 @@ h4, h5, .logo, .fc-title {
 .stagger.in > *:nth-child(5) { transition-delay: .33s; }
 .stagger.in > *:nth-child(6) { transition-delay: .4s; }
 
-
+/* Form Inputs */
+.form-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  font-size: 14px;
+  color: var(--color-text-main);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+  backdrop-filter: blur(6px);
+}
+.form-input::placeholder {
+  color: var(--color-text-faint);
+}
+.form-input:focus {
+  border-color: rgba(215, 255, 61, 0.4);
+  box-shadow: 0 0 0 3px rgba(215, 255, 61, 0.08);
+}
+.form-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+select.form-input {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238C8C82' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+select.form-input option {
+  background: #131309;
+  color: #F5F3EA;
+}
 

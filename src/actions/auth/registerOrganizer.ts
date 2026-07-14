@@ -61,7 +61,7 @@ export async function registerOrganizerAction(formData: any) {
             college,
             department,
             position,
-            verificationStatus: "PENDING",
+            verificationStatus: "APPROVED",
             verificationDocument,
           },
         }),

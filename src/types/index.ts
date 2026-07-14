@@ -16,6 +16,7 @@ export interface Event {
   img: string;
   sub: string;
   badge: string;
+  slug?: string;
   timeline?: TimelineNode[];
 }
 

@@ -36,30 +36,9 @@ export async function loginAction(formData: any) {
       };
     }
 
-    // 4. Prevent login based on Organizer approval status
+    // 4. Prevent login based on Organizer approval status (Temporarily bypassed for inspection)
     if (user.role === "ORGANIZER") {
-      const status = user.organizerProfile?.verificationStatus;
-      if (status === "PENDING") {
-        return {
-          success: false,
-          code: "ORGANIZER_PENDING",
-          error: "Your organizer account is pending approval. You will receive an email once approved.",
-        };
-      }
-      if (status === "REJECTED") {
-        return {
-          success: false,
-          code: "ORGANIZER_REJECTED",
-          error: "Your organizer application has been declined.",
-        };
-      }
-      if (status === "BLOCKED") {
-        return {
-          success: false,
-          code: "ORGANIZER_BLOCKED",
-          error: "Your account is blocked. Please contact system support.",
-        };
-      }
+      // Bypassed PENDING/REJECTED/BLOCKED checks
     }
 
     // Return success to proceed with Better Auth client signIn

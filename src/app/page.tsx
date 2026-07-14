@@ -1,104 +1,71 @@
-"use client";
+import { getFeaturedEvents, getCategories, getHomepageStats } from "@/actions/events";
+import { HomeClient } from "./HomeClient";
+import { format } from "date-fns";
+import type { Event, Category } from "@/types";
 
-import { useState } from "react";
-import { EVENTS, CATEGORIES, COLLEGE_INFO, COLLEGES, TESTIMONIALS } from "@/constants/events";
-import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
-import { HeroSection } from "@/components/home/HeroSection";
-import { FeaturedEvents } from "@/components/home/FeaturedEvents";
-import { EventTimeline } from "@/components/home/EventTimeline";
-import { CategoryGrid } from "@/components/home/CategoryGrid";
-import { TrendingColleges } from "@/components/home/TrendingColleges";
-import { Testimonials } from "@/components/home/Testimonials";
-import { StatsSection } from "@/components/home/StatsSection";
-import { EventDetailModal } from "@/components/shared/EventDetailModal";
-import { RegistrationModal } from "@/components/shared/RegistrationModal";
-import { Event } from "@/types";
-import { useRouter } from "next/navigation";
-import { authClient } from "@/lib/auth-client";
-import { AboutSection } from "@/components/home/AboutSection";
-import { ContactSection } from "@/components/home/ContactSection";
+export const dynamic = "force-dynamic";
 
-export default function Home() {
-  const router = useRouter();
-  const [detailEventId, setDetailEventId] = useState<string | null>(null);
-  const [registerEventId, setRegisterEventId] = useState<string | null>(null);
 
-  const { data: session } = authClient.useSession();
-  const isAuthenticated = !!session;
+// Badge color map based on category
+const badgeMap: Record<string, string> = {
+  hackathons: "b-blue",
+  sports: "b-green",
+  technical: "b-cyan",
+  music: "b-pink",
+  dance: "b-purple",
+  gaming: "b-cyan",
+  startup: "b-orange",
+  robotics: "b-blue",
+  ai: "b-cyan",
+};
 
-  const detailEvent = detailEventId ? EVENTS.find((e) => e.id === detailEventId) || null : null;
-  const registerEvent = registerEventId ? EVENTS.find((e) => e.id === registerEventId) || null : null;
-  
-  const collegeInfo = detailEvent ? COLLEGE_INFO[detailEvent.college] : undefined;
+// Category color to glow map
+function colorToGlow(color: string | null): string {
+  if (!color) return "rgba(215,255,61,.4)";
+  // Convert hex to rgba with 0.4 opacity
+  const r = parseInt(color.slice(1, 3), 16);
+  const g = parseInt(color.slice(3, 5), 16);
+  const b = parseInt(color.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},.4)`;
+}
 
-  const openDetails = (id: string) => setDetailEventId(id);
-  
-  const handleRegisterClick = (id: string) => {
-    if (isAuthenticated) {
-      setRegisterEventId(id);
-    } else {
-      router.push("/signup");
-    }
-  };
+export default async function Home() {
+  const [dbEvents, dbCategories, stats] = await Promise.all([
+    getFeaturedEvents(),
+    getCategories(),
+    getHomepageStats(),
+  ]);
 
-  const handleLogout = async () => {
-    await authClient.signOut();
-    router.refresh();
-  };
+  // Map database events to the format existing home components expect
+  const events: Event[] = dbEvents.map((ev) => {
+    const heroImg = ev.images.find((i) => i.isHero)?.url || ev.images[0]?.url || "";
+    const locationParts = ev.location.split(",");
+    const venue = locationParts[0]?.trim() || ev.location;
+    const college = locationParts.length > 1 ? locationParts.slice(1).join(",").trim() : "Campus";
 
-  return (
-    <main className="min-h-screen bg-[var(--color-background)] text-[var(--color-text-main)]">
-      <Navbar 
-        isAuthenticated={isAuthenticated}
-        onLogout={handleLogout}
-      />
-      
-      <HeroSection 
-        events={EVENTS} 
-        onOpenDetails={openDetails} 
-        onOpenRegister={handleRegisterClick} 
-      />
-      
-      <FeaturedEvents 
-        events={EVENTS} 
-        onOpenDetails={openDetails} 
-      />
-      
-      <EventTimeline 
-        events={EVENTS} 
-        onOpenDetails={openDetails} 
-      />
-      
-      <CategoryGrid categories={CATEGORIES} />
-      
-      <TrendingColleges colleges={COLLEGES} />
-      
-      <Testimonials testimonials={TESTIMONIALS} />
-      
-      <StatsSection />
+    return {
+      id: ev.id,
+      title: ev.title,
+      cat: ev.category.name.toUpperCase(),
+      college,
+      venue,
+      date: format(new Date(ev.date), "MMM d"),
+      participants: `${ev.capacity.toLocaleString()}+`,
+      prize: "",
+      img: heroImg,
+      sub: ev.description,
+      badge: badgeMap[ev.category.slug] || "b-blue",
+      slug: ev.slug,
+    };
+  });
 
-      <AboutSection />
-      
-      <ContactSection />
+  // Map database categories to the format CategoryGrid expects
+  const categories: Category[] = dbCategories.map((cat) => ({
+    name: cat.name,
+    count: `${cat._count.events} event${cat._count.events !== 1 ? "s" : ""}`,
+    icon: cat.icon || "📌",
+    glow: colorToGlow(cat.color),
+  }));
 
-      <Footer />
-
-      <EventDetailModal 
-        isOpen={!!detailEventId} 
-        onClose={() => setDetailEventId(null)} 
-        event={detailEvent}
-        collegeInfo={collegeInfo}
-        onRegister={() => {
-          if (detailEventId) handleRegisterClick(detailEventId);
-        }}
-      />
-      
-      <RegistrationModal 
-        isOpen={!!registerEventId} 
-        onClose={() => setRegisterEventId(null)} 
-        event={registerEvent}
-      />
-    </main>
-  );
+  return <HomeClient events={events} categories={categories} stats={stats} />;
 }

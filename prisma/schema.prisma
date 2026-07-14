@@ -1,11 +1,35 @@
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 generator client {
   provider = "prisma-client-js"
 }
+
+// ─── Enums ──────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  STUDENT
+  ORGANIZER
+  SUPER_ADMIN
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  COMPLETED
+  CANCELLED
+  ARCHIVED
+}
+
+enum RegistrationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  WAITLISTED
+}
+
+// ─── Auth Models (Better Auth compatible) ───────────────────────────────────
 
 model User {
   id            String    @id @default(uuid())
@@ -17,7 +41,7 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   // Custom Application Fields
-  role         String   @default("STUDENT") // STUDENT | ORGANIZER
+  role         UserRole @default(STUDENT)
   passwordHash String?
   provider     String?
   providerId   String?
@@ -26,6 +50,10 @@ model User {
   accounts         Account[]
   studentProfile   StudentProfile?
   organizerProfile OrganizerProfile?
+
+  // Events created by this user (when role = ORGANIZER or SUPER_ADMIN)
+  events Event[]
+  savedEvents SavedEvent[]
 
   @@index([email])
   @@index([role])
@@ -64,7 +92,6 @@ model Account {
 
   @@unique([providerId, accountId])
   @@index([userId])
-  @@index([providerId, accountId])
 }
 
 model Verification {
@@ -78,6 +105,8 @@ model Verification {
   @@index([value])
 }
 
+// ─── Profile Models ─────────────────────────────────────────────────────────
+
 model StudentProfile {
   id           String   @id @default(uuid())
   userId       String   @unique
@@ -86,9 +115,13 @@ model StudentProfile {
   branch       String
   academicYear String
   interests    String[]
+  bio          String?
   profileImage String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  // Registrations relation
+  registrations Registration[]
 
   @@index([userId])
 }
@@ -109,4 +142,93 @@ model OrganizerProfile {
 
   @@index([userId])
   @@index([verificationStatus])
+}
+
+// ─── Core Domain Models ─────────────────────────────────────────────────────
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  slug        String   @unique
+  icon        String?  // Emoji or icon identifier
+  description String?
+  color       String?
+  isArchived  Boolean  @default(false)
+  events      Event[]
+}
+
+model Event {
+  id          String      @id @default(uuid())
+  title       String
+  slug        String      @unique
+  description String      @db.Text
+  date        DateTime
+  location    String
+  capacity    Int
+  isClosed    Boolean     @default(false)
+  status      EventStatus @default(DRAFT)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Event owner (organizer or super_admin User)
+  organizerId String
+  organizer   User   @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  images        EventImage[]
+  registrations Registration[]
+  savedBy       SavedEvent[]
+
+  @@index([date])
+  @@index([status])
+  @@index([categoryId])
+  @@index([organizerId])
+}
+
+model EventImage {
+  id        String   @id @default(uuid())
+  eventId   String
+  url       String
+  isHero    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+}
+
+model Registration {
+  id           String             @id @default(uuid())
+  ticketId     String             @unique @default(uuid())
+  eventId      String
+  studentId    String
+  status       RegistrationStatus @default(CONFIRMED)
+  checkedIn    Boolean            @default(false)
+  checkedInAt  DateTime?
+  registeredAt DateTime           @default(now())
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  event   Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, studentId]) // Prevents double-registration
+  @@index([eventId])
+  @@index([studentId])
+}
+
+model SavedEvent {
+  id        String   @id @default(uuid())
+  userId    String
+  eventId   String
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventId])
+  @@index([userId])
+  @@index([eventId])
 }

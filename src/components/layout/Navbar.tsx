@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { cn } from "@/utils/cn";
 import { authClient } from "@/lib/auth-client";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
 interface NavbarProps {
   isAuthenticated?: boolean;
@@ -86,6 +87,7 @@ export function Navbar({ isAuthenticated: propIsAuthenticated, onLogout: propOnL
             </div>
 
             <div className="flex items-center gap-[24px]">
+              <ThemeToggle />
               {isAuthenticated ? (
                 <div className="hidden md:flex items-center gap-4">
                   <div className="flex items-center gap-3 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
