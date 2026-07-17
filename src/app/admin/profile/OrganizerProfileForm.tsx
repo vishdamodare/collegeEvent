@@ -3,7 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2, ShieldCheck, Clock } from "lucide-react";
@@ -31,6 +31,11 @@ interface OrganizerProfileFormProps {
 export function OrganizerProfileForm({ initialData }: OrganizerProfileFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const {
     register,
@@ -62,6 +67,10 @@ export function OrganizerProfileForm({ initialData }: OrganizerProfileFormProps)
       setLoading(false);
     }
   };
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

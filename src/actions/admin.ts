@@ -30,80 +30,44 @@ export async function getAdminDashboardStats() {
 
   const [
     totalEvents,
-    publishedEvents,
-    draftEvents,
-    upcomingEvents,
-    todayRegistrations,
-    todayCheckIns,
-    recentEvents,
-    activities,
+    totalRegistrations,
+    pendingCheckIns,
+    recentRegistrationsRaw,
   ] = await Promise.all([
     // Total events for this organizer
     prisma.event.count({ where: { organizerId: user.id } }),
-    // Published
-    prisma.event.count({ where: { organizerId: user.id, status: EventStatus.PUBLISHED } }),
-    // Drafts
-    prisma.event.count({ where: { organizerId: user.id, status: EventStatus.DRAFT } }),
-    // Upcoming (published and date in future)
-    prisma.event.count({
-      where: {
-        organizerId: user.id,
-        status: EventStatus.PUBLISHED,
-        date: { gte: now },
+    // Total signups/registrations
+    prisma.registration.count({ where: { event: { organizerId: user.id } } }),
+    // Pending check-ins (registered, not checked in)
+    prisma.registration.count({ where: { event: { organizerId: user.id }, checkedIn: false } }),
+    // Recent 5 registrations
+    prisma.registration.findMany({
+      where: { event: { organizerId: user.id } },
+      include: {
+        student: { include: { user: true } },
+        event: true,
       },
-    }),
-    // Registrations today for all organizer's events
-    prisma.registration.count({
-      where: {
-        event: { organizerId: user.id },
-        registeredAt: { gte: startOfToday },
-      },
-    }),
-    // Check-ins today for all organizer's events
-    prisma.registration.count({
-      where: {
-        event: { organizerId: user.id },
-        checkedIn: true,
-        checkedInAt: { gte: startOfToday },
-      },
-    }),
-    // Recent 5 events
-    prisma.event.findMany({
-      where: { organizerId: user.id },
-      include: { category: true, _count: { select: { registrations: true } } },
-      orderBy: { createdAt: "desc" },
-      take: 5,
-    }),
-    // Recent activities (mocked timeline from database records)
-    prisma.event.findMany({
-      where: { organizerId: user.id },
-      select: {
-        id: true,
-        title: true,
-        status: true,
-        updatedAt: true,
-      },
-      orderBy: { updatedAt: "desc" },
+      orderBy: { registeredAt: "desc" },
       take: 5,
     }),
   ]);
 
   return {
-    stats: {
+    quickStats: {
       totalEvents,
-      publishedEvents,
-      draftEvents,
-      upcomingEvents,
-      todayRegistrations,
-      todayCheckIns,
+      totalRegistrations,
+      revenue: 0, // Always 0 for free events
+      certificates: 0,
+      pendingCheckIns,
     },
-    recentEvents,
-    activities: activities.map((a) => ({
-      id: a.id,
-      title: a.title,
-      type: a.status === "PUBLISHED" ? "published" : a.status === "ARCHIVED" ? "archived" : "updated",
-      timestamp: a.updatedAt,
+    recentRegistrations: recentRegistrationsRaw.map((reg) => ({
+      id: reg.id,
+      participantName: reg.student.user.name || "Student",
+      college: reg.student.college,
+      eventName: reg.event.title,
     })),
+    recentPayments: [], // No payments for free events
+    pendingTasks: [], // Start completely clean
   };
 }
 
@@ -159,6 +123,21 @@ export async function createEvent(data: EventFormData) {
   }
 
   try {
+    // Resolve categoryId: if it looks like a UUID, use it directly.
+    // Otherwise, treat it as a name/slug and upsert the category.
+    let categoryId = parsed.data.categoryId;
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(categoryId);
+    if (!isUuid) {
+      const name = categoryId;
+      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+      const cat = await prisma.category.upsert({
+        where: { slug },
+        update: {},
+        create: { name, slug, icon: "🏷️", description: `${name} events`, color: "#D7FF3D" },
+      });
+      categoryId = cat.id;
+    }
+
     const slug = await generateUniqueSlug(parsed.data.title);
 
     const event = await prisma.event.create({
@@ -171,7 +150,7 @@ export async function createEvent(data: EventFormData) {
         capacity: parsed.data.capacity,
         status: parsed.data.status,
         organizerId: user.id,
-        categoryId: parsed.data.categoryId,
+        categoryId,
         ...(parsed.data.imageUrl
           ? {
               images: {
@@ -190,7 +169,7 @@ export async function createEvent(data: EventFormData) {
     return { success: true, event };
   } catch (err: any) {
     console.error("Failed to create event:", err);
-    return { error: "Failed to create event in database." };
+    return { error: `Failed to create event: ${err.message}` };
   }
 }
 
@@ -212,6 +191,20 @@ export async function updateEvent(id: string, data: EventFormData) {
   }
 
   try {
+    // Resolve categoryId: if not a UUID, upsert by slug/name
+    let categoryId = parsed.data.categoryId;
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(categoryId);
+    if (!isUuid) {
+      const name = categoryId;
+      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+      const cat = await prisma.category.upsert({
+        where: { slug },
+        update: {},
+        create: { name, slug, icon: "🏷️", description: `${name} events`, color: "#D7FF3D" },
+      });
+      categoryId = cat.id;
+    }
+
     const slug = await generateUniqueSlug(parsed.data.title, id);
 
     await prisma.event.update({
@@ -224,7 +217,7 @@ export async function updateEvent(id: string, data: EventFormData) {
         location: parsed.data.location,
         capacity: parsed.data.capacity,
         status: parsed.data.status,
-        categoryId: parsed.data.categoryId,
+        categoryId,
       },
     });
 
@@ -252,7 +245,7 @@ export async function updateEvent(id: string, data: EventFormData) {
     return { success: true };
   } catch (err: any) {
     console.error("Failed to update event:", err);
-    return { error: "Failed to update event in database." };
+    return { error: `Failed to update event: ${err.message}` };
   }
 }
 
@@ -486,6 +479,11 @@ const organizerProfileSchema = z.object({
   college: z.string().min(2, "College name is required"),
   department: z.string().min(2, "Department is required"),
   position: z.string().min(2, "Position is required"),
+  description: z.string().optional().nullable(),
+  website: z.string().optional().nullable(),
+  instagram: z.string().optional().nullable(),
+  linkedin: z.string().optional().nullable(),
+  address: z.string().optional().nullable(),
 });
 
 export type OrganizerProfileData = z.infer<typeof organizerProfileSchema>;
@@ -498,7 +496,7 @@ export async function updateOrganizerProfile(data: OrganizerProfileData) {
     return { error: parsed.error.issues[0].message };
   }
 
-  const { name, college, department, position } = parsed.data;
+  const { name, college, department, position, description, website, instagram, linkedin, address } = parsed.data;
 
   try {
     await prisma.user.update({
@@ -508,13 +506,236 @@ export async function updateOrganizerProfile(data: OrganizerProfileData) {
 
     await prisma.organizerProfile.upsert({
       where: { userId: user.id },
-      update: { college, department, position },
-      create: { userId: user.id, college, department, position },
+      update: { college, department, position, description, website, instagram, linkedin, address },
+      create: { userId: user.id, college, department, position, description, website, instagram, linkedin, address },
     });
 
     revalidatePath("/admin/profile");
+    revalidatePath("/admin/college");
     return { success: true };
   } catch (err: any) {
     return { error: "Failed to update organizer profile." };
   }
+}
+
+export async function getOrganizerProfile() {
+  const user = await getAuthenticatedAdmin();
+  const profile = await prisma.organizerProfile.findUnique({
+    where: { userId: user.id },
+  });
+  return {
+    name: user.name || "",
+    college: profile?.college || "",
+    department: profile?.department || "",
+    position: profile?.position || "",
+    description: profile?.description || "",
+    website: profile?.website || "",
+    instagram: profile?.instagram || "",
+    linkedin: profile?.linkedin || "",
+    address: profile?.address || "",
+    verificationStatus: profile?.verificationStatus || "PENDING",
+  };
+}
+
+// ─── Extra Multi-Tenant SaaS Actions ────────────────────────────────────────
+
+export async function getAdminParticipants() {
+  const user = await getAuthenticatedAdmin();
+  const registrations = await prisma.registration.findMany({
+    where: { event: { organizerId: user.id } },
+    include: {
+      student: { include: { user: true } },
+      event: true,
+      ticket: true
+    },
+    orderBy: { registeredAt: "desc" }
+  });
+
+  return registrations.map(reg => ({
+    id: reg.id,
+    participantName: reg.student.user.name || "Student",
+    email: reg.student.user.email || "",
+    phone: reg.student.phoneNumber || "",
+    college: reg.student.college,
+    eventName: reg.event.title,
+    ticketNumber: reg.ticket?.ticketNumber || "N/A",
+    checkedIn: reg.checkedIn,
+    registeredAt: reg.registeredAt
+  }));
+}
+
+export async function getAdminPayments() {
+  await getAuthenticatedAdmin();
+  // Multi-tenant Payments (returns 0 for now as all events are free)
+  return {
+    revenue: 0,
+    settled: 0,
+    pending: 0,
+    refunds: 0,
+    transactions: []
+  };
+}
+
+export async function getAdminAnalytics() {
+  const user = await getAuthenticatedAdmin();
+
+  // Past 7 days registration trends
+  const dailyRegistrations = [];
+  for (let i = 6; i >= 0; i--) {
+    const start = new Date();
+    start.setDate(start.getDate() - i);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+
+    const count = await prisma.registration.count({
+      where: {
+        event: { organizerId: user.id },
+        registeredAt: { gte: start, lt: end }
+      }
+    });
+
+    const dayName = start.toLocaleDateString("en-US", { weekday: "short" });
+    dailyRegistrations.push({ label: dayName, value: count });
+  }
+
+  // Top events by signups count
+  const topEventsRaw = await prisma.event.findMany({
+    where: { organizerId: user.id },
+    include: { _count: { select: { registrations: true } } },
+    orderBy: { registrations: { _count: "desc" } },
+    take: 5
+  });
+
+  const topEvents = topEventsRaw.map(e => ({
+    name: e.title,
+    value: e._count.registrations
+  }));
+
+  // Category distribution
+  const categoriesRaw = await prisma.category.findMany({
+    include: {
+      events: {
+        where: { organizerId: user.id },
+        include: { _count: { select: { registrations: true } } }
+      }
+    }
+  });
+
+  const categoryDistribution = categoriesRaw.map(cat => {
+    const count = cat.events.reduce((sum, e) => sum + e._count.registrations, 0);
+    return {
+      category: cat.name,
+      value: count
+    };
+  }).filter(c => c.value > 0);
+
+  return {
+    dailyRegistrations,
+    topEvents,
+    categoryDistribution
+  };
+}
+
+export async function getAdminNotifications() {
+  const user = await getAuthenticatedAdmin();
+  const notifications = await prisma.notification.findMany({
+    where: { userId: user.id },
+    orderBy: { createdAt: "desc" },
+    take: 20
+  });
+
+  return notifications.map(n => ({
+    id: n.id,
+    message: n.message,
+    read: n.read,
+    createdAt: n.createdAt
+  }));
+}
+
+export async function createNotification(userId: string, message: string) {
+  try {
+    await prisma.notification.create({
+      data: { userId, message }
+    });
+  } catch(e) {
+    console.error("Failed to create notification:", e);
+  }
+}
+
+export async function toggleParticipantAttendance(registrationId: string) {
+  const user = await getAuthenticatedAdmin();
+  const reg = await prisma.registration.findFirst({
+    where: { id: registrationId, event: { organizerId: user.id } }
+  });
+  if (!reg) {
+    return { error: "Registration not found or unauthorized" };
+  }
+  const updated = await prisma.registration.update({
+    where: { id: registrationId },
+    data: {
+      checkedIn: !reg.checkedIn,
+      checkedInAt: !reg.checkedIn ? new Date() : null,
+      checkInMethod: "MANUAL"
+    }
+  });
+  revalidatePath("/admin/participants");
+  revalidatePath("/admin");
+  return { success: true, checkedIn: updated.checkedIn };
+}
+
+export async function markNotificationRead(notificationId: string) {
+  const user = await getAuthenticatedAdmin();
+  await prisma.notification.updateMany({
+    where: { id: notificationId, userId: user.id },
+    data: { read: true },
+  });
+  revalidatePath("/admin/notifications");
+  return { success: true };
+}
+
+export async function markAllNotificationsRead() {
+  const user = await getAuthenticatedAdmin();
+  await prisma.notification.updateMany({
+    where: { userId: user.id, read: false },
+    data: { read: true },
+  });
+  revalidatePath("/admin/notifications");
+  return { success: true };
+}
+
+export async function deleteNotification(notificationId: string) {
+  const user = await getAuthenticatedAdmin();
+  await prisma.notification.deleteMany({
+    where: { id: notificationId, userId: user.id },
+  });
+  revalidatePath("/admin/notifications");
+  return { success: true };
+}
+
+export async function getEligibleCertificateEvents() {
+  const user = await getAuthenticatedAdmin();
+  const events = await prisma.event.findMany({
+    where: {
+      organizerId: user.id,
+      registrations: { some: { checkedIn: true } },
+    },
+    include: {
+      _count: { select: { registrations: true } },
+      registrations: {
+        where: { checkedIn: true },
+        select: { id: true },
+      },
+    },
+    orderBy: { date: "desc" },
+  });
+
+  return events.map((e) => ({
+    id: e.id,
+    title: e.title,
+    date: e.date,
+    totalRegistrations: e._count.registrations,
+    checkedInCount: e.registrations.length,
+  }));
 }

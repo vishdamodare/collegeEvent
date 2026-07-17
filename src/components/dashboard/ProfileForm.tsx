@@ -14,6 +14,9 @@ interface ProfileFormProps {
     branch: string;
     academicYear: string;
     bio?: string;
+    phoneNumber?: string;
+    gender?: string;
+    studentId?: string;
     interests: string[];
     profileImage?: string;
   };
@@ -43,6 +46,9 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
       branch: initialData?.branch ?? "",
       academicYear: initialData?.academicYear ?? "",
       bio: initialData?.bio ?? "",
+      phoneNumber: initialData?.phoneNumber ?? "",
+      gender: initialData?.gender ?? "",
+      studentId: initialData?.studentId ?? "",
       interests: initialData?.interests ?? [],
       profileImage: initialData?.profileImage ?? "",
     },
@@ -96,6 +102,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
       {/* Name */}
       <FormField label="Full Name" error={errors.name?.message}>
         <input
+          suppressHydrationWarning
           {...register("name", { required: "Name is required", minLength: { value: 2, message: "Name must be at least 2 characters" } })}
           className="form-input"
           placeholder="John Doe"
@@ -106,6 +113,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField label="College / University" error={errors.college?.message}>
           <input
+            suppressHydrationWarning
             {...register("college", { required: "College is required" })}
             className="form-input"
             placeholder="IIT Bombay"
@@ -113,6 +121,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
         </FormField>
         <FormField label="Branch / Major" error={errors.branch?.message}>
           <input
+            suppressHydrationWarning
             {...register("branch", { required: "Branch is required" })}
             className="form-input"
             placeholder="Computer Science"
@@ -123,6 +132,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
       {/* Academic Year */}
       <FormField label="Academic Year" error={errors.academicYear?.message}>
         <select
+          suppressHydrationWarning
           {...register("academicYear", { required: "Academic year is required" })}
           className="form-input"
         >
@@ -137,9 +147,50 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
         </select>
       </FormField>
 
+      {/* Gender & Student ID */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <FormField label="Gender" error={errors.gender?.message}>
+          <select
+            suppressHydrationWarning
+            {...register("gender", { required: "Gender is required" })}
+            className="form-input"
+          >
+            <option value="">Select gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+            <option value="Prefer not to say">Prefer not to say</option>
+          </select>
+        </FormField>
+        <FormField label="Student ID / Roll Number" error={errors.studentId?.message}>
+          <input
+            suppressHydrationWarning
+            {...register("studentId")}
+            className="form-input"
+            placeholder="123456"
+          />
+        </FormField>
+      </div>
+
+      {/* Phone Number */}
+      <FormField label="Phone Number" error={errors.phoneNumber?.message}>
+        <input
+          suppressHydrationWarning
+          {...register("phoneNumber", {
+            pattern: {
+              value: /^[+]?[0-9\s-]{10,15}$/,
+              message: "Please enter a valid phone number",
+            },
+          })}
+          className="form-input"
+          placeholder="+91 98765 43210"
+        />
+      </FormField>
+
       {/* Bio */}
       <FormField label="Bio" error={errors.bio?.message}>
         <textarea
+          suppressHydrationWarning
           {...register("bio", { maxLength: { value: 500, message: "Bio must be under 500 characters" } })}
           className="form-input min-h-[100px] resize-none"
           placeholder="Tell us a bit about yourself..."
@@ -168,6 +219,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
 
         <div className="flex gap-2 mb-3">
           <input
+            suppressHydrationWarning
             value={interestInput}
             onChange={(e) => setInterestInput(e.target.value)}
             onKeyDown={(e) => {
@@ -180,6 +232,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
             placeholder="Add an interest..."
           />
           <button
+            suppressHydrationWarning
             type="button"
             onClick={() => addInterest(interestInput)}
             className="px-3 py-2 rounded-xl bg-card border border-border text-text-faint hover:text-lime hover:border-lime/30 transition-all"
@@ -204,6 +257,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
 
       {/* Submit */}
       <button
+        suppressHydrationWarning
         type="submit"
         disabled={isPending}
         className="btn btn-primary w-full sm:w-auto"

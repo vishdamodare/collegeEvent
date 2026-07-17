@@ -8,6 +8,16 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
+  trustedOrigins: [
+    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+    process.env.BETTER_AUTH_URL || "http://localhost:3000",
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:3002",
+    "http://localhost:3003",
+    "http://localhost:3004",
+    "http://localhost:3005",
+  ],
   logger: {
     level: "debug",
   },
@@ -16,7 +26,7 @@ export const auth = betterAuth({
   ],
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: true,
+    requireEmailVerification: false,
     sendResetPassword: async ({ user, url }) => {
       // Extract the token parameter from the Better Auth API URL
       const token = url.split("token=")[1] || "";
@@ -42,7 +52,7 @@ export const auth = betterAuth({
     },
   },
   emailVerification: {
-    sendOnSignUp: true,
+    sendOnSignUp: false,
     autoSignInAfterVerification: false,
     sendVerificationEmail: async ({ user, url }) => {
       // Extract the token parameter from the Better Auth API URL

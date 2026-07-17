@@ -65,7 +65,7 @@ export function StatsSection() {
           <div className="p-[34px] px-[28px] rounded-[24px] flex flex-col justify-center bg-[var(--color-lime)] text-[#0B0B08] border-none">
             <h3 className="font-anton text-[32px] font-normal mb-2">Ready to join?</h3>
             <p className="text-[#0B0B08] opacity-80 mb-4 font-medium">Create your account in 30 seconds.</p>
-            <button className="btn bg-[#0B0B08] text-white hover:bg-black w-fit">Sign up free</button>
+            <button suppressHydrationWarning className="btn bg-[#0B0B08] text-white hover:bg-black w-fit">Sign up free</button>
           </div>
         </div>
       </div>

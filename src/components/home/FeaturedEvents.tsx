@@ -69,7 +69,7 @@ export function FeaturedEvents({ events, onOpenDetails }: FeaturedEventsProps) {
                 </div>
                 <div className="flex justify-between items-center pt-3.5 border-t border-[var(--color-border)]">
                   <span className="text-[12.5px] text-[var(--color-text-muted)]">{ev.date}</span>
-                  <button className="btn-glass btn-sm rounded-full font-semibold transition-all hover:bg-[var(--color-card-hover)] hover:border-[var(--color-border-bright)] hover:-translate-y-[3px]">
+                  <button suppressHydrationWarning className="btn-glass btn-sm rounded-full font-semibold transition-all hover:bg-[var(--color-card-hover)] hover:border-[var(--color-border-bright)] hover:-translate-y-[3px]">
                     Details
                   </button>
                 </div>

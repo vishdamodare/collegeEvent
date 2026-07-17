@@ -71,7 +71,7 @@ export function RegistrationModal({ isOpen, onClose, event }: RegistrationModalP
               {/* Event Summary Card */}
               <div className="flex items-center gap-[18px] p-[20px] rounded-[20px] bg-[var(--color-card)] border border-[var(--color-border)] mb-10">
                 <div className="w-[64px] h-[64px] rounded-[14px] overflow-hidden bg-white/5 relative flex-none border border-[var(--color-border)]">
-                  <Image src={event.img} alt={event.title} fill className="object-cover" />
+                  <Image src={event.img} alt={event.title} fill className="object-cover" sizes="64px" />
                 </div>
                 <div>
                   <h4 className="text-[18px] font-bold font-archivo mb-1">{event.title}</h4>

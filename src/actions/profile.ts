@@ -18,8 +18,11 @@ const profileSchema = z.object({
   branch: z.string().min(2, "Branch is required"),
   academicYear: z.string().min(1, "Academic year is required"),
   bio: z.string().max(500, "Bio must be under 500 characters").optional().nullable(),
+  phoneNumber: z.string().max(20, "Phone number must be under 20 characters").optional().nullable(),
+  gender: z.string().optional().nullable(),
+  studentId: z.string().optional().nullable(),
   interests: z.array(z.string()).max(10, "Maximum 10 interests").optional(),
-  profileImage: z.string().url().optional().nullable(),
+  profileImage: z.string().url().or(z.literal("")).optional().nullable(),
 });
 
 export type ProfileFormData = z.infer<typeof profileSchema>;
@@ -36,6 +39,20 @@ export async function getStudentProfile() {
     include: {
       user: {
         select: { id: true, name: true, email: true, image: true, role: true },
+      },
+      registrations: {
+        include: {
+          event: {
+            include: {
+              category: true,
+              images: { where: { isHero: true }, take: 1 },
+            },
+          },
+          ticket: true,
+        },
+        orderBy: {
+          registeredAt: "desc",
+        },
       },
     },
   });
@@ -57,13 +74,26 @@ export async function updateStudentProfile(data: ProfileFormData) {
     return { error: parsed.error.issues[0].message };
   }
 
-  const { name, college, branch, academicYear, bio, interests, profileImage } = parsed.data;
+  const { name, college, branch, academicYear, bio, phoneNumber, gender, studentId, interests, profileImage } = parsed.data;
+
+  const cleanBio = bio === "" ? null : bio;
+  const cleanPhone = phoneNumber === "" ? null : phoneNumber;
+  const cleanGender = gender === "" ? null : gender;
+  const cleanStudentId = studentId === "" ? null : studentId;
+  const cleanProfileImage = profileImage === "" ? null : profileImage;
 
   // Update user name
   await prisma.user.update({
     where: { id: user.id },
     data: { name },
   });
+
+  // Check if phone number changed. If so, reset phoneVerified status!
+  const currentProfile = await prisma.studentProfile.findUnique({
+    where: { userId: user.id },
+  });
+
+  const shouldResetPhoneVerification = currentProfile && currentProfile.phoneNumber !== cleanPhone;
 
   // Upsert student profile
   await prisma.studentProfile.upsert({
@@ -72,18 +102,29 @@ export async function updateStudentProfile(data: ProfileFormData) {
       college,
       branch,
       academicYear,
-      bio: bio ?? null,
+      bio: cleanBio,
+      phoneNumber: cleanPhone,
+      gender: cleanGender,
+      studentId: cleanStudentId,
+      ...(shouldResetPhoneVerification ? {
+        phoneVerified: false,
+        verifiedAt: null,
+        verificationMethod: null,
+      } : {}),
       interests: interests ?? [],
-      profileImage: profileImage ?? null,
+      profileImage: cleanProfileImage,
     },
     create: {
       userId: user.id,
       college,
       branch,
       academicYear,
-      bio: bio ?? null,
+      bio: cleanBio,
+      phoneNumber: cleanPhone,
+      gender: cleanGender,
+      studentId: cleanStudentId,
       interests: interests ?? [],
-      profileImage: profileImage ?? null,
+      profileImage: cleanProfileImage,
     },
   });
 

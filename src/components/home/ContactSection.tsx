@@ -170,6 +170,7 @@ export function ContactSection() {
                     Full Name
                   </label>
                   <input
+                    suppressHydrationWarning
                     type="text"
                     id="name"
                     name="name"
@@ -185,6 +186,7 @@ export function ContactSection() {
                     Email Address
                   </label>
                   <input
+                    suppressHydrationWarning
                     type="email"
                     id="email"
                     name="email"
@@ -202,6 +204,7 @@ export function ContactSection() {
                   Subject
                 </label>
                 <input
+                  suppressHydrationWarning
                   type="text"
                   id="subject"
                   name="subject"
@@ -218,6 +221,7 @@ export function ContactSection() {
                   Message
                 </label>
                 <textarea
+                  suppressHydrationWarning
                   id="message"
                   name="message"
                   required
@@ -230,6 +234,7 @@ export function ContactSection() {
               </div>
 
               <button
+                suppressHydrationWarning
                 type="submit"
                 disabled={status === "loading"}
                 className="btn bg-[var(--color-lime)] text-[#0B0B08] font-bold py-4 rounded-[16px] w-full hover:shadow-[0_0_20px_rgba(215,255,61,0.4)] disabled:opacity-50 transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer"

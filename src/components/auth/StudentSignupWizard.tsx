@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AuthCard } from "./AuthCard";
 import { ProgressStepper } from "./ProgressStepper";
@@ -8,7 +8,7 @@ import { registerStudentAction } from "@/actions/auth/registerStudent";
 import { resendVerificationAction } from "@/actions/auth/verifyEmail";
 import { uploadFileAction } from "@/actions/auth/upload";
 
-const STEPS = ["Personal", "Academic", "Interests", "Profile", "Verify"];
+const STEPS = ["Personal", "Academic", "Interests", "Profile", "Success"];
 
 const INTERESTS = [
   "Hackathon", "AI", "Cyber Security", "Robotics", "Gaming", 
@@ -24,6 +24,11 @@ export function StudentSignupWizard({ onBack }: StudentSignupWizardProps) {
   const [step, setStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Form Fields State
   const [name, setName] = useState("");
@@ -41,6 +46,10 @@ export function StudentSignupWizard({ onBack }: StudentSignupWizardProps) {
   
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
   const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
+
+  if (!mounted) {
+    return null;
+  }
 
   const validateStep = () => {
     if (step === 0) {
@@ -377,23 +386,22 @@ export function StudentSignupWizard({ onBack }: StudentSignupWizardProps) {
               </div>
             )}
 
-            {/* STEP 4: Verification */}
+            {/* STEP 4: Success */}
             {step === 4 && (
               <div className="flex flex-col items-center gap-4 text-center py-8">
                 <div className="w-[80px] h-[80px] rounded-full bg-[var(--color-lime)]/20 flex items-center justify-center text-[40px] mx-auto mb-2 text-[var(--color-lime)] border border-[var(--color-lime)]/30 shadow-[0_0_30px_rgba(215,255,61,0.2)]">
-                  ✉️
+                  ✓
                 </div>
-                <h3 className="text-[28px] font-anton uppercase mb-2">Verify your email</h3>
+                <h3 className="text-[28px] font-anton uppercase mb-2">Account Created!</h3>
                 <p className="text-[15px] text-white/70 mb-8 max-w-sm leading-relaxed font-archivo">
-                  We've sent a verification link to your inbox at <span className="font-semibold text-white">{email}</span>. Click the link to activate your student account.
+                  Your student account has been created successfully. You can now log in to access the platform.
                 </p>
                 
                 <button 
-                  onClick={handleResendEmail} 
-                  disabled={isSubmitting}
-                  className="btn btn-glass px-8 w-full cursor-pointer flex justify-center items-center font-bold"
+                  onClick={() => window.location.href = "/login"} 
+                  className="btn btn-primary px-8 w-full cursor-pointer flex justify-center items-center font-bold py-[16px] shadow-[4px_4px_0_var(--color-coral)] hover:shadow-[6px_6px_0_var(--color-coral)]"
                 >
-                  {isSubmitting ? <span className="animate-spin text-xl">↻</span> : "Resend Email"}
+                  Log In to Account
                 </button>
               </div>
             )}

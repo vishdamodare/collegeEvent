@@ -79,7 +79,7 @@ export function EventDetailModal({ isOpen, onClose, event, collegeInfo, onRegist
                 <div className="p-6 rounded-[24px] bg-[var(--color-card)] border border-[var(--color-border)] mb-6">
                   <div className="flex gap-4 items-start mb-4">
                     <div className="w-[60px] h-[60px] rounded-[14px] overflow-hidden bg-white/5 flex-none relative">
-                      <Image src={collegeInfo.img} alt={event.college} fill className="object-cover" />
+                      <Image src={collegeInfo.img} alt={event.college} fill className="object-cover" sizes="60px" />
                     </div>
                     <div>
                       <h4 className="text-[19px] font-bold font-archivo">{event.college}</h4>
@@ -103,7 +103,7 @@ export function EventDetailModal({ isOpen, onClose, event, collegeInfo, onRegist
                 <div className="grid grid-cols-3 gap-4">
                   {collegeInfo.gallery.map((img, i) => (
                     <div key={i} className="h-[140px] rounded-[16px] overflow-hidden relative border border-[var(--color-border)]">
-                      <Image src={img} alt="Gallery" fill className="object-cover" />
+                      <Image src={img} alt="Gallery" fill className="object-cover" sizes="(max-width: 768px) 33vw, 150px" />
                     </div>
                   ))}
                 </div>

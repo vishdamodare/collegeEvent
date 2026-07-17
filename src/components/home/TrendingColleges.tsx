@@ -2,7 +2,22 @@
 
 import { useEffect, useRef } from "react";
 import Image from "next/image";
-import { College } from "@/types";
+import Link from "next/link";
+import { CheckCircle2, Star } from "lucide-react";
+
+interface College {
+  name: string;
+  loc: string;
+  events: string;
+  students: string;
+  img: string;
+  slug: string;
+  verified?: boolean;
+  followers?: string;
+  upcomingEvents?: string;
+  rating?: string;
+  categories?: string;
+}
 
 interface TrendingCollegesProps {
   colleges: College[];
@@ -48,41 +63,81 @@ export function TrendingColleges({ colleges }: TrendingCollegesProps) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 stagger">
           {colleges.map((college, idx) => (
-            <div
+            <Link
               key={idx}
-              className="rounded-[24px] overflow-hidden bg-[var(--color-card)] border border-[var(--color-border)] relative cursor-pointer group"
+              href={`/colleges/${college.slug}`}
+              className="rounded-[24px] overflow-hidden bg-[var(--color-card)] border border-[var(--color-border)] relative cursor-pointer group flex flex-col justify-between"
             >
-              <div className="h-[200px] relative overflow-hidden">
-                <div className="absolute top-4 left-4 w-[34px] h-[34px] rounded-full bg-[#05050599] backdrop-blur-[10px] border border-white/10 flex items-center justify-center font-bold text-[14px] font-anton z-[2]">
-                  #{idx + 1}
-                </div>
-                <Image
-                  src={college.img}
-                  alt={college.name}
-                  fill
-                  className="object-cover transition-transform duration-800 ease-[var(--ease-custom)] group-hover:scale-105"
-                />
-              </div>
-              <div className="p-[22px] px-[24px]">
-                <h4 className="text-[22px] font-archivo font-bold mb-[6px]">{college.name}</h4>
-                <div className="text-[13px] text-[var(--color-text-faint)] mb-4">{college.loc}</div>
-                <div className="flex gap-[18px]">
-                  <div className="text-[12.5px] text-[var(--color-text-muted)] flex flex-col gap-[3px]">
-                    <b className="text-white text-[15px] font-semibold">{college.events}</b> events active
+              <div>
+                <div className="h-[200px] relative overflow-hidden">
+                  <div className="absolute top-4 left-4 w-[34px] h-[34px] rounded-full bg-[#05050599] backdrop-blur-[10px] border border-white/10 flex items-center justify-center font-bold text-[14px] font-anton z-[2]">
+                    #{idx + 1}
                   </div>
-                  <div className="text-[12.5px] text-[var(--color-text-muted)] flex flex-col gap-[3px]">
-                    <b className="text-white text-[15px] font-semibold">{college.students}</b> students on campus
+                  {college.verified && (
+                    <div className="absolute top-4 right-4 bg-emerald-500/90 backdrop-blur-[5px] rounded-lg border border-white/10 px-2.5 py-1 flex items-center gap-1 z-[2] text-[10px] font-bold text-white uppercase tracking-wider">
+                      <CheckCircle2 className="w-3 h-3 fill-emerald-500 text-black" />
+                      Verified
+                    </div>
+                  )}
+                  <Image
+                    src={college.img}
+                    alt={college.name}
+                    fill
+                    className="object-cover transition-transform duration-800 ease-[var(--ease-custom)] group-hover:scale-105"
+                    sizes="(max-width: 768px) 100vw, 350px"
+                  />
+                </div>
+                <div className="p-[22px] px-[24px]">
+                  <div className="flex items-start justify-between gap-3 mb-[6px]">
+                    <h4 className="text-[20px] font-archivo font-bold leading-tight group-hover:text-[var(--color-lime)] transition-colors">
+                      {college.name}
+                    </h4>
+                    {college.rating && (
+                      <span className="flex items-center gap-0.5 text-xs font-bold text-orange-400 shrink-0 mt-0.5">
+                        <Star className="w-3.5 h-3.5 fill-orange-400 text-orange-400" />
+                        {college.rating.split(" ")[0]}
+                      </span>
+                    )}
                   </div>
+                  <div className="text-[13px] text-[var(--color-text-faint)] mb-4">{college.loc}</div>
+                  
+                  {college.categories && (
+                    <div className="text-[11px] text-[var(--color-text-muted)] font-medium mb-4 uppercase tracking-wider">
+                      <span className="text-[var(--color-lime)] font-bold">Top:</span> {college.categories}
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
+
+              <div className="p-[22px] px-[24px] pt-0 border-t border-white/5 mt-4">
+                <div className="flex gap-[18px] pt-4">
+                  <div className="text-[12px] text-[var(--color-text-muted)] flex flex-col gap-[3px]">
+                    <span className="text-white text-[14px] font-bold leading-none">{college.events}</span>
+                    <span>events active</span>
+                  </div>
+                  <div className="text-[12px] text-[var(--color-text-muted)] flex flex-col gap-[3px]">
+                    <span className="text-white text-[14px] font-bold leading-none">{college.students}</span>
+                    <span>students registered</span>
+                  </div>
+                  {college.followers && (
+                    <div className="text-[12px] text-[var(--color-text-muted)] flex flex-col gap-[3px]">
+                      <span className="text-white text-[14px] font-bold leading-none">{college.followers}</span>
+                      <span>followers</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Link>
           ))}
         </div>
 
         <div className="text-center mt-[50px] reveal">
-          <button className="btn-glass px-[28px] py-[15px] rounded-full font-semibold transition-all hover:bg-[var(--color-card-hover)] hover:border-[var(--color-border-bright)] hover:-translate-y-[3px]">
-            View all 120+ campuses
-          </button>
+          <Link 
+            href="/events" 
+            className="btn-glass px-[28px] py-[15px] rounded-full font-semibold transition-all hover:bg-[var(--color-card-hover)] hover:border-[var(--color-border-bright)] hover:-translate-y-[3px] inline-block text-sm"
+          >
+            Explore all fests
+          </Link>
         </div>
       </div>
     </section>

@@ -1,0 +1,53 @@
+# Tasks
+
+- `[x]` Create Types (`src/types/admin/`)
+  - `[x]` `ticket.ts`
+  - `[x]` `coupon.ts`
+  - `[x]` `registration.ts`
+  - `[x]` `payment.ts`
+  - `[x]` `attendance.ts`
+  - `[x]` `audit.ts`
+  - `[x]` `certificate.ts`
+  - `[x]` `sponsor.ts`
+  - `[x]` `template.ts`
+  - `[x]` `media.ts`
+  - `[x]` `preview.ts`
+  - `[x]` `settings.ts`
+  - `[x]` Modify `event.ts` with all expanded fields
+  - `[x]` Update `index.ts` to export new types
+- `[x]` Create Data Layers (`src/data/admin/`)
+  - `[x]` `tickets.ts`
+  - `[x]` `coupons.ts`
+  - `[x]` `registrationForm.ts`
+  - `[x]` `attendance.ts`
+  - `[x]` `auditLogs.ts`
+  - `[x]` `sponsors.ts`
+  - `[x]` `templates.ts`
+  - `[x]` `media.ts`
+  - `[x]` `certificates.ts`
+  - `[x]` `preview.ts`
+  - `[x]` Modify `events.ts` to support expanded properties on `MOCK_EVENTS`
+  - `[x]` Update `index.ts` exports
+- `[x]` Create Shared Sub-Builders & Frames (`src/components/admin/`)
+  - `[x]` `RegistrationFormBuilder.tsx`
+  - `[x]` `TicketBuilder.tsx`
+  - `[x]` `CouponBuilder.tsx`
+  - `[x]` `SponsorBuilder.tsx`
+  - `[x]` `FAQBuilder.tsx`
+  - `[x]` `PreviewFrame.tsx`
+- `[x]` Modify `EventWizard.tsx` to handle 15 Steps & Full Configuration
+- `[x]` Simplify Event Creation Wizard details
+  - `[x]` Merge detailed Venue coordinates into 'venueLocation'
+  - `[x]` Consolidate coordinator contacts to a single record
+  - `[x]` Hide Advanced settings (SEO, Waitlist options, certificate templates) behind collapsible toggles
+- `[x]` Fix Organizer Profile fetching details from database
+  - `[x]` Create `getOrganizerProfile` Server Action
+  - `[x]` Rewrite `/admin/profile/page.tsx` to fetch dynamic session profile
+- `[x]` Configure Home & Auth Navigation Routing for Admins
+  - `[x]` Restore standard `src/middleware.ts` protections (updated to `src/proxy.ts` Next 16 specs)
+  - `[x]` Implement automatic server-side organizer redirection to `/admin` from `/`
+  - `[x]` Add "Admin Panel" actions and dashboard navigation shortcuts to `Navbar.tsx` header
+- `[x]` Dynamically display logged-in organizer credentials on Admin Dashboard home
+  - `[x]` Convert `/admin/page.tsx` into a Server Component
+  - `[x]` Query `getOrganizerProfile()` on dashboard load to render correct coordinator name & college
+- `[x]` Verify build & validation rules
