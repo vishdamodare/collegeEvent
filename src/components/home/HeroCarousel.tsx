@@ -62,7 +62,7 @@ export function HeroCarousel({ events, activeIndex, onEventSelect, onDetailsClic
                 }
               }}
             >
-              <Image src={ev.img} alt={ev.title} fill className="object-cover" />
+              <Image src={ev.img} alt={ev.title} fill className="object-cover" sizes="(max-width: 768px) 100vw, 50vw" />
               <div className="absolute inset-0 bg-gradient-to-b from-transparent from-30% to-black/85" />
               
               <div className="absolute left-[18px] right-[18px] bottom-[18px]">
@@ -84,6 +84,7 @@ export function HeroCarousel({ events, activeIndex, onEventSelect, onDetailsClic
       <div className="absolute bottom-8 right-10 flex justify-center gap-2 z-[5]">
         {events.map((_, index) => (
           <button
+            suppressHydrationWarning
             key={index}
             onClick={() => onEventSelect(index)}
             className={cn(

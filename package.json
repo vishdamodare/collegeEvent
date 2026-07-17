@@ -10,10 +10,13 @@
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
-    "db:generate": "prisma generate"
+    "db:generate": "prisma generate",
+    "clean": "node -e \"const fs = require('fs'); fs.rmSync('.next', { recursive: true, force: true });\"",
+    "clean:all": "node -e \"const fs = require('fs'); fs.rmSync('.next', { recursive: true, force: true }); fs.rmSync('node_modules/.cache', { recursive: true, force: true });\"",
+    "rebuild": "npm run clean && npm run build"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "npx tsx prisma/seed.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
@@ -26,8 +29,10 @@
     "date-fns": "^4.4.0",
     "dotenv": "^17.4.2",
     "framer-motion": "^12.42.2",
+    "jsqr": "^1.4.0",
     "lucide-react": "^1.24.0",
     "next": "16.2.10",
+    "qrcode": "^1.5.4",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-hook-form": "^7.81.0",
@@ -38,6 +43,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",

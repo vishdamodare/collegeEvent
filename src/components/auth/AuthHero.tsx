@@ -21,6 +21,7 @@ export function AuthHero() {
           alt="Students at a massive tech event"
           fill
           className="object-cover"
+          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 100vw, 60vw"
           priority
         />
         {/* Deep gradient overlay to ensure text readability */}

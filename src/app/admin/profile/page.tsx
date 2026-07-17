@@ -1,38 +1,25 @@
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { getOrganizerProfile } from "@/actions/admin";
 import { OrganizerProfileForm } from "./OrganizerProfileForm";
+import { redirect } from "next/navigation";
 
-export default async function OrganizerProfilePage() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+export const metadata = {
+  title: "Profile — CollegeEvents Admin",
+};
 
-  if (!session || !session.user) {
+export default async function ProfilePage() {
+  try {
+    const profile = await getOrganizerProfile();
+    return (
+      <div className="space-y-8 font-archivo text-white">
+        <div>
+          <h1 className="text-[28px] font-anton uppercase tracking-wider text-white">Organizer Profile</h1>
+          <p className="text-[13px] text-white/40">Manage your personal coordinator details, institution parameters, and verification status.</p>
+        </div>
+
+        <OrganizerProfileForm initialData={profile} />
+      </div>
+    );
+  } catch (err) {
     redirect("/login");
   }
-
-  const profile = await prisma.organizerProfile.findUnique({
-    where: { userId: session.user.id },
-  });
-
-  const initialData = {
-    name: session.user.name,
-    college: profile?.college || "",
-    department: profile?.department || "",
-    position: profile?.position || "",
-    verificationStatus: profile?.verificationStatus || "PENDING",
-  };
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold font-[family-name:var(--font-archivo)]">Organizer Profile</h1>
-        <p className="text-text-faint mt-1">Update your organization, position, and user profile information.</p>
-      </div>
-
-      <OrganizerProfileForm initialData={initialData} />
-    </div>
-  );
 }

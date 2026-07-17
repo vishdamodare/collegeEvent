@@ -11,7 +11,6 @@ import { TrendingColleges } from "@/components/home/TrendingColleges";
 import { Testimonials } from "@/components/home/Testimonials";
 import { StatsSection } from "@/components/home/StatsSection";
 import { EventDetailModal } from "@/components/shared/EventDetailModal";
-import { RegistrationModal } from "@/components/shared/RegistrationModal";
 import { AboutSection } from "@/components/home/AboutSection";
 import { ContactSection } from "@/components/home/ContactSection";
 import { Event, Category } from "@/types";
@@ -21,7 +20,8 @@ import { COLLEGES, COLLEGE_INFO, TESTIMONIALS } from "@/constants/events";
 
 interface HomeClientProps {
   events: Event[];
-  categories: Category[];
+  categories: any[];
+  colleges: any[];
   stats: {
     totalEvents: number;
     totalCategories: number;
@@ -29,26 +29,22 @@ interface HomeClientProps {
   };
 }
 
-export function HomeClient({ events, categories, stats }: HomeClientProps) {
+export function HomeClient({ events, categories, colleges, stats }: HomeClientProps) {
   const router = useRouter();
   const [detailEventId, setDetailEventId] = useState<string | null>(null);
-  const [registerEventId, setRegisterEventId] = useState<string | null>(null);
 
   const { data: session } = authClient.useSession();
   const isAuthenticated = !!session;
 
   const detailEvent = detailEventId ? events.find((e) => e.id === detailEventId) || null : null;
-  const registerEvent = registerEventId ? events.find((e) => e.id === registerEventId) || null : null;
-
   const collegeInfo = detailEvent ? COLLEGE_INFO[detailEvent.college] : undefined;
 
   const openDetails = (id: string) => setDetailEventId(id);
 
   const handleRegisterClick = (id: string) => {
-    if (isAuthenticated) {
-      setRegisterEventId(id);
-    } else {
-      router.push("/signup");
+    const event = events.find((e) => e.id === id);
+    if (event) {
+      router.push(`/events/${event.slug}?register=true`);
     }
   };
 
@@ -82,7 +78,7 @@ export function HomeClient({ events, categories, stats }: HomeClientProps) {
 
       <CategoryGrid categories={categories} />
 
-      <TrendingColleges colleges={COLLEGES} />
+      <TrendingColleges colleges={colleges} />
 
       <Testimonials testimonials={TESTIMONIALS} />
 
@@ -102,12 +98,6 @@ export function HomeClient({ events, categories, stats }: HomeClientProps) {
         onRegister={() => {
           if (detailEventId) handleRegisterClick(detailEventId);
         }}
-      />
-
-      <RegistrationModal
-        isOpen={!!registerEventId}
-        onClose={() => setRegisterEventId(null)}
-        event={registerEvent}
       />
     </main>
   );

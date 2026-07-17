@@ -90,6 +90,15 @@ export function Navbar({ isAuthenticated: propIsAuthenticated, onLogout: propOnL
               <ThemeToggle />
               {isAuthenticated ? (
                 <div className="hidden md:flex items-center gap-4">
+                  {(session?.user as any)?.role === "ORGANIZER" || (session?.user as any)?.role === "SUPER_ADMIN" ? (
+                    <Link href="/admin" className="text-[13.5px] font-bold text-[var(--color-lime)] hover:text-white transition-colors duration-350 mr-1">
+                      Admin Panel
+                    </Link>
+                  ) : (
+                    <Link href="/dashboard" className="text-[13.5px] font-bold text-[var(--color-lime)] hover:text-white transition-colors duration-350 mr-1">
+                      Dashboard
+                    </Link>
+                  )}
                   <div className="flex items-center gap-3 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
                     {avatar ? (
                       <img src={avatar} alt={name} className="w-7 h-7 rounded-full object-cover" />
@@ -182,6 +191,15 @@ export function Navbar({ isAuthenticated: propIsAuthenticated, onLogout: propOnL
         <div className="h-[1px] bg-[var(--color-border)] my-[6px]"></div>
         {isAuthenticated ? (
           <>
+            {(session?.user as any)?.role === "ORGANIZER" || (session?.user as any)?.role === "SUPER_ADMIN" ? (
+              <Link href="/admin" onClick={closeMenu} className="text-[17px] font-bold text-[var(--color-lime)] hover:text-white">
+                Admin Panel
+              </Link>
+            ) : (
+              <Link href="/dashboard" onClick={closeMenu} className="text-[17px] font-bold text-[var(--color-lime)] hover:text-white">
+                Dashboard
+              </Link>
+            )}
             <div className="flex items-center gap-3 px-3 py-2 rounded-full bg-white/5 border border-white/10 w-fit">
               {avatar ? (
                 <img src={avatar} alt={name} className="w-7 h-7 rounded-full object-cover" />

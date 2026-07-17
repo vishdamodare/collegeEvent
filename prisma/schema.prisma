@@ -25,8 +25,11 @@ enum EventStatus {
 enum RegistrationStatus {
   PENDING
   CONFIRMED
-  CANCELLED
   WAITLISTED
+  CANCELLED
+  CHECKED_IN
+  COMPLETED
+  CERTIFICATE_ISSUED
 }
 
 // ─── Auth Models (Better Auth compatible) ───────────────────────────────────
@@ -50,6 +53,7 @@ model User {
   accounts         Account[]
   studentProfile   StudentProfile?
   organizerProfile OrganizerProfile?
+  notifications    Notification[]
 
   // Events created by this user (when role = ORGANIZER or SUPER_ADMIN)
   events Event[]
@@ -108,20 +112,27 @@ model Verification {
 // ─── Profile Models ─────────────────────────────────────────────────────────
 
 model StudentProfile {
-  id           String   @id @default(uuid())
-  userId       String   @unique
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  college      String
-  branch       String
-  academicYear String
-  interests    String[]
-  bio          String?
-  profileImage String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  college            String
+  branch             String
+  academicYear       String
+  interests          String[]
+  bio                String?
+  phoneNumber        String?
+  gender             String?
+  studentId          String?
+  phoneVerified      Boolean  @default(false)
+  verifiedAt         DateTime?
+  verificationMethod String?
+  profileImage       String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   // Registrations relation
   registrations Registration[]
+  tickets       Ticket[]
 
   @@index([userId])
 }
@@ -133,6 +144,11 @@ model OrganizerProfile {
   college              String
   department           String
   position             String
+  description          String?
+  website              String?
+  instagram            String?
+  linkedin             String?
+  address              String?
   verificationStatus   String    @default("PENDING") // PENDING | APPROVED | REJECTED | BLOCKED
   verificationDocument String?
   approvedBy           String?
@@ -158,17 +174,21 @@ model Category {
 }
 
 model Event {
-  id          String      @id @default(uuid())
-  title       String
-  slug        String      @unique
-  description String      @db.Text
-  date        DateTime
-  location    String
-  capacity    Int
-  isClosed    Boolean     @default(false)
-  status      EventStatus @default(DRAFT)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id                  String      @id @default(uuid())
+  title               String
+  slug                String      @unique
+  description         String      @db.Text
+  date                DateTime
+  location            String
+  capacity            Int
+  isClosed            Boolean     @default(false)
+  status              EventStatus @default(DRAFT)
+  eventType           String      @default("INDIVIDUAL") // INDIVIDUAL | TEAM
+  teamMinSize         Int         @default(1)
+  teamMaxSize         Int         @default(1)
+  additionalQuestions Json?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
 
   // Event owner (organizer or super_admin User)
   organizerId String
@@ -179,6 +199,7 @@ model Event {
 
   images        EventImage[]
   registrations Registration[]
+  tickets       Ticket[]
   savedBy       SavedEvent[]
 
   @@index([date])
@@ -200,23 +221,88 @@ model EventImage {
 }
 
 model Registration {
-  id           String             @id @default(uuid())
-  ticketId     String             @unique @default(uuid())
-  eventId      String
-  studentId    String
-  status       RegistrationStatus @default(CONFIRMED)
-  checkedIn    Boolean            @default(false)
-  checkedInAt  DateTime?
-  registeredAt DateTime           @default(now())
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
+  id                  String             @id @default(uuid())
+  eventId             String
+  studentId           String
+  status              RegistrationStatus @default(PENDING)
+  checkedIn           Boolean            @default(false)
+  checkedInAt         DateTime?
+  checkedInBy         String?
+  checkInDevice       String?
+  checkInMethod       String?            // QR | MANUAL
+  checkInStatus       String             @default("NOT_CHECKED_IN") // NOT_CHECKED_IN | CHECKED_IN
+  phoneVerified       Boolean            @default(false)
+  registrationAnswers Json?
+  teamName            String?
+  registrationType    String             @default("INDIVIDUAL")
+  timeline            Json?
+  registeredAt        DateTime           @default(now())
+  cancelledAt         DateTime?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
 
-  event   Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  event        Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  student      StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  ticket       Ticket?
+  teamMembers  TeamMember[]
 
   @@unique([eventId, studentId]) // Prevents double-registration
   @@index([eventId])
   @@index([studentId])
+}
+
+model Ticket {
+  id                String         @id @default(uuid())
+  registrationId    String         @unique
+  eventId           String
+  studentId         String
+  ticketNumber      String         @unique
+  verificationToken String         @unique
+  qrCode            String?        @db.Text
+  status            String         @default("ACTIVE") // ACTIVE | USED | CANCELLED | EXPIRED
+  issuedAt          DateTime       @default(now())
+  downloadUrl       String?
+  downloadCount     Int            @default(0)
+  shareCount        Int            @default(0)
+  lastDownloadedAt  DateTime?
+  lastSharedAt      DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  registration Registration   @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  event        Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  student      StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@index([studentId])
+}
+
+model TeamMember {
+  id             String       @id @default(uuid())
+  registrationId String
+  registration   Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  name           String
+  email          String
+  phone          String
+  otpVerified    Boolean      @default(false)
+  college        String
+  branch         String
+  academicYear   String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([registrationId])
+}
+
+model OtpVerification {
+  id        String   @id @default(uuid())
+  phone     String
+  code      String
+  expiresAt DateTime
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([phone])
 }
 
 model SavedEvent {
@@ -231,4 +317,16 @@ model SavedEvent {
   @@unique([userId, eventId])
   @@index([userId])
   @@index([eventId])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

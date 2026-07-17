@@ -1,10 +1,12 @@
-import { getFeaturedEvents, getCategories, getHomepageStats } from "@/actions/events";
+import { getRecommendedEvents, getCategoryRecommendations, getHomepageStats, getDynamicColleges } from "@/actions/events";
 import { HomeClient } from "./HomeClient";
 import { format } from "date-fns";
-import type { Event, Category } from "@/types";
+import type { Event } from "@/types";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
-
 
 // Badge color map based on category
 const badgeMap: Record<string, string> = {
@@ -22,7 +24,6 @@ const badgeMap: Record<string, string> = {
 // Category color to glow map
 function colorToGlow(color: string | null): string {
   if (!color) return "rgba(215,255,61,.4)";
-  // Convert hex to rgba with 0.4 opacity
   const r = parseInt(color.slice(1, 3), 16);
   const g = parseInt(color.slice(3, 5), 16);
   const b = parseInt(color.slice(5, 7), 16);
@@ -30,10 +31,19 @@ function colorToGlow(color: string | null): string {
 }
 
 export default async function Home() {
-  const [dbEvents, dbCategories, stats] = await Promise.all([
-    getFeaturedEvents(),
-    getCategories(),
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (session?.user?.role === "ORGANIZER" || session?.user?.role === "SUPER_ADMIN") {
+    redirect("/admin");
+  }
+
+  const [dbEvents, dbCategories, stats, dbColleges] = await Promise.all([
+    getRecommendedEvents(),
+    getCategoryRecommendations(),
     getHomepageStats(),
+    getDynamicColleges(),
   ]);
 
   // Map database events to the format existing home components expect
@@ -60,12 +70,15 @@ export default async function Home() {
   });
 
   // Map database categories to the format CategoryGrid expects
-  const categories: Category[] = dbCategories.map((cat) => ({
+  const categories = dbCategories.map((cat) => ({
     name: cat.name,
-    count: `${cat._count.events} event${cat._count.events !== 1 ? "s" : ""}`,
+    count: `${cat.liveEvents} event${cat.liveEvents !== 1 ? "s" : ""}`,
     icon: cat.icon || "📌",
     glow: colorToGlow(cat.color),
+    slug: cat.slug,
+    nearestCity: cat.nearestCity,
+    trending: cat.trending,
   }));
 
-  return <HomeClient events={events} categories={categories} stats={stats} />;
+  return <HomeClient events={events} categories={categories} colleges={dbColleges} stats={stats} />;
 }

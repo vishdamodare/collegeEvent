@@ -42,6 +42,11 @@ export function EventForm({ initialData, categories, onSubmit }: EventFormProps)
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [slug, setSlug] = useState("");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const {
     register,
@@ -97,6 +102,10 @@ export function EventForm({ initialData, categories, onSubmit }: EventFormProps)
       setLoading(false);
     }
   };
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6 max-w-2xl bg-card border border-border rounded-2xl p-6 md:p-8">

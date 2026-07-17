@@ -1,46 +1,32 @@
 "use client";
 
 import { useState } from "react";
-import { AdminSidebar } from "./AdminSidebar";
-import { AdminHeader } from "./AdminHeader";
-import { cn } from "@/utils/cn";
+import { Sidebar } from "./Sidebar";
+import { Topbar } from "./Topbar";
 
 interface AdminShellProps {
-  user: {
-    id: string;
+  children: React.ReactNode;
+  profile: {
     name: string;
     email: string;
-    image?: string | null;
+    college: string;
+    department: string;
+    position: string;
   };
-  children: React.ReactNode;
 }
 
-export function AdminShell({ user, children }: AdminShellProps) {
-  const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+export function AdminShell({ children, profile }: AdminShellProps) {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background text-text-main">
-      {/* Sidebar navigation */}
-      <AdminSidebar
-        collapsed={collapsed}
-        onToggleCollapse={() => setCollapsed(!collapsed)}
-        mobileOpen={mobileOpen}
-        onCloseMobile={() => setMobileOpen(false)}
-      />
+    <div className="min-h-screen bg-[#0A0A0A] text-white flex">
+      {/* Permanent Left Navigation Sidebar */}
+      <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
 
-      {/* Main panel layout */}
-      <div
-        className={cn(
-          "min-h-screen flex flex-col transition-all duration-350 ease-[var(--ease-custom)]",
-          collapsed ? "lg:pl-[80px]" : "lg:pl-[260px]"
-        )}
-      >
-        {/* Sticky top navigation header */}
-        <AdminHeader user={user} onOpenMobile={() => setMobileOpen(true)} />
-
-        {/* Content area */}
-        <main className="flex-1 p-5 lg:p-8 max-w-6xl mx-auto w-full">
+      {/* Main Panel Area */}
+      <div className="flex-1 flex flex-col lg:pl-64 min-w-0 transition-all duration-300">
+        <Topbar profile={profile} onToggleSidebar={() => setIsSidebarOpen(true)} />
+        <main className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto animate-in fade-in slide-in-from-bottom-2 duration-300">
           {children}
         </main>
       </div>

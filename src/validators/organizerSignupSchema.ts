@@ -18,7 +18,7 @@ export const organizerSignupSchema = z.object({
   position: z.string().min(1, { message: "Position selection is required" }),
   
   // Verification Document
-  verificationDocument: z.string().min(1, { message: "Verification document upload is required" }),
+  verificationDocument: z.string().optional(),
 });
 
 export type OrganizerSignupInput = z.infer<typeof organizerSignupSchema>;

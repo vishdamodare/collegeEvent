@@ -27,15 +27,6 @@ export async function loginAction(formData: any) {
       return { success: true };
     }
 
-    // 3. Prevent login if Student email is not verified
-    if (user.role === "STUDENT" && !user.emailVerified) {
-      return {
-        success: false,
-        code: "EMAIL_NOT_VERIFIED",
-        error: "Your email address is not verified. Please verify your email to log in.",
-      };
-    }
-
     // 4. Prevent login based on Organizer approval status (Temporarily bypassed for inspection)
     if (user.role === "ORGANIZER") {
       // Bypassed PENDING/REJECTED/BLOCKED checks

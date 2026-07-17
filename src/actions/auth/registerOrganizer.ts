@@ -62,7 +62,7 @@ export async function registerOrganizerAction(formData: any) {
             department,
             position,
             verificationStatus: "APPROVED",
-            verificationDocument,
+            verificationDocument: verificationDocument || null,
           },
         }),
       ]);
@@ -78,7 +78,7 @@ export async function registerOrganizerAction(formData: any) {
 
     return {
       success: true,
-      message: "Organizer account created! Please verify your email and await admin approval.",
+      message: "Organizer account created! Please await admin approval.",
     };
   } catch (error: any) {
     console.error("Organizer registration failed:", error);

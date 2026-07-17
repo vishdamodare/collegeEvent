@@ -1,8 +1,12 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { prisma } from "@/lib/prisma";
 import { AdminShell } from "@/components/admin/AdminShell";
-import { UserRole } from "@prisma/client";
+
+export const metadata = {
+  title: "Admin Dashboard — CollegeEvents",
+};
 
 export default async function AdminLayout({
   children,
@@ -13,25 +17,27 @@ export default async function AdminLayout({
     headers: await headers(),
   });
 
-  if (!session || !session.user) {
-    redirect("/login?callbackUrl=/admin/dashboard");
+  if (!session) {
+    redirect("/login?callbackUrl=/admin");
   }
 
-  const user = session.user;
-  if (user.role !== UserRole.ORGANIZER && user.role !== UserRole.SUPER_ADMIN) {
+  // Look up user role and status in database
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    include: { organizerProfile: true },
+  });
+
+  if (!user || user.role !== "ORGANIZER") {
     redirect("/unauthorized");
   }
 
-  return (
-    <AdminShell
-      user={{
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        image: user.image,
-      }}
-    >
-      {children}
-    </AdminShell>
-  );
+  const profile = {
+    name: user.name || "Organizer",
+    email: user.email || "",
+    college: user.organizerProfile?.college || "Your College",
+    department: user.organizerProfile?.department || "General",
+    position: user.organizerProfile?.position || "Coordinator",
+  };
+
+  return <AdminShell profile={profile}>{children}</AdminShell>;
 }

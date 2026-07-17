@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AuthCard } from "@/components/auth/AuthCard";
@@ -16,6 +16,15 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,6 +91,7 @@ export default function LoginPage() {
         <div>
           <label className="block text-[13px] font-semibold mb-2 text-white/70">Email Address</label>
           <input 
+            suppressHydrationWarning
             type="email" 
             placeholder="you@college.edu" 
             required
@@ -98,6 +108,7 @@ export default function LoginPage() {
             </Link>
           </div>
           <input 
+            suppressHydrationWarning
             type="password" 
             placeholder="••••••••" 
             required
@@ -109,6 +120,7 @@ export default function LoginPage() {
         
         <label className="flex items-center gap-2 cursor-pointer mt-1 mb-2">
           <input 
+            suppressHydrationWarning
             type="checkbox" 
             checked={rememberMe}
             onChange={(e) => setRememberMe(e.target.checked)}
@@ -116,8 +128,9 @@ export default function LoginPage() {
           />
           <span className="text-[13px] text-[var(--color-text-muted)]">Remember me for 30 days</span>
         </label>
-
+ 
         <button 
+          suppressHydrationWarning
           type="submit" 
           disabled={isSubmitting}
           className="btn btn-primary w-full py-[16px] text-[16px] mt-2 shadow-[4px_4px_0_var(--color-coral)] hover:shadow-[6px_6px_0_var(--color-coral)] flex justify-center items-center cursor-pointer font-bold"

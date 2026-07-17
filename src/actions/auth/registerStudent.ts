@@ -80,7 +80,7 @@ export async function registerStudentAction(formData: any) {
 
     return {
       success: true,
-      message: "Student account created successfully! Please verify your email.",
+      message: "Student account created successfully!",
     };
   } catch (error: any) {
     console.error("Student registration failed:", error);

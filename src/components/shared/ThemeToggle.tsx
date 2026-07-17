@@ -6,8 +6,10 @@ import { motion } from "framer-motion";
 
 export function ThemeToggle() {
   const [theme, setTheme] = useState<"light" | "dark">("dark");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const activeTheme = (document.documentElement.getAttribute("data-theme") as "light" | "dark") || "dark";
     setTheme(activeTheme);
   }, []);
@@ -18,6 +20,12 @@ export function ThemeToggle() {
     document.documentElement.setAttribute("data-theme", nextTheme);
     localStorage.setItem("theme", nextTheme);
   };
+
+  if (!mounted) {
+    return (
+      <div className="w-[42px] h-[42px] rounded-full border border-border bg-card" />
+    );
+  }
 
   return (
     <motion.button
