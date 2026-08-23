@@ -685,7 +685,7 @@ export async function clearNotifications() {
 /**
  * Validates check-in ticket references from scanned QR code.
  */
-export async function verifyCheckInTicket(ticketIdentifier: string, verificationToken: string) {
+export async function verifyCheckInTicket(ticketIdentifier: string, verificationToken?: string) {
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -696,14 +696,17 @@ export async function verifyCheckInTicket(ticketIdentifier: string, verification
       return { error: "Access denied. Organizer role required." };
     }
 
+    const cleanIdentifier = ticketIdentifier.trim();
+    const cleanToken = verificationToken?.trim() || "";
+
     const ticket = await prisma.ticket.findFirst({
       where: {
         OR: [
-          { ticketNumber: ticketIdentifier.trim() },
-          { id: ticketIdentifier.trim() },
-          { registrationId: ticketIdentifier.trim() },
+          { ticketNumber: { equals: cleanIdentifier, mode: "insensitive" } },
+          { id: cleanIdentifier },
+          { registrationId: cleanIdentifier },
         ],
-        verificationToken: verificationToken.trim(),
+        ...(cleanToken ? { verificationToken: cleanToken } : {}),
       },
       include: {
         event: true,

@@ -32,6 +32,7 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
   const [scannedDetails, setScannedDetails] = useState<any>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+  const [isDecodingImage, setIsDecodingImage] = useState(false);
 
   // Transitions
   const [isVerifying, setIsVerifying] = useState(false);
@@ -40,6 +41,7 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
   // Camera canvas references
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
   const lastScannedCode = useRef<string>("");
 
@@ -118,37 +120,19 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
           const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
           const code = jsQR(imageData.data, imageData.width, imageData.height, {
-            inversionAttempts: "dontInvert",
+            inversionAttempts: "attemptBoth",
           });
 
           if (code && code.data && code.data !== lastScannedCode.current) {
             lastScannedCode.current = code.data;
-            try {
-              let identifier = "";
-              let token = "";
-
-              try {
-                const parsed = JSON.parse(code.data);
-                identifier = parsed.ticketNumber || parsed.ticketId || "";
-                token = parsed.verificationToken || "";
-              } catch {
-                const parts = code.data.split(":");
-                if (parts.length === 2) {
-                  identifier = parts[0];
-                  token = parts[1];
-                }
+            const parsed = extractTicketPayload(code.data);
+            if (parsed) {
+              if (navigator.vibrate) {
+                try { navigator.vibrate(200); } catch {}
               }
-
-              if (identifier && token) {
-                if (navigator.vibrate) {
-                  try { navigator.vibrate(200); } catch {}
-                }
-                setTicketSearch(identifier);
-                setTokenSearch(token);
-                handleVerify(identifier, token);
-              }
-            } catch (e) {
-              console.error("QR decode error:", e);
+              setTicketSearch(parsed.identifier);
+              setTokenSearch(parsed.token);
+              handleVerify(parsed.identifier, parsed.token);
             }
           }
         }
@@ -173,9 +157,96 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
 
   if (!mounted) return null;
 
-  const handleVerify = async (ticketNum: string, token: string) => {
-    if (!ticketNum.trim() || !token.trim()) {
-      toast.error("Please provide both ticket number and verification token.");
+  // Robust QR data extractor supporting JSON, URLs, Colons, and raw ticket codes
+  function extractTicketPayload(rawString: string): { identifier: string; token: string } | null {
+    if (!rawString || typeof rawString !== "string") return null;
+    const dataStr = rawString.trim();
+
+    // 1. JSON Payload format (from generateQRCodeDataUrl)
+    try {
+      const parsed = JSON.parse(dataStr);
+      const identifier = parsed.ticketNumber || parsed.ticketId || parsed.id || parsed.registrationId || "";
+      const token = parsed.verificationToken || parsed.token || "";
+      if (identifier) {
+        return { identifier, token };
+      }
+    } catch {}
+
+    // 2. Colon-delimited format "TICKET_NUMBER:TOKEN"
+    if (dataStr.includes(":") && !dataStr.startsWith("http")) {
+      const parts = dataStr.split(":");
+      if (parts.length >= 2) {
+        return { identifier: parts[0].trim(), token: parts[1].trim() };
+      }
+    }
+
+    // 3. URL format "http.../dashboard/tickets/[id]"
+    if (dataStr.startsWith("http")) {
+      try {
+        const url = new URL(dataStr);
+        const segments = url.pathname.split("/").filter(Boolean);
+        const lastSegment = segments[segments.length - 1];
+        if (lastSegment) {
+          return {
+            identifier: lastSegment,
+            token: url.searchParams.get("token") || "",
+          };
+        }
+      } catch {}
+    }
+
+    // 4. Raw identifier fallback (e.g. CE-TKT-2026-0001 or UUID)
+    if (dataStr.length >= 3) {
+      return { identifier: dataStr, token: "" };
+    }
+
+    return null;
+  }
+
+  // Multi-scale image decoder for high-resolution phone screenshots and dark themes
+  function decodeQRFromImage(img: HTMLImageElement): { identifier: string; token: string } | null {
+    const maxDim = Math.max(img.width, img.height);
+    const targetScales = [
+      1,
+      1200 / maxDim,
+      800 / maxDim,
+      500 / maxDim,
+      350 / maxDim,
+    ].filter(s => s > 0 && s <= 1.5);
+
+    // Remove near duplicates
+    const uniqueScales = Array.from(new Set(targetScales.map(s => Math.round(s * 100) / 100)));
+
+    for (const scale of uniqueScales) {
+      const targetW = Math.max(50, Math.round(img.width * scale));
+      const targetH = Math.max(50, Math.round(img.height * scale));
+
+      const canvas = document.createElement("canvas");
+      canvas.width = targetW;
+      canvas.height = targetH;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      if (!ctx) continue;
+
+      ctx.drawImage(img, 0, 0, targetW, targetH);
+      const imageData = ctx.getImageData(0, 0, targetW, targetH);
+
+      const code = jsQR(imageData.data, imageData.width, imageData.height, {
+        inversionAttempts: "attemptBoth",
+      });
+
+      if (code && code.data) {
+        const payload = extractTicketPayload(code.data);
+        if (payload) {
+          return payload;
+        }
+      }
+    }
+    return null;
+  }
+
+  const handleVerify = async (ticketNum: string, token?: string) => {
+    if (!ticketNum.trim()) {
+      toast.error("Please provide a valid ticket number or QR pass.");
       return;
     }
 
@@ -208,7 +279,7 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
       try {
         const res = await confirmCheckInAction(
           scannedDetails.ticket.id, 
-          activeTab === "camera" ? "QR" : "MANUAL",
+          activeTab === "camera" ? "QR" : activeTab === "upload" ? "QR" : "MANUAL",
           navigator.userAgent.includes("Mobile") ? "Mobile Scanner" : "Desktop Terminal"
         );
 
@@ -231,58 +302,55 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
     });
   };
 
-  // Handle Drag & Drop QR Image decoding
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Process uploaded image file
+  const processImageFile = (file: File) => {
+    if (!file || !file.type.startsWith("image/")) {
+      toast.error("Please upload a valid image file (PNG, JPG, WebP).");
+      return;
+    }
 
+    setIsDecodingImage(true);
     const reader = new FileReader();
+
     reader.onload = (event) => {
       const img = new Image();
       img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          canvas.width = img.width;
-          canvas.height = img.height;
-          ctx.drawImage(img, 0, 0);
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const code = jsQR(imageData.data, imageData.width, imageData.height);
-          if (code) {
-            try {
-              let identifier = "";
-              let token = "";
+        setIsDecodingImage(false);
+        const payload = decodeQRFromImage(img);
 
-              try {
-                const parsed = JSON.parse(code.data);
-                identifier = parsed.ticketNumber || parsed.ticketId || "";
-                token = parsed.verificationToken || "";
-              } catch {
-                const parts = code.data.split(":");
-                if (parts.length === 2) {
-                  identifier = parts[0];
-                  token = parts[1];
-                }
-              }
-
-              if (identifier && token) {
-                setTicketSearch(identifier);
-                setTokenSearch(token);
-                handleVerify(identifier, token);
-                return;
-              }
-            } catch (e) {
-              console.error("Image decode error:", e);
-            }
-            toast.error("Decoded QR successfully, but ticket payload format was invalid.");
-          } else {
-            toast.error("No valid QR code detected in this image.");
-          }
+        if (payload) {
+          setTicketSearch(payload.identifier);
+          setTokenSearch(payload.token);
+          handleVerify(payload.identifier, payload.token);
+        } else {
+          toast.error("No valid QR code could be detected in this image. Please ensure the QR code is clearly visible.");
         }
       };
+
+      img.onerror = () => {
+        setIsDecodingImage(false);
+        toast.error("Failed to load image file.");
+      };
+
       img.src = event.target?.result as string;
     };
+
+    reader.onerror = () => {
+      setIsDecodingImage(false);
+      toast.error("Error reading file.");
+    };
+
     reader.readAsDataURL(file);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      processImageFile(file);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const handleDemoScan = (ticketNum: string, token: string) => {
@@ -362,17 +430,38 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
         {/* Tab 2: Upload Ticket Screenshot */}
         {activeTab === "upload" && (
           <div className="space-y-4">
-            <label className="border-2 border-dashed border-border hover:border-lime/60 rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-all bg-card-hover/20">
-              <Upload className="w-10 h-10 text-lime mb-3" />
-              <p className="text-sm font-semibold text-white">Upload Ticket QR Screenshot</p>
-              <p className="text-xs text-text-faint mt-1">Drag and drop or browse PNG, JPG, or WebP</p>
+            <label 
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                const droppedFile = e.dataTransfer.files?.[0];
+                if (droppedFile) processImageFile(droppedFile);
+              }}
+              className="border-2 border-dashed border-border hover:border-lime/60 rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-all bg-card-hover/20 relative"
+            >
+              {isDecodingImage ? (
+                <div className="py-4 space-y-2 flex flex-col items-center">
+                  <Loader2 className="w-10 h-10 text-lime animate-spin" />
+                  <p className="text-sm font-semibold text-white">Scanning QR Code across resolutions...</p>
+                </div>
+              ) : (
+                <>
+                  <Upload className="w-10 h-10 text-lime mb-3" />
+                  <p className="text-sm font-semibold text-white">Upload Ticket QR Screenshot</p>
+                  <p className="text-xs text-text-faint mt-1">Drag & drop or click to browse PNG, JPG, or WebP</p>
+                </>
+              )}
               <input 
+                ref={fileInputRef}
                 type="file" 
                 accept="image/*" 
                 onChange={handleImageUpload} 
                 className="hidden" 
               />
             </label>
+            <p className="text-center text-xs text-text-faint">
+              Supports full-screen mobile screenshots, dark mode passes, and downloaded tickets.
+            </p>
           </div>
         )}
 
@@ -385,23 +474,23 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
               </label>
               <input 
                 type="text" 
-                placeholder="e.g. CE-TKT-2026-XXXX" 
+                placeholder="e.g. CE-TKT-2026-XXXX or Ticket ID" 
                 value={ticketSearch}
                 onChange={(e) => setTicketSearch(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-bg-elevated border border-border text-white text-sm outline-none focus:border-lime"
+                className="w-full px-4 py-3 rounded-xl bg-bg-elevated border border-border text-white text-sm outline-none focus:border-lime font-mono"
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase">
-                Digital Verification Signature Token
+                Digital Verification Signature Token (Optional for Admins)
               </label>
               <input 
                 type="text" 
                 placeholder="e.g. 7f8a9b2c3d4e..." 
                 value={tokenSearch}
                 onChange={(e) => setTokenSearch(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-bg-elevated border border-border text-white text-sm outline-none focus:border-lime"
+                className="w-full px-4 py-3 rounded-xl bg-bg-elevated border border-border text-white text-sm outline-none focus:border-lime font-mono"
               />
             </div>
 
