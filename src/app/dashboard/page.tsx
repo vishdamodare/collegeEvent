@@ -1,13 +1,15 @@
 import { getStudentDashboard } from "@/actions/profile";
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
-import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
   const data = await getStudentDashboard();
 
-  if (!data) {
-    redirect("/login?callbackUrl=/dashboard");
-  }
+  const fallbackData = {
+    user: { id: "", name: "Student", email: "" },
+    profile: null,
+    savedCount: 0,
+    upcomingEvents: [],
+  };
 
-  return <DashboardOverview data={data} />;
+  return <DashboardOverview data={data || fallbackData} />;
 }

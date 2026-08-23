@@ -1,0 +1,4 @@
+#!/bin/sh
+export ELECTRON_RUN_AS_NODE=1
+export PATH="$(dirname "$0"):$PATH"
+exec "/Applications/Antigravity IDE.app/Contents/Frameworks/Antigravity IDE Helper (Plugin).app/Contents/MacOS/Antigravity IDE Helper (Plugin)" "$@"

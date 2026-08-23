@@ -41,6 +41,7 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
+  const lastScannedCode = useRef<string>("");
 
   useEffect(() => {
     setMounted(true);
@@ -52,30 +53,64 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
 
     let stream: MediaStream | null = null;
     let animationFrameId: number;
+    let isCancelled = false;
 
     const startCamera = async () => {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" }
-        });
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.setAttribute("playsinline", "true");
-          videoRef.current.play();
-          setCameraActive(true);
-          scanFrame();
+        let mediaStream: MediaStream;
+        try {
+          mediaStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: "environment" } }
+          });
+        } catch {
+          mediaStream = await navigator.mediaDevices.getUserMedia({
+            video: true
+          });
         }
-      } catch (err) {
-        console.error("Camera access failed:", err);
+
+        if (isCancelled) {
+          mediaStream.getTracks().forEach(t => t.stop());
+          return;
+        }
+
+        stream = mediaStream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+          videoRef.current.setAttribute("playsinline", "true");
+          
+          try {
+            const playPromise = videoRef.current.play();
+            if (playPromise !== undefined) {
+              await playPromise.catch((err) => {
+                if (err.name !== "AbortError") {
+                  console.warn("Video play error:", err);
+                }
+              });
+            }
+          } catch (e) {
+            // Ignore interruption errors
+          }
+
+          if (!isCancelled) {
+            setCameraActive(true);
+            scanFrame();
+          }
+        }
+      } catch (err: any) {
+        if (err?.name !== "AbortError" && !isCancelled) {
+          console.warn("Camera access failed or unavailable:", err);
+        }
         setCameraActive(false);
       }
     };
 
     const scanFrame = () => {
+      if (isCancelled) return;
+
       if (videoRef.current && canvasRef.current && activeTab === "camera") {
         const video = videoRef.current;
         const canvas = canvasRef.current;
-        const ctx = canvas.getContext("2d");
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
         if (video.readyState === video.HAVE_ENOUGH_DATA && ctx) {
           canvas.height = video.videoHeight;
@@ -86,26 +121,34 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
             inversionAttempts: "dontInvert",
           });
 
-          if (code) {
+          if (code && code.data && code.data !== lastScannedCode.current) {
+            lastScannedCode.current = code.data;
             try {
-              const parsed = JSON.parse(code.data);
-              if (parsed.ticketId && parsed.verificationToken) {
-                if (navigator.vibrate) navigator.vibrate(200);
-                handleVerify(parsed.ticketId, parsed.verificationToken);
-                setActiveTab("manual");
-                setTicketSearch(parsed.ticketId);
-                setTokenSearch(parsed.verificationToken);
-                return;
+              let identifier = "";
+              let token = "";
+
+              try {
+                const parsed = JSON.parse(code.data);
+                identifier = parsed.ticketNumber || parsed.ticketId || "";
+                token = parsed.verificationToken || "";
+              } catch {
+                const parts = code.data.split(":");
+                if (parts.length === 2) {
+                  identifier = parts[0];
+                  token = parts[1];
+                }
+              }
+
+              if (identifier && token) {
+                if (navigator.vibrate) {
+                  try { navigator.vibrate(200); } catch {}
+                }
+                setTicketSearch(identifier);
+                setTokenSearch(token);
+                handleVerify(identifier, token);
               }
             } catch (e) {
-              const parts = code.data.split(":");
-              if (parts.length === 2) {
-                handleVerify(parts[0], parts[1]);
-                setActiveTab("manual");
-                setTicketSearch(parts[0]);
-                setTokenSearch(parts[1]);
-                return;
-              }
+              console.error("QR decode error:", e);
             }
           }
         }
@@ -120,6 +163,7 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
     }
 
     return () => {
+      isCancelled = true;
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
@@ -130,53 +174,59 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
   if (!mounted) return null;
 
   const handleVerify = async (ticketNum: string, token: string) => {
+    if (!ticketNum.trim() || !token.trim()) {
+      toast.error("Please provide both ticket number and verification token.");
+      return;
+    }
+
     setIsVerifying(true);
     setErrorMsg(null);
     setScannedDetails(null);
 
-    const res = await verifyCheckInTicket(ticketNum, token);
-    setIsVerifying(false);
+    try {
+      const res = await verifyCheckInTicket(ticketNum, token);
+      setIsVerifying(false);
 
-    if (res.error) {
-      setErrorMsg(res.error);
-      toast.error(res.error);
-    } else {
-      setScannedDetails(res);
-      toast.success("Ticket scanned and signature verified!");
+      if (res.error) {
+        setErrorMsg(res.error);
+        toast.error(res.error);
+      } else {
+        setScannedDetails(res);
+        toast.success("Ticket scanned and signature verified!");
+      }
+    } catch (err: any) {
+      setIsVerifying(false);
+      setErrorMsg(err?.message || "Failed to verify ticket.");
+      toast.error(err?.message || "Failed to verify ticket.");
     }
   };
 
   const handleApprove = () => {
     if (!scannedDetails?.ticket?.id) return;
-    
+
     startTransition(async () => {
-      const res = await confirmCheckInAction(
-        scannedDetails.ticket.id, 
-        activeTab === "manual" ? "MANUAL" : "QR",
-        "Admin Check-in Console"
-      );
+      try {
+        const res = await confirmCheckInAction(
+          scannedDetails.ticket.id, 
+          activeTab === "camera" ? "QR" : "MANUAL",
+          navigator.userAgent.includes("Mobile") ? "Mobile Scanner" : "Desktop Terminal"
+        );
 
-      if (res.error) {
-        toast.error(res.error);
-      } else {
-        setShowSuccessAnimation(true);
-        toast.success("Attendance marked successfully!");
-        
-        // Refresh scanned states
-        setScannedDetails((prev: any) => ({
-          ...prev,
-          ticket: { ...prev.ticket, status: "USED" },
-          registration: {
-            ...prev.registration,
-            status: "CHECKED_IN",
-            checkInStatus: "CHECKED_IN",
-            checkedInAt: new Date().toISOString(),
-          }
-        }));
-
-        setTimeout(() => {
-          setShowSuccessAnimation(false);
-        }, 3000);
+        if (res.error) {
+          toast.error(res.error);
+        } else {
+          setShowSuccessAnimation(true);
+          toast.success("Attendee successfully checked in!");
+          setTimeout(() => {
+            setShowSuccessAnimation(false);
+            setScannedDetails(null);
+            setTicketSearch("");
+            setTokenSearch("");
+            lastScannedCode.current = "";
+          }, 2500);
+        }
+      } catch (err: any) {
+        toast.error(err?.message || "Failed to confirm check-in.");
       }
     });
   };
@@ -200,21 +250,33 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
           const code = jsQR(imageData.data, imageData.width, imageData.height);
           if (code) {
             try {
-              const parsed = JSON.parse(code.data);
-              if (parsed.ticketId && parsed.verificationToken) {
-                handleVerify(parsed.ticketId, parsed.verificationToken);
+              let identifier = "";
+              let token = "";
+
+              try {
+                const parsed = JSON.parse(code.data);
+                identifier = parsed.ticketNumber || parsed.ticketId || "";
+                token = parsed.verificationToken || "";
+              } catch {
+                const parts = code.data.split(":");
+                if (parts.length === 2) {
+                  identifier = parts[0];
+                  token = parts[1];
+                }
+              }
+
+              if (identifier && token) {
+                setTicketSearch(identifier);
+                setTokenSearch(token);
+                handleVerify(identifier, token);
                 return;
               }
             } catch (e) {
-              const parts = code.data.split(":");
-              if (parts.length === 2) {
-                handleVerify(parts[0], parts[1]);
-                return;
-              }
+              console.error("Image decode error:", e);
             }
-            toast.error("Decoded QR successfully, but format was invalid.");
+            toast.error("Decoded QR successfully, but ticket payload format was invalid.");
           } else {
-            toast.error("No QR code detected in this image.");
+            toast.error("No valid QR code detected in this image.");
           }
         }
       };
@@ -224,6 +286,8 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
   };
 
   const handleDemoScan = (ticketNum: string, token: string) => {
+    setTicketSearch(ticketNum);
+    setTokenSearch(token);
     handleVerify(ticketNum, token);
   };
 
@@ -236,8 +300,8 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
           <button 
             onClick={() => setActiveTab("camera")}
             className={cn(
-              "flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5",
-              activeTab === "camera" ? "bg-white text-black" : "text-text-faint hover:text-white"
+              "flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer",
+              activeTab === "camera" ? "bg-white text-black shadow-md" : "text-text-faint hover:text-white"
             )}
           >
             <Camera className="w-4 h-4" /> Camera
@@ -245,8 +309,8 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
           <button 
             onClick={() => setActiveTab("upload")}
             className={cn(
-              "flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5",
-              activeTab === "upload" ? "bg-white text-black" : "text-text-faint hover:text-white"
+              "flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer",
+              activeTab === "upload" ? "bg-white text-black shadow-md" : "text-text-faint hover:text-white"
             )}
           >
             <Upload className="w-4 h-4" /> Upload
@@ -254,292 +318,221 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
           <button 
             onClick={() => setActiveTab("manual")}
             className={cn(
-              "flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5",
-              activeTab === "manual" ? "bg-white text-black" : "text-text-faint hover:text-white"
+              "flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer",
+              activeTab === "manual" ? "bg-white text-black shadow-md" : "text-text-faint hover:text-white"
             )}
           >
             <Search className="w-4 h-4" /> Manual
           </button>
         </div>
 
-        {/* Tab 1: Live Camera Scanner */}
+        {/* Tab 1: Live Camera Stream */}
         {activeTab === "camera" && (
-          <div className="space-y-4 font-archivo">
-            <div className="aspect-square bg-black border border-border/60 rounded-2xl overflow-hidden relative flex flex-col items-center justify-center">
+          <div className="space-y-4">
+            <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-black/50 border border-border flex items-center justify-center">
               <video 
                 ref={videoRef} 
-                className="w-full h-full object-cover absolute inset-0"
-                playsInline
-                muted
+                className="w-full h-full object-cover" 
+                playsInline 
+                muted 
               />
               <canvas ref={canvasRef} className="hidden" />
 
-              {/* Laser line overlay scanning guide */}
-              <div className="absolute inset-0 border-[30px] border-black/45 flex items-center justify-center pointer-events-none z-10">
-                <div className="w-48 h-48 border-2 border-dashed border-[var(--color-lime)]/70 rounded-xl relative">
-                  <div className="absolute left-2 right-2 h-0.5 bg-[var(--color-lime)] shadow-[0_0_8px_var(--color-lime)] animate-[laser_2s_infinite_ease-in-out]" />
+              {/* Viewfinder Target Graphic */}
+              <div className="absolute inset-0 pointer-events-none flex items-center justify-center p-8">
+                <div className="w-48 h-48 border-2 border-dashed border-lime/60 rounded-2xl relative animate-pulse flex items-center justify-center">
+                  <div className="w-full h-0.5 bg-lime shadow-[0_0_12px_#D7FF3D] animate-bounce" />
                 </div>
               </div>
-              <style dangerouslySetInnerHTML={{__html: `
-                @keyframes laser {
-                  0%, 100% { top: 5%; }
-                  50% { top: 95%; }
-                }
-              `}} />
 
               {!cameraActive && (
-                <div className="absolute inset-0 bg-[#0C0C0C]/85 flex flex-col items-center justify-center text-center p-6 z-20">
-                  <QrCode className="w-12 h-12 text-white/20 mb-3 animate-pulse" />
-                  <p className="text-sm font-bold text-white">Starting Video Feed...</p>
-                  <p className="text-xs text-white/40 mt-1 max-w-[200px]">Please approve camera privileges if prompted by the browser.</p>
+                <div className="absolute inset-0 bg-bg-elevated/90 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center">
+                  <Camera className="w-10 h-10 text-text-faint mb-3 animate-pulse" />
+                  <p className="text-sm font-semibold text-white">Starting Optical Camera...</p>
+                  <p className="text-xs text-text-faint mt-1">Please allow camera permissions in your browser, or switch to Upload/Manual mode.</p>
                 </div>
               )}
             </div>
-
-            {/* Test demo selector */}
-            <div className="space-y-2 pt-2">
-              <label className="block text-xs font-bold text-text-muted uppercase">Scan Demo DB Ticket (For Testing)</label>
-              <div className="grid grid-cols-1 gap-1.5 max-h-[180px] overflow-y-auto pr-1">
-                {demoTickets.length === 0 ? (
-                  <p className="text-xs text-text-faint py-3 text-center border border-dashed border-border rounded-xl">
-                    No active tickets in database to test. Create one first!
-                  </p>
-                ) : (
-                  demoTickets.map((demo, i) => (
-                    <button
-                      key={i}
-                      onClick={() => handleDemoScan(demo.ticketNumber || demo.token, demo.token)}
-                      className="w-full text-left p-2.5 rounded-xl border border-border bg-card-hover hover:border-lime/30 text-xs flex flex-col gap-1 transition-all cursor-pointer group"
-                    >
-                      <div className="flex justify-between font-bold text-white group-hover:text-lime">
-                        <span>{demo.studentName}</span>
-                        <span className="font-mono text-[10px] text-text-faint">{demo.ticketNumber}</span>
-                      </div>
-                      <div className="text-[10px] text-text-faint flex justify-between">
-                        <span>{demo.eventName}</span>
-                        <span className="italic">{demo.teamName}</span>
-                      </div>
-                    </button>
-                  ))
-                )}
-              </div>
-            </div>
+            <p className="text-center text-xs text-text-faint">
+              Point your camera directly at the student&apos;s digital ticket QR code.
+            </p>
           </div>
         )}
 
-        {/* Tab 2: Upload Ticket QR Code */}
+        {/* Tab 2: Upload Ticket Screenshot */}
         {activeTab === "upload" && (
-          <div className="border-2 border-dashed border-border/80 rounded-2xl p-8 text-center flex flex-col items-center justify-center hover:border-[var(--color-lime)]/30 hover:bg-white/[0.01] transition-all relative min-h-[300px]">
-            <Upload className="w-8 h-8 text-text-faint mb-3" />
-            <p className="text-sm font-bold text-white mb-1">Upload QR image file</p>
-            <p className="text-xs text-text-faint max-w-[200px] leading-relaxed mb-4 font-archivo">
-              Select or drop ticket pass screenshots to auto-verify.
-            </p>
-            <input 
-              type="file" 
-              accept="image/*"
-              onChange={handleImageUpload}
-              className="absolute inset-0 opacity-0 cursor-pointer" 
-              id="qr-file-upload" 
-            />
-            <label 
-              htmlFor="qr-file-upload" 
-              className="px-4 py-2.5 bg-[#1b1b1b] border border-border hover:border-[var(--color-lime)]/30 hover:text-[var(--color-lime)] text-xs font-bold rounded-xl transition-all pointer-events-none"
-            >
-              Browse Files
+          <div className="space-y-4">
+            <label className="border-2 border-dashed border-border hover:border-lime/60 rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-all bg-card-hover/20">
+              <Upload className="w-10 h-10 text-lime mb-3" />
+              <p className="text-sm font-semibold text-white">Upload Ticket QR Screenshot</p>
+              <p className="text-xs text-text-faint mt-1">Drag and drop or browse PNG, JPG, or WebP</p>
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={handleImageUpload} 
+                className="hidden" 
+              />
             </label>
           </div>
         )}
 
-        {/* Tab 3: Manual Code Search */}
+        {/* Tab 3: Manual Input Search */}
         {activeTab === "manual" && (
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-text-muted mb-2 uppercase">Ticket Number / ID</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase">
+                Ticket Number / Identifier
+              </label>
               <input 
                 type="text" 
+                placeholder="e.g. CE-TKT-2026-XXXX" 
                 value={ticketSearch}
                 onChange={(e) => setTicketSearch(e.target.value)}
-                placeholder="e.g. CE-2027-000145"
-                className="w-full px-4 py-3 rounded-xl bg-black border border-border text-white text-sm outline-none focus:border-lime" 
+                className="w-full px-4 py-3 rounded-xl bg-bg-elevated border border-border text-white text-sm outline-none focus:border-lime"
               />
             </div>
+
             <div>
-              <label className="block text-xs font-bold text-text-muted mb-2 uppercase">Verification Signature Token</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase">
+                Digital Verification Signature Token
+              </label>
               <input 
                 type="text" 
+                placeholder="e.g. 7f8a9b2c3d4e..." 
                 value={tokenSearch}
                 onChange={(e) => setTokenSearch(e.target.value)}
-                placeholder="e.g. 7XK4L92AFR18"
-                className="w-full px-4 py-3 rounded-xl bg-black border border-border text-white text-sm outline-none focus:border-lime" 
+                className="w-full px-4 py-3 rounded-xl bg-bg-elevated border border-border text-white text-sm outline-none focus:border-lime"
               />
             </div>
+
             <button 
               onClick={() => handleVerify(ticketSearch, tokenSearch)}
-              disabled={isVerifying || !ticketSearch || !tokenSearch}
-              className="btn btn-primary w-full py-3.5 text-xs font-bold flex items-center justify-center gap-1.5"
+              disabled={isVerifying}
+              className="w-full py-3.5 rounded-xl bg-lime text-black font-bold text-sm flex items-center justify-center gap-2 hover:bg-lime/90 transition-all cursor-pointer disabled:opacity-50"
             >
-              {isVerifying ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Verify Signature & Fetch</>}
+              {isVerifying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+              Verify Attendee Record
             </button>
           </div>
         )}
+
+        {/* Demo Fast-Scan Shortcuts */}
+        {demoTickets.length > 0 && (
+          <div className="border-t border-border/50 pt-4">
+            <p className="text-[11px] font-bold text-text-faint uppercase tracking-wider mb-2">
+              Recent Issued Tickets (Click to Fast-Test):
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {demoTickets.slice(0, 4).map(t => (
+                <button
+                  key={t.ticketNumber}
+                  onClick={() => handleDemoScan(t.ticketNumber, t.token)}
+                  className="px-2.5 py-1.5 rounded-lg bg-bg-elevated border border-border text-[11px] font-mono text-white/80 hover:text-lime hover:border-lime transition-all cursor-pointer"
+                >
+                  {t.ticketNumber} ({t.studentName})
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Validation Screen Display */}
-      <div className="bg-card border border-border rounded-2xl p-5 md:p-6 min-h-[380px] shadow-xl flex flex-col relative overflow-hidden">
-        
-        {/* Checked-In Success Animation Overlay */}
-        {showSuccessAnimation && (
-          <div className="absolute inset-0 bg-[#0E0E0E]/95 border border-[var(--color-lime)]/20 rounded-2xl flex flex-col items-center justify-center text-center p-6 z-30 animate-in fade-in zoom-in duration-300">
-            <div className="w-16 h-16 rounded-full bg-[var(--color-lime)]/10 border border-[var(--color-lime)]/30 flex items-center justify-center mb-4">
-              <CheckCircle className="w-8 h-8 text-[var(--color-lime)] animate-bounce" />
+      {/* Validation Result Inspection View */}
+      <div className="space-y-6">
+        {showSuccessAnimation ? (
+          <div className="p-8 rounded-3xl bg-lime/10 border border-lime/30 text-center space-y-4 animate-in fade-in zoom-in duration-300">
+            <div className="w-16 h-16 rounded-full bg-lime text-black flex items-center justify-center mx-auto shadow-lg shadow-lime/20">
+              <CheckCircle className="w-10 h-10 stroke-[2.5]" />
             </div>
-            <h3 className="text-lg font-bold text-white uppercase tracking-wider">Attendance Marked Successfully</h3>
-            <p className="text-xs text-white/50 mt-1 max-w-sm font-archivo leading-relaxed">
-              The database has been updated and a confirmation notification has been sent to the attendee.
-            </p>
+            <h2 className="text-2xl font-anton uppercase text-white tracking-wide">Check-In Confirmed!</h2>
+            <p className="text-sm text-lime/90 font-medium">Attendee verified and checked in to event roster.</p>
           </div>
-        )}
-
-        {isVerifying && (
-          <div className="flex-1 flex flex-col items-center justify-center text-center animate-fade-in">
-            <Loader2 className="w-10 h-10 animate-spin text-lime" />
-            <p className="text-sm font-bold text-white mt-4">Verifying digital signature...</p>
-            <p className="text-xs text-text-faint mt-1">Checking secure database records.</p>
-          </div>
-        )}
-
-        {errorMsg && !isVerifying && (
-          <div className="flex-1 flex flex-col items-center justify-center text-center p-6 bg-coral/5 border border-coral/10 rounded-2xl animate-fade-in">
-            <XCircle className="w-12 h-12 text-coral mb-3" />
-            <h3 className="text-lg font-bold text-white">Validation Failed</h3>
-            <p className="text-xs text-text-muted mt-2 max-w-sm leading-relaxed">{errorMsg}</p>
-          </div>
-        )}
-
-        {!scannedDetails && !errorMsg && !isVerifying && (
-          <div className="flex-1 flex flex-col items-center justify-center text-center p-6 border-2 border-dashed border-border/40 rounded-2xl">
-            <QrCode className="w-12 h-12 text-text-faint opacity-50 mb-3" />
-            <h3 className="text-base font-bold text-white">Awaiting QR Scan</h3>
-            <p className="text-xs text-text-faint mt-1.5 max-w-xs leading-relaxed">
-              Use the camera scanner, drag a screenshot, or search manually to inspect attendee details here.
-            </p>
-          </div>
-        )}
-
-        {scannedDetails && !isVerifying && (
-          <div className="flex-1 space-y-6 animate-fade-in">
+        ) : scannedDetails ? (
+          <div className="p-6 md:p-8 rounded-3xl bg-card border border-border space-y-6 shadow-2xl animate-in fade-in slide-in-from-top-4 duration-300">
             
-            {/* Header Badge */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-border/50 pb-4 gap-3">
+            {/* Header Status */}
+            <div className="flex items-center justify-between border-b border-border pb-4">
               <div>
-                <span className="text-[10px] uppercase font-bold text-text-faint tracking-wider">Scanned Ticket</span>
-                <h3 className="text-xl font-bold text-white font-mono">{scannedDetails.ticket.ticketNumber}</h3>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className={cn(
-                  "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border",
-                  scannedDetails.ticket.status === "ACTIVE" 
-                    ? "bg-lime/10 border-lime/20 text-lime"
-                    : "bg-coral/10 border-coral/20 text-coral"
-                )}>
-                  Ticket: {scannedDetails.ticket.status}
+                <span className="px-2.5 py-1 rounded-full bg-lime/10 border border-lime/20 text-lime text-[11px] font-bold tracking-widest uppercase">
+                  Verified QR Pass
                 </span>
-                <RegistrationStatusBadge status={scannedDetails.registration.status} size="sm" />
+                <h3 className="text-xl font-bold text-white mt-1">{scannedDetails.event.title}</h3>
+              </div>
+              <div className="text-right">
+                <span className={cn(
+                  "px-3 py-1 rounded-full text-xs font-bold uppercase",
+                  scannedDetails.registration.checkInStatus === "CHECKED_IN" 
+                    ? "bg-amber-500/10 border border-amber-500/20 text-amber-400"
+                    : "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
+                )}>
+                  {scannedDetails.registration.checkInStatus === "CHECKED_IN" ? "Already Checked In" : "Ready For Entry"}
+                </span>
               </div>
             </div>
 
-            {/* Event Info */}
-            <div className="p-4 rounded-xl bg-card-hover border border-border space-y-2">
-              <span className="text-[10px] uppercase font-bold text-text-faint tracking-wider block">Target Event</span>
-              <h4 className="text-base font-bold text-white">{scannedDetails.event.title}</h4>
-              {scannedDetails.registration.teamName && (
-                <div className="text-xs text-text-muted">
-                  Team Association: <span className="font-semibold text-lime">{scannedDetails.registration.teamName}</span>
-                </div>
-              )}
-            </div>
+            {/* Student & Ticket Metadata Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="p-4 rounded-xl bg-bg-elevated border border-border">
+                <p className="text-xs text-text-faint uppercase font-semibold">Attendee Name</p>
+                <p className="text-base font-bold text-white mt-0.5">{scannedDetails.student.name}</p>
+                <p className="text-xs text-text-muted mt-0.5">{scannedDetails.student.email}</p>
+              </div>
 
-            {/* Attendee Info */}
-            <div className="space-y-4 font-archivo">
-              <h5 className="text-xs font-bold uppercase tracking-wider text-text-faint">Participant Details</h5>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                <div>
-                  <span className="text-text-faint block uppercase mb-0.5">Full Name</span>
-                  <span className="text-white font-semibold text-sm">{scannedDetails.student.name}</span>
-                </div>
-                <div>
-                  <span className="text-text-faint block uppercase mb-0.5">Email Address</span>
-                  <span className="text-white font-semibold text-sm">{scannedDetails.student.email}</span>
-                </div>
-                <div>
-                  <span className="text-text-faint block uppercase mb-0.5">Phone Number</span>
-                  <span className="text-white font-semibold text-sm">{scannedDetails.student.phone}</span>
-                </div>
-                <div>
-                  <span className="text-text-faint block uppercase mb-0.5">College / Institution</span>
-                  <span className="text-white font-semibold text-sm">{scannedDetails.student.college}</span>
-                </div>
-                <div>
-                  <span className="text-text-faint block uppercase mb-0.5">Branch / Major</span>
-                  <span className="text-white font-semibold text-sm">{scannedDetails.student.branch}</span>
-                </div>
-                <div>
-                  <span className="text-text-faint block uppercase mb-0.5">Academic Year</span>
-                  <span className="text-white font-semibold text-sm">{scannedDetails.student.academicYear}</span>
-                </div>
+              <div className="p-4 rounded-xl bg-bg-elevated border border-border">
+                <p className="text-xs text-text-faint uppercase font-semibold">Ticket ID</p>
+                <p className="text-base font-mono font-bold text-lime mt-0.5">{scannedDetails.ticket.ticketNumber}</p>
+                <p className="text-xs text-text-muted mt-0.5">Team: {scannedDetails.registration.teamName || "Individual Entry"}</p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-bg-elevated border border-border">
+                <p className="text-xs text-text-faint uppercase font-semibold">Institution / Major</p>
+                <p className="text-sm font-semibold text-white mt-0.5">{scannedDetails.student.college}</p>
+                <p className="text-xs text-text-muted mt-0.5">{scannedDetails.student.branch} · {scannedDetails.student.academicYear}</p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-bg-elevated border border-border">
+                <p className="text-xs text-text-faint uppercase font-semibold">Contact Phone</p>
+                <p className="text-sm font-semibold text-white mt-0.5">{scannedDetails.student.phone}</p>
+                <p className="text-xs text-text-muted mt-0.5">Issued: {format(new Date(scannedDetails.ticket.issuedAt), "MMM d, yyyy")}</p>
               </div>
             </div>
 
-            {/* Check-In Action Section */}
-            <div className="border-t border-border/50 pt-5 mt-auto">
+            {/* Check-in Actions */}
+            <div className="border-t border-border pt-4 flex flex-col sm:flex-row gap-3">
               {scannedDetails.registration.checkInStatus === "CHECKED_IN" ? (
-                <div className="p-4 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400 flex flex-col gap-2 text-xs">
-                  <div className="flex items-center gap-2 font-bold">
-                    <XCircle className="w-5 h-5 text-orange-400" />
-                    <span>Already Checked In (Duplicate Prevented)</span>
-                  </div>
-                  <p className="text-white/60 leading-relaxed font-archivo pl-7">
-                    This ticket was checked in on{" "}
-                    <span className="text-white font-semibold">
-                      {scannedDetails.registration.checkedInAt && 
-                        format(new Date(scannedDetails.registration.checkedInAt), "MMM d, yyyy 'at' h:mm a")}
-                    </span>{" "}
-                    by <span className="text-white font-semibold">{scannedDetails.registration.checkedInByName || "another organizer"}</span>.
-                  </p>
+                <div className="w-full p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-semibold text-center">
+                  ⚠️ This pass was already checked in on {format(new Date(scannedDetails.registration.checkedInAt), "MMM d 'at' h:mm a")} by {scannedDetails.registration.checkedInByName || "Organizer"}.
                 </div>
               ) : (
-                <div className="flex gap-3">
-                  <button 
-                    onClick={handleApprove}
-                    disabled={isPending || scannedDetails.ticket.status !== "ACTIVE"}
-                    className="flex-1 py-3 bg-lime text-black hover:bg-lime/90 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 disabled:opacity-40 transition-all cursor-pointer"
-                  >
-                    {isPending ? (
-                      <Loader2 className="w-4.5 h-4.5 animate-spin" />
-                    ) : (
-                      <>
-                        <UserCheck className="w-4.5 h-4.5" /> Confirm & Approve Entry
-                      </>
-                    )}
-                  </button>
-                  <button 
-                    onClick={() => {
-                      setScannedDetails(null);
-                      toast.error("Participant entry rejected.");
-                    }}
-                    className="px-4 py-3 bg-card-hover border border-border hover:border-coral/25 hover:text-coral font-bold rounded-xl text-xs transition-all cursor-pointer"
-                  >
-                    Reject
-                  </button>
-                </div>
+                <button
+                  onClick={handleApprove}
+                  disabled={isPending}
+                  className="w-full py-4 rounded-2xl bg-lime text-black font-bold text-base flex items-center justify-center gap-2 hover:bg-lime/90 transition-all shadow-[4px_4px_0_var(--color-coral)] cursor-pointer disabled:opacity-50"
+                >
+                  {isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <UserCheck className="w-5 h-5" />}
+                  Approve Entry & Check In
+                </button>
               )}
             </div>
-
+          </div>
+        ) : errorMsg ? (
+          <div className="p-8 rounded-3xl bg-red-500/10 border border-red-500/20 text-center space-y-3">
+            <XCircle className="w-12 h-12 text-red-400 mx-auto" />
+            <h3 className="text-lg font-bold text-white">Verification Failed</h3>
+            <p className="text-sm text-red-300/80 max-w-sm mx-auto">{errorMsg}</p>
+          </div>
+        ) : (
+          <div className="p-12 rounded-3xl bg-card border border-border border-dashed text-center flex flex-col items-center justify-center min-h-[350px]">
+            <div className="w-16 h-16 rounded-2xl bg-bg-elevated border border-border flex items-center justify-center mb-4 text-text-faint">
+              <QrCode className="w-8 h-8" />
+            </div>
+            <h3 className="text-lg font-bold text-white">No Pass Scanned Yet</h3>
+            <p className="text-xs text-text-faint max-w-xs mt-1">
+              Position a ticket QR code inside the camera viewfinder, upload a screenshot, or enter the ticket number manually.
+            </p>
           </div>
         )}
       </div>
-
     </div>
   );
 }

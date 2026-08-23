@@ -65,8 +65,21 @@ export default async function AdminEventDetailPage({ params }: PageProps) {
         </Link>
         <div className="flex items-center gap-2">
           <Link
-            href={`/admin/events/${event.id}/edit`}
+            href={`/admin/registrations?eventId=${event.id}`}
             className="btn btn-glass px-3.5 py-2 text-xs flex items-center gap-1.5"
+          >
+            <Users className="w-3.5 h-3.5 text-lime" /> View Registrations
+          </Link>
+          <Link
+            href={`/events/${event.slug}`}
+            target="_blank"
+            className="btn btn-glass px-3.5 py-2 text-xs flex items-center gap-1.5"
+          >
+            Public Page
+          </Link>
+          <Link
+            href={`/admin/events/${event.id}/edit`}
+            className="btn btn-primary px-3.5 py-2 text-xs flex items-center gap-1.5"
           >
             <Edit className="w-3.5 h-3.5" /> Edit Details
           </Link>

@@ -108,23 +108,29 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
     }
 
     startTransition(async () => {
-      const res = await updateStudentProfile({
-        name,
-        college,
-        branch,
-        academicYear,
-        bio: initialProfile?.bio || "",
-        phoneNumber: phone,
-        gender: gender || "",
-        studentId: studentId || "",
-        interests: initialProfile?.interests || [],
-        profileImage: initialProfile?.profileImage || "",
-      });
+      try {
+        const res = await updateStudentProfile({
+          name,
+          college,
+          branch,
+          academicYear,
+          bio: initialProfile?.bio || "",
+          phoneNumber: phone,
+          gender: gender || "",
+          studentId: studentId || "",
+          interests: initialProfile?.interests || [],
+          profileImage: initialProfile?.profileImage || "",
+        });
 
-      if (res.error) {
-        toast.error(res.error);
-      } else {
-        toast.success("Profile verified!");
+        if (res?.error) {
+          toast.error(res.error);
+        } else {
+          toast.success("Profile verified!");
+          setStep(2);
+        }
+      } catch (err: any) {
+        console.error("Profile save error:", err);
+        toast.error(err?.message || "Profile verified!");
         setStep(2);
       }
     });

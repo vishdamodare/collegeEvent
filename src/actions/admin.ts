@@ -6,6 +6,7 @@ import { headers } from "next/headers";
 import { EventStatus, UserRole, RegistrationStatus } from "@prisma/client";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
+import { sendCertificateIssuedEmail } from "@/lib/email";
 
 // Helper to get authenticated user & verify role
 async function getAuthenticatedAdmin() {
@@ -79,9 +80,9 @@ const eventFormSchema = z.object({
   categoryId: z.string().min(1, "Category is required"),
   date: z.coerce.date(),
   location: z.string().min(3, "Location/Venue is required"),
-  capacity: z.number().int().min(1, "Capacity must be at least 1"),
+  capacity: z.coerce.number().int().min(1, "Capacity must be at least 1"),
   status: z.nativeEnum(EventStatus).default(EventStatus.DRAFT),
-  imageUrl: z.string().url().optional().nullable(),
+  imageUrl: z.string().url().or(z.literal("")).optional().nullable(),
 });
 
 export type EventFormData = z.infer<typeof eventFormSchema>;
@@ -181,13 +182,23 @@ export async function updateEvent(id: string, data: EventFormData) {
     return { error: parsed.error.issues[0].message };
   }
 
-  // Ensure owner
-  const existingEvent = await prisma.event.findFirst({
-    where: { id, organizerId: user.id },
+  // Ensure owner or authorized admin
+  const isSuperAdmin = user.role === UserRole.SUPER_ADMIN;
+  const existingEvent = await prisma.event.findUnique({
+    where: { id },
   });
 
   if (!existingEvent) {
-    return { error: "Event not found or unauthorized" };
+    return { error: "Event not found" };
+  }
+
+  if (!isSuperAdmin && existingEvent.organizerId !== user.id) {
+    const userOrganizer = await prisma.organizerProfile.findUnique({
+      where: { userId: user.id },
+    });
+    if (!userOrganizer || userOrganizer.verificationStatus !== "APPROVED") {
+      return { error: "You are not authorized to edit this event" };
+    }
   }
 
   try {
@@ -239,6 +250,8 @@ export async function updateEvent(id: string, data: EventFormData) {
     }
 
     revalidatePath(`/admin/events/${id}`);
+    revalidatePath(`/admin/events/${id}/edit`);
+    revalidatePath(`/admin/events/edit/${id}`);
     revalidatePath(`/events/${slug}`);
     revalidatePath("/admin/events");
     revalidatePath("/");
@@ -739,3 +752,360 @@ export async function getEligibleCertificateEvents() {
     checkedInCount: e.registrations.length,
   }));
 }
+
+export async function issueBulkCertificatesAction(eventId: string) {
+  const user = await getAuthenticatedAdmin();
+
+  const event = await prisma.event.findFirst({
+    where: { id: eventId, organizerId: user.id },
+  });
+
+  if (!event) {
+    return { error: "Event not found or unauthorized" };
+  }
+
+  const checkedInRegs = await prisma.registration.findMany({
+    where: { eventId, checkedIn: true },
+    include: { student: { include: { user: true } } },
+  });
+
+  if (checkedInRegs.length === 0) {
+    return { error: "No checked-in attendees found for this event." };
+  }
+
+  // Update status to CERTIFICATE_ISSUED
+  await prisma.registration.updateMany({
+    where: { eventId, checkedIn: true },
+    data: { status: "CERTIFICATE_ISSUED" },
+  });
+
+  // Dispatch certificate email notification to each checked-in student
+  for (const reg of checkedInRegs) {
+    sendCertificateIssuedEmail({
+      to: reg.student.user.email,
+      studentName: reg.student.user.name,
+      eventTitle: event.title,
+    }).catch((err) => console.error("Certificate email error:", err));
+
+    await createNotification(
+      reg.student.userId,
+      `Your Certificate of Participation for "${event.title}" has been issued!`
+    );
+  }
+
+  revalidatePath("/admin/certificates");
+  revalidatePath("/dashboard/events");
+
+  return { success: true, count: checkedInRegs.length };
+}
+
+export async function getAdminAttendanceAction(options?: { eventId?: string; search?: string; status?: "ALL" | "CHECKED_IN" | "PENDING" }) {
+  const user = await getAuthenticatedAdmin();
+  const { eventId, search, status = "ALL" } = options ?? {};
+
+  const where: any = {
+    event: {
+      organizerId: user.role === "SUPER_ADMIN" ? undefined : user.id,
+      ...(eventId ? { id: eventId } : {}),
+    },
+  };
+
+  if (status === "CHECKED_IN") {
+    where.checkedIn = true;
+  } else if (status === "PENDING") {
+    where.checkedIn = false;
+  }
+
+  if (search) {
+    where.OR = [
+      { student: { user: { name: { contains: search, mode: "insensitive" } } } },
+      { student: { user: { email: { contains: search, mode: "insensitive" } } } },
+      { student: { college: { contains: search, mode: "insensitive" } } },
+      { event: { title: { contains: search, mode: "insensitive" } } },
+    ];
+  }
+
+  const [registrations, events] = await Promise.all([
+    prisma.registration.findMany({
+      where,
+      include: {
+        event: { select: { id: true, title: true, date: true, location: true } },
+        student: {
+          include: {
+            user: { select: { name: true, email: true, image: true } },
+          },
+        },
+        ticket: { select: { ticketNumber: true, status: true, verificationToken: true } },
+      },
+      orderBy: { registeredAt: "desc" },
+    }),
+    prisma.event.findMany({
+      where: user.role === "SUPER_ADMIN" ? {} : { organizerId: user.id },
+      select: { id: true, title: true },
+      orderBy: { title: "asc" },
+    }),
+  ]);
+
+  const totalCount = registrations.length;
+  const checkedInCount = registrations.filter((r) => r.checkedIn).length;
+  const pendingCount = totalCount - checkedInCount;
+
+  return {
+    registrations: registrations.map((r) => ({
+      id: r.id,
+      participantName: r.student.user.name || "Student",
+      email: r.student.user.email,
+      college: r.student.college,
+      branch: r.student.branch,
+      academicYear: r.student.academicYear,
+      phone: r.student.phoneNumber || "Not provided",
+      eventName: r.event.title,
+      eventId: r.event.id,
+      checkedIn: r.checkedIn,
+      checkedInAt: r.checkedInAt,
+      checkInMethod: r.checkInMethod || "N/A",
+      checkInDevice: r.checkInDevice || "N/A",
+      ticketNumber: r.ticket?.ticketNumber || "N/A",
+      registrationStatus: r.status,
+      teamName: r.teamName,
+    })),
+    stats: {
+      totalCount,
+      checkedInCount,
+      pendingCount,
+      percentage: totalCount > 0 ? Math.round((checkedInCount / totalCount) * 100) : 0,
+    },
+    events,
+  };
+}
+
+export async function getAdminTicketsAction(options?: { eventId?: string; search?: string; status?: string }) {
+  const user = await getAuthenticatedAdmin();
+  const { eventId, search, status } = options ?? {};
+
+  const where: any = {
+    event: {
+      organizerId: user.role === "SUPER_ADMIN" ? undefined : user.id,
+      ...(eventId ? { id: eventId } : {}),
+    },
+  };
+
+  if (status && status !== "ALL") {
+    where.status = status;
+  }
+
+  if (search) {
+    where.OR = [
+      { ticketNumber: { contains: search, mode: "insensitive" } },
+      { verificationToken: { contains: search, mode: "insensitive" } },
+      { student: { user: { name: { contains: search, mode: "insensitive" } } } },
+      { student: { user: { email: { contains: search, mode: "insensitive" } } } },
+      { event: { title: { contains: search, mode: "insensitive" } } },
+    ];
+  }
+
+  const [tickets, events] = await Promise.all([
+    prisma.ticket.findMany({
+      where,
+      include: {
+        event: { select: { id: true, title: true, date: true, location: true } },
+        student: {
+          include: {
+            user: { select: { name: true, email: true } },
+          },
+        },
+        registration: { select: { teamName: true, status: true, checkedIn: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.event.findMany({
+      where: user.role === "SUPER_ADMIN" ? {} : { organizerId: user.id },
+      select: { id: true, title: true },
+      orderBy: { title: "asc" },
+    }),
+  ]);
+
+  return {
+    tickets: tickets.map((t) => ({
+      id: t.id,
+      ticketNumber: t.ticketNumber,
+      verificationToken: t.verificationToken,
+      status: t.status,
+      issuedAt: t.issuedAt,
+      downloadCount: t.downloadCount,
+      qrCode: t.qrCode,
+      studentName: t.student.user.name,
+      studentEmail: t.student.user.email,
+      studentCollege: t.student.college,
+      eventName: t.event.title,
+      eventDate: t.event.date,
+      teamName: t.registration?.teamName || "Individual",
+      checkedIn: t.registration?.checkedIn || false,
+    })),
+    events,
+  };
+}
+
+/**
+ * Toggle whether registration is open or closed/frozen for an event.
+ */
+export async function toggleEventRegistrationStatusAction(eventId: string, isClosed: boolean) {
+  const user = await getAuthenticatedAdmin();
+
+  const event = await prisma.event.findFirst({
+    where: {
+      id: eventId,
+      ...(user.role === "SUPER_ADMIN" ? {} : { organizerId: user.id }),
+    },
+  });
+
+  if (!event) {
+    return { error: "Event not found or unauthorized." };
+  }
+
+  try {
+    const updated = await prisma.event.update({
+      where: { id: eventId },
+      data: { isClosed },
+    });
+
+    revalidatePath("/admin/registrations");
+    revalidatePath("/admin/events");
+    revalidatePath(`/admin/events/${eventId}`);
+    revalidatePath(`/events/${event.slug}`);
+    revalidatePath("/");
+
+    return { success: true, isClosed: updated.isClosed };
+  } catch (err: any) {
+    console.error("Failed to toggle event registration status:", err);
+    return { error: "Failed to update registration status." };
+  }
+}
+
+/**
+ * Fetch detailed attendee registrations list with full filters and stats.
+ */
+export async function getAdminRegistrationsAction(options?: {
+  eventId?: string;
+  search?: string;
+  status?: string;
+}) {
+  const user = await getAuthenticatedAdmin();
+  const { eventId, search, status } = options ?? {};
+
+  const where: any = {
+    event: {
+      organizerId: user.role === "SUPER_ADMIN" ? undefined : user.id,
+      ...(eventId ? { id: eventId } : {}),
+    },
+  };
+
+  if (status && status !== "ALL") {
+    if (status === "CHECKED_IN") {
+      where.checkedIn = true;
+    } else {
+      where.status = status as RegistrationStatus;
+    }
+  }
+
+  if (search) {
+    where.OR = [
+      { student: { user: { name: { contains: search, mode: "insensitive" } } } },
+      { student: { user: { email: { contains: search, mode: "insensitive" } } } },
+      { student: { college: { contains: search, mode: "insensitive" } } },
+      { student: { studentId: { contains: search, mode: "insensitive" } } },
+      { event: { title: { contains: search, mode: "insensitive" } } },
+      { ticket: { ticketNumber: { contains: search, mode: "insensitive" } } },
+    ];
+  }
+
+  const [registrations, events] = await Promise.all([
+    prisma.registration.findMany({
+      where,
+      include: {
+        event: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            date: true,
+            location: true,
+            capacity: true,
+            isClosed: true,
+          },
+        },
+        student: {
+          include: {
+            user: { select: { name: true, email: true, image: true } },
+          },
+        },
+        ticket: true,
+        teamMembers: true,
+      },
+      orderBy: { registeredAt: "desc" },
+    }),
+    prisma.event.findMany({
+      where: user.role === "SUPER_ADMIN" ? {} : { organizerId: user.id },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        capacity: true,
+        isClosed: true,
+        _count: { select: { registrations: true } },
+      },
+      orderBy: { title: "asc" },
+    }),
+  ]);
+
+  const totalCount = registrations.length;
+  const confirmedCount = registrations.filter((r) => r.status === "CONFIRMED" || r.status === "CHECKED_IN").length;
+  const checkedInCount = registrations.filter((r) => r.checkedIn).length;
+  const cancelledCount = registrations.filter((r) => r.status === "CANCELLED").length;
+
+  return {
+    registrations: registrations.map((r) => ({
+      id: r.id,
+      participantName: r.student.user.name || "Student",
+      email: r.student.user.email,
+      college: r.student.college,
+      branch: r.student.branch,
+      academicYear: r.student.academicYear,
+      rollNumber: r.student.studentId || "N/A",
+      phone: r.student.phoneNumber || "N/A",
+      eventName: r.event.title,
+      eventSlug: r.event.slug,
+      eventId: r.event.id,
+      eventDate: r.event.date,
+      eventCapacity: r.event.capacity,
+      eventIsClosed: r.event.isClosed,
+      status: r.status,
+      checkedIn: r.checkedIn,
+      checkedInAt: r.checkedInAt,
+      ticketNumber: r.ticket?.ticketNumber || "N/A",
+      ticketStatus: r.ticket?.status || "N/A",
+      ticketId: r.ticket?.id || null,
+      teamName: r.teamName || null,
+      registrationType: r.registrationType || "INDIVIDUAL",
+      registeredAt: r.registeredAt,
+      answers: r.registrationAnswers as Record<string, string> | null,
+    })),
+    stats: {
+      totalCount,
+      confirmedCount,
+      checkedInCount,
+      cancelledCount,
+    },
+    events: events.map((e) => ({
+      id: e.id,
+      title: e.title,
+      slug: e.slug,
+      capacity: e.capacity,
+      isClosed: e.isClosed,
+      registeredCount: e._count.registrations,
+    })),
+  };
+}
+
+
+

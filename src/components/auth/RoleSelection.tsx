@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { AuthCard } from "./AuthCard";
+import { SocialLogin } from "./SocialLogin";
 import Link from "next/link";
 
 interface RoleSelectionProps {
@@ -20,7 +21,7 @@ export function RoleSelection({ onSelectRole }: RoleSelectionProps) {
         </p>
       </div>
 
-      <div className="flex flex-col gap-4 mb-8">
+      <div className="flex flex-col gap-4 mb-6">
         <motion.div 
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
@@ -66,7 +67,15 @@ export function RoleSelection({ onSelectRole }: RoleSelectionProps) {
         </motion.div>
       </div>
 
-      <div className="text-center text-[14px] text-[var(--color-text-muted)]">
+      <div className="flex items-center gap-4 mb-6">
+        <div className="h-[1px] flex-1 bg-[var(--color-border)]"></div>
+        <span className="text-[11px] font-bold text-[var(--color-text-faint)] uppercase tracking-wider">or sign up with</span>
+        <div className="h-[1px] flex-1 bg-[var(--color-border)]"></div>
+      </div>
+
+      <SocialLogin callbackURL="/auth-callback?targetRole=student" />
+
+      <div className="text-center mt-6 text-[14px] text-[var(--color-text-muted)]">
         Already have an account?{" "}
         <Link href="/login" className="text-white font-bold hover:underline transition-all">
           Log in

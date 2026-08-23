@@ -11,7 +11,7 @@ import {
   CalendarDays,
   Users,
 } from "lucide-react";
-import { getEligibleCertificateEvents } from "@/actions/admin";
+import { getEligibleCertificateEvents, issueBulkCertificatesAction } from "@/actions/admin";
 import { toast } from "sonner";
 
 export default function CertificatesPage() {
@@ -22,12 +22,16 @@ export default function CertificatesPage() {
   const [isSending, setIsSending] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  useEffect(() => {
+  const loadEligibleEvents = () => {
     startTransition(async () => {
       const res = await getEligibleCertificateEvents();
       setEvents(res);
-      if (res.length > 0) setSelectedEventId(res[0].id);
+      if (res.length > 0 && !selectedEventId) setSelectedEventId(res[0].id);
     });
+  };
+
+  useEffect(() => {
+    loadEligibleEvents();
   }, []);
 
   const selectedEvent = events.find((e) => e.id === selectedEventId);
@@ -38,21 +42,28 @@ export default function CertificatesPage() {
       setIsUploading(false);
       setTemplateFile("custom-certificate-template.pdf");
       toast.success("Certificate template uploaded successfully!");
-    }, 1500);
+    }, 1200);
   };
 
-  const handleSendBulk = () => {
+  const handleSendBulk = async () => {
     if (!selectedEventId) {
       toast.error("Please select an eligible event first.");
       return;
     }
     setIsSending(true);
-    setTimeout(() => {
+    try {
+      const res = await issueBulkCertificatesAction(selectedEventId);
+      if (res.error) {
+        toast.error(res.error);
+      } else {
+        toast.success(`Certificates successfully issued and emailed to ${res.count} attendees!`);
+        loadEligibleEvents();
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to issue certificates.");
+    } finally {
       setIsSending(false);
-      toast.success(
-        `Participation certificates queued for ${selectedEvent?.checkedInCount ?? 0} attendees!`
-      );
-    }, 2000);
+    }
   };
 
   return (

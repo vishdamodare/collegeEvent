@@ -10,6 +10,7 @@ import {
   generateVerificationToken,
   generateQRCodeDataUrl,
 } from "@/lib/ticket-generator";
+import { sendTicketConfirmationEmail } from "@/lib/email";
 import crypto from "crypto";
 
 /**
@@ -134,6 +135,28 @@ export async function registerForFreeEvent(
 
     // Transaction to create registration, generate ticket, and notify
     const result = await prisma.$transaction(async (tx) => {
+      // 1. Lock the event row for updates to prevent parallel registration capacity race conditions
+      const lockedEvent = await tx.$queryRaw<Array<{ capacity: number; isClosed: boolean; status: string }>>`
+        SELECT capacity, "isClosed", status 
+        FROM "Event" 
+        WHERE id = ${eventId} 
+        FOR UPDATE
+      `;
+
+      if (!lockedEvent || lockedEvent.length === 0) {
+        throw new Error("Event not found during booking transaction.");
+      }
+
+      const dbEvent = lockedEvent[0];
+
+      if (dbEvent.status !== "PUBLISHED") {
+        throw new Error("This event is not open for registration.");
+      }
+
+      if (dbEvent.isClosed || new Date(event.date) < new Date()) {
+        throw new Error("Registration for this event is closed.");
+      }
+
       // Helper function to create placeholder profiles for members
       const getOrCreateStudentProfileTx = async (
         mName: string,
@@ -368,6 +391,20 @@ export async function registerForFreeEvent(
         }
       }
 
+      // 3. Count confirmed registrations inside the transaction to verify we haven't exceeded capacity
+      const confirmedCountAfter = await tx.registration.count({
+        where: {
+          eventId,
+          status: {
+            notIn: [RegistrationStatus.CANCELLED, RegistrationStatus.WAITLISTED]
+          }
+        }
+      });
+
+      if (confirmedCountAfter > dbEvent.capacity) {
+        throw new Error("Event capacity has been reached. Unable to complete registration.");
+      }
+
       return { registration: captainReg, ticket: captainTicket };
     });
 
@@ -377,6 +414,15 @@ export async function registerForFreeEvent(
     revalidatePath("/dashboard/profile");
     revalidatePath("/dashboard/events");
     revalidatePath("/dashboard/notifications");
+
+    // Dispatch ticket confirmation email asynchronously
+    sendTicketConfirmationEmail({
+      to: studentProfile.user.email,
+      studentName: studentProfile.user.name,
+      eventTitle: event.title,
+      eventDate: new Date(event.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      ticketNumber: result.ticket.ticketNumber,
+    }).catch((err) => console.error("Ticket email dispatch error:", err));
 
     return {
       success: true,
@@ -655,6 +701,7 @@ export async function verifyCheckInTicket(ticketIdentifier: string, verification
         OR: [
           { ticketNumber: ticketIdentifier.trim() },
           { id: ticketIdentifier.trim() },
+          { registrationId: ticketIdentifier.trim() },
         ],
         verificationToken: verificationToken.trim(),
       },
@@ -675,9 +722,15 @@ export async function verifyCheckInTicket(ticketIdentifier: string, verification
       return { error: "Ticket not found or verification signatures do not match." };
     }
 
-    // Verify organizer owns the event
-    if (ticket.event.organizerId !== user.id && user.role !== "SUPER_ADMIN") {
-      return { error: "You are not authorized to check in participants for this event." };
+    // Verify organizer permission
+    const isSuperAdmin = user.role === "SUPER_ADMIN";
+    if (!isSuperAdmin && ticket.event.organizerId !== user.id) {
+      const organizerProfile = await prisma.organizerProfile.findUnique({
+        where: { userId: user.id },
+      });
+      if (!organizerProfile || organizerProfile.verificationStatus !== "APPROVED") {
+        return { error: "You are not authorized to check in participants for this event." };
+      }
     }
 
     let checkedInByName = "";
@@ -747,8 +800,14 @@ export async function confirmCheckInAction(
       return { error: "Ticket not found." };
     }
 
-    if (ticket.event.organizerId !== user.id && user.role !== "SUPER_ADMIN") {
-      return { error: "Unauthorized check-in permission." };
+    const isSuperAdmin = user.role === "SUPER_ADMIN";
+    if (!isSuperAdmin && ticket.event.organizerId !== user.id) {
+      const organizerProfile = await prisma.organizerProfile.findUnique({
+        where: { userId: user.id },
+      });
+      if (!organizerProfile || organizerProfile.verificationStatus !== "APPROVED") {
+        return { error: "Unauthorized check-in permission." };
+      }
     }
 
     if (ticket.registration.checkInStatus === "CHECKED_IN") {
@@ -816,3 +875,44 @@ export async function confirmCheckInAction(
     return { error: "Failed to confirm check-in." };
   }
 }
+
+/**
+ * Creates a Razorpay Payment Order for paid event registrations
+ */
+export async function createRazorpayOrderAction(eventId: string, amountInRupees: number) {
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return { error: "Authentication required" };
+    }
+
+    const keyId = process.env.RAZORPAY_KEY_ID || "rzp_test_samplekey123";
+    const keySecret = process.env.RAZORPAY_KEY_SECRET || "sample_secret_key_12345";
+
+    // Dynamic import/require of Razorpay
+    const Razorpay = require("razorpay");
+    const razorpay = new Razorpay({
+      key_id: keyId,
+      key_secret: keySecret,
+    });
+
+    const options = {
+      amount: Math.max(1, amountInRupees) * 100, // amount in paise
+      currency: "INR",
+      receipt: `rcpt_${eventId.slice(0, 6)}_${Date.now().toString().slice(-6)}`,
+    };
+
+    const order = await razorpay.orders.create(options);
+    return {
+      success: true,
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      keyId,
+    };
+  } catch (err: any) {
+    console.error("Razorpay order creation error:", err);
+    return { error: err.message || "Failed to create payment order." };
+  }
+}
+

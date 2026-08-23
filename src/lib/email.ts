@@ -184,3 +184,54 @@ export async function sendOrganizerRejectedEmail(to: string, name: string) {
     html: emailWrapper("Application Declined", content),
   });
 }
+
+export async function sendTicketConfirmationEmail({
+  to,
+  studentName,
+  eventTitle,
+  eventDate,
+  ticketNumber,
+}: {
+  to: string;
+  studentName: string;
+  eventTitle: string;
+  eventDate: string;
+  ticketNumber: string;
+}) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const content = `
+    <p>Congratulations ${studentName}! Your registration for <strong>${eventTitle}</strong> on ${eventDate} is confirmed.</p>
+    <div style="background-color: #1E1E1E; border: 1px solid #333; padding: 20px; border-radius: 12px; margin: 20px 0; text-align: center;">
+      <span style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px;">Official Ticket Number</span>
+      <h2 style="color: #D7FF3D; margin: 5px 0 0 0; font-size: 22px; font-family: monospace;">${ticketNumber}</h2>
+    </div>
+    <a href="${appUrl}/dashboard/tickets" class="btn" style="color: #0B0B08;">View Digital Ticket Pass</a>
+  `;
+  return sendEmail({
+    to,
+    subject: `Ticket Confirmed: ${eventTitle} - CollegeEvents`,
+    html: emailWrapper("Registration Confirmed 🎉", content),
+  });
+}
+
+export async function sendCertificateIssuedEmail({
+  to,
+  studentName,
+  eventTitle,
+}: {
+  to: string;
+  studentName: string;
+  eventTitle: string;
+}) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const content = `
+    <p>Dear ${studentName}, thank you for attending <strong>${eventTitle}</strong>! Your official Certificate of Participation has been generated and issued.</p>
+    <a href="${appUrl}/dashboard/events" class="btn" style="color: #0B0B08;">View & Download Certificate</a>
+  `;
+  return sendEmail({
+    to,
+    subject: `Certificate Issued: ${eventTitle} - CollegeEvents`,
+    html: emailWrapper("Participation Certificate Issued 🏆", content),
+  });
+}
+

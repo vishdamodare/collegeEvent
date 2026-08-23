@@ -9,19 +9,18 @@ export function proxy(request: NextRequest) {
     request.cookies.get("better-auth.session_token") || 
     request.cookies.get("__secure-better-auth.session_token");
 
-  const isAuthRoute = path.startsWith("/login") || path.startsWith("/signup");
-  const isProtectedRoute = path.startsWith("/dashboard") || path.startsWith("/admin") || path.startsWith("/pending-approval");
+  // Protected routes requiring an active session
+  const isProtectedRoute = 
+    path.startsWith("/dashboard") || 
+    path.startsWith("/admin") || 
+    path.startsWith("/pending-approval") || 
+    path === "/signup/student-onboarding";
 
-  // 1. Redirect unauthenticated visitors attempting to access protected pages
+  // 1. Redirect unauthenticated visitors attempting to access protected pages to /login
   if (!sessionToken && isProtectedRoute) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("callbackUrl", path);
     return NextResponse.redirect(loginUrl);
-  }
-
-  // 2. Redirect authenticated users away from guest-only pages
-  if (sessionToken && isAuthRoute) {
-    return NextResponse.redirect(new URL("/", request.url));
   }
 
   return NextResponse.next();
@@ -31,8 +30,9 @@ export const config = {
   matcher: [
     "/dashboard/:path*",
     "/admin/:path*",
-    "/login",
-    "/signup",
     "/pending-approval",
+    "/signup/student-onboarding",
   ],
 };
+
+export default proxy;

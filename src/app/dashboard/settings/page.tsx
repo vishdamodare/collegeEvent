@@ -1,26 +1,37 @@
-import { Settings } from "lucide-react";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { prisma } from "@/lib/prisma";
+import { StudentSettingsClient } from "@/components/dashboard/StudentSettingsClient";
 
-export default function SettingsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function SettingsPage() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  const profile = session?.user?.id
+    ? await prisma.studentProfile.findUnique({
+        where: { userId: session.user.id },
+        select: {
+          college: true,
+          branch: true,
+          academicYear: true,
+          phoneNumber: true,
+          phoneVerified: true,
+        },
+      })
+    : null;
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold font-[family-name:var(--font-archivo)]">
-          Settings
-        </h1>
-        <p className="text-text-faint mt-1">Manage your account settings and preferences.</p>
-      </div>
-
-      <div className="flex flex-col items-center justify-center py-20 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-card border border-border flex items-center justify-center mb-5">
-          <Settings className="w-7 h-7 text-text-faint" />
-        </div>
-        <h3 className="text-lg font-semibold text-text-main mb-2 font-[family-name:var(--font-archivo)]">
-          Coming Soon
-        </h3>
-        <p className="text-sm text-text-faint max-w-sm">
-          Account settings including password changes, notification preferences, and privacy controls will be available in a future update.
-        </p>
-      </div>
-    </div>
+    <StudentSettingsClient
+      user={{
+        id: session?.user?.id || "",
+        name: session?.user?.name || "Student",
+        email: session?.user?.email || "",
+        image: session?.user?.image,
+      }}
+      profile={profile}
+    />
   );
 }

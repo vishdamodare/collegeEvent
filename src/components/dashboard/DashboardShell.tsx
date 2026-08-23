@@ -134,9 +134,9 @@ function SidebarNav({ pathname, onItemClick }: { pathname: string; onItemClick?:
             key={item.href}
             href={item.href}
             onClick={onItemClick}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
               isActive
-                ? "bg-lime/10 text-lime"
+                ? "bg-lime/10 text-lime font-bold shadow-sm"
                 : "text-text-faint hover:text-text-main hover:bg-card"
             }`}
           >

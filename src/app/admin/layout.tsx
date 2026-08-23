@@ -17,7 +17,7 @@ export default async function AdminLayout({
     headers: await headers(),
   });
 
-  if (!session) {
+  if (!session?.user) {
     redirect("/login?callbackUrl=/admin");
   }
 
@@ -27,8 +27,13 @@ export default async function AdminLayout({
     include: { organizerProfile: true },
   });
 
-  if (!user || user.role !== "ORGANIZER") {
+  if (!user || (user.role !== "ORGANIZER" && user.role !== "SUPER_ADMIN")) {
     redirect("/unauthorized");
+  }
+
+  // If user is an organizer, check their verification approval status
+  if (user.role === "ORGANIZER" && user.organizerProfile?.verificationStatus !== "APPROVED") {
+    redirect("/pending-approval");
   }
 
   const profile = {
@@ -36,7 +41,7 @@ export default async function AdminLayout({
     email: user.email || "",
     college: user.organizerProfile?.college || "Your College",
     department: user.organizerProfile?.department || "General",
-    position: user.organizerProfile?.position || "Coordinator",
+    position: user.organizerProfile?.position || (user.role === "SUPER_ADMIN" ? "Super Admin" : "Coordinator"),
   };
 
   return <AdminShell profile={profile}>{children}</AdminShell>;

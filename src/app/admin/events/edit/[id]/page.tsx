@@ -1,43 +1,62 @@
+import { getAdminCategories, updateEvent } from "@/actions/admin";
+import { EventForm } from "@/components/admin/EventForm";
 import { prisma } from "@/lib/prisma";
-import { EventWizard } from "@/components/admin/EventWizard";
 import { notFound } from "next/navigation";
 
 interface PageProps {
-  params: Promise<{ id: string }> | { id: string };
+  params: Promise<{
+    id: string;
+  }> | { id: string };
 }
 
 export default async function EditEventPage({ params }: PageProps) {
   const resolvedParams = await params;
-  
-  const event = await prisma.event.findUnique({
-    where: { id: resolvedParams.id },
-    include: { category: true, images: true }
-  });
+  const id = resolvedParams.id;
+
+  const [event, categoriesData] = await Promise.all([
+    prisma.event.findUnique({
+      where: { id },
+      include: { images: { where: { isHero: true }, take: 1 } },
+    }),
+    getAdminCategories(),
+  ]);
 
   if (!event) {
     notFound();
   }
 
-  // Map database format to expected initialData structure for EventWizard
+  const activeCategories = categoriesData.filter((c) => !c.isArchived);
+
+  // Map values to initialData format
   const initialData = {
     id: event.id,
-    status: event.status,
-    basic: {
-      title: event.title,
-      slug: event.slug,
-      shortDescription: event.description.substring(0, 100),
-      longDescription: event.description,
-      category: event.categoryId,
-      date: event.date.toISOString().split("T")[0],
-      time: "10:00",
-      venue: event.location,
-      tags: []
-    },
+    title: event.title,
+    description: event.description,
+    categoryId: event.categoryId,
+    date: event.date,
+    location: event.location,
     capacity: event.capacity,
-    media: {
-      heroImage: event.images.find(img => img.isHero)?.url || ""
-    }
+    status: event.status,
+    imageUrl: event.images[0]?.url || "",
   };
 
-  return <EventWizard initialData={initialData as any} />;
+  const handleUpdate = async (data: any) => {
+    "use server";
+    return updateEvent(id, data);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold font-[family-name:var(--font-archivo)]">Edit Event</h1>
+        <p className="text-text-faint mt-1">Modify dates, descriptions, category groupings, or statuses.</p>
+      </div>
+
+      <EventForm
+        initialData={initialData}
+        categories={activeCategories}
+        onSubmit={handleUpdate}
+      />
+    </div>
+  );
 }
