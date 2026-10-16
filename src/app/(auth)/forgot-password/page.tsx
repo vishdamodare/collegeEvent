@@ -56,14 +56,14 @@ export default function ForgotPasswordPage() {
       {!message && (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 mb-6">
           <div>
-            <label className="block text-[13px] font-semibold mb-2 text-white/70">Email Address</label>
+            <label className="block text-[13px] font-semibold mb-2 text-text-muted">Email Address</label>
             <input 
               type="email" 
               placeholder="you@college.edu" 
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3.5 rounded-[12px] bg-[#141414] border border-[#2A2A2A] text-white text-[15px] outline-none transition-colors focus:border-[var(--color-lime)] placeholder:text-[#555]" 
+              className="w-full px-4 py-3.5 rounded-[12px] bg-card border border-border text-text-main text-[15px] outline-none transition-colors focus:border-[var(--color-lime)] placeholder:text-text-faint" 
             />
           </div>
 

@@ -19,10 +19,10 @@ export function HeroSection({ events, onOpenDetails, onOpenRegister }: HeroSecti
   const activeEvent = events[activeIndex];
 
   return (
-    <section id="home" className="relative min-h-screen flex items-center pt-[120px] pb-[60px] overflow-hidden">
+    <section id="home" className="relative lg:min-h-screen flex items-center pt-[110px] pb-10 lg:pt-[120px] lg:pb-[60px] overflow-hidden">
       <HeroBackground events={events} activeIndex={activeIndex} />
       
-      <div className="max-w-[1360px] mx-auto px-10 w-full relative z-[2] grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-10 items-center">
+      <div className="max-w-[1360px] mx-auto px-5 sm:px-10 w-full relative z-[2] grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-10 items-center">
         <HeroContent 
           event={activeEvent}
           onRegisterClick={() => onOpenRegister(activeEvent.id)}
@@ -37,9 +37,9 @@ export function HeroSection({ events, onOpenDetails, onOpenRegister }: HeroSecti
         />
       </div>
 
-      <div className="absolute bottom-9 left-10 flex items-center gap-[10px] z-[3] text-[12px] text-[var(--color-text-muted)] tracking-[.05em]">
+      <div className="absolute bottom-9 left-5 sm:left-10 hidden sm:flex items-center gap-[10px] z-[3] text-[12px] text-[var(--color-text-muted)] tracking-[.05em]">
         <div className="w-[1px] h-[34px] bg-gradient-to-b from-[var(--color-text-muted)] to-transparent relative overflow-hidden">
-          <div className="absolute left-0 w-full h-full bg-white animate-[scrollcue_1.8s_infinite_ease]" style={{ top: "-100%" }} />
+          <div className="absolute left-0 w-full h-full bg-[var(--color-text-main)] animate-[scrollcue_1.8s_infinite_ease]" style={{ top: "-100%" }} />
           <style dangerouslySetInnerHTML={{__html: `
             @keyframes scrollcue {
               50% { top: 100%; }

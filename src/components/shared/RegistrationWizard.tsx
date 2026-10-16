@@ -130,8 +130,7 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
         }
       } catch (err: any) {
         console.error("Profile save error:", err);
-        toast.error(err?.message || "Profile verified!");
-        setStep(2);
+        toast.error(err?.message || "Could not save your profile. Please try again.");
       }
     });
   };

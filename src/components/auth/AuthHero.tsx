@@ -13,7 +13,7 @@ const badges = [
 
 export function AuthHero() {
   return (
-    <div className="relative w-full h-full overflow-hidden flex flex-col justify-end p-12 lg:p-20">
+    <div className="relative w-full h-full overflow-hidden flex flex-col justify-end p-5 pb-6 sm:p-12 lg:p-20 rounded-b-[28px] lg:rounded-none text-white">
       {/* Background Image */}
       <div className="absolute inset-0 z-0">
         <Image
@@ -24,9 +24,10 @@ export function AuthHero() {
           sizes="(max-width: 768px) 100vw, (max-width: 1024px) 100vw, 60vw"
           priority
         />
-        {/* Deep gradient overlay to ensure text readability */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/80 to-transparent"></div>
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0A0A0A]/60 to-transparent"></div>
+        {/* Deep gradient overlay to ensure text readability. Stays dark in both
+            themes: it sits on a photo and carries white text. */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[rgb(var(--hero-ink))] via-[rgb(var(--hero-ink))]/75 to-[rgb(var(--hero-ink))]/10"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-[rgb(var(--hero-ink))]/60 to-transparent"></div>
       </div>
 
       {/* Floating Badges */}
@@ -58,10 +59,10 @@ export function AuthHero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
-          <h1 className="text-[clamp(32px,5vw,56px)] font-anton leading-[1] uppercase tracking-tight mb-6">
+          <h1 className="text-[clamp(26px,5vw,56px)] font-anton leading-[1] uppercase tracking-tight mb-3 lg:mb-6">
             Join the most exciting college events across the country.
           </h1>
-          <div className="flex gap-4 text-[18px] md:text-[22px] font-archivo font-bold text-[var(--color-lime)]">
+          <div className="flex gap-3 lg:gap-4 text-[15px] md:text-[22px] font-archivo font-bold text-[var(--color-lime)]">
             <span>Connect.</span>
             <span>Compete.</span>
             <span>Celebrate.</span>

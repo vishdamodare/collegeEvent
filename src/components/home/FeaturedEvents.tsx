@@ -32,9 +32,9 @@ export function FeaturedEvents({ events, onOpenDetails }: FeaturedEventsProps) {
   }, []);
 
   return (
-    <section id="events" className="py-[140px]" ref={sectionRef}>
-      <div className="max-w-[1360px] mx-auto px-10">
-        <div className="reveal max-w-[640px] mb-[56px]">
+    <section id="events" className="py-20 sm:py-[140px]" ref={sectionRef}>
+      <div className="max-w-[1360px] mx-auto px-5 sm:px-10">
+        <div className="reveal max-w-[640px] mb-8 sm:mb-[56px]">
           <span className="eyebrow">
             <span className="dot"></span> Handpicked for you
           </span>
@@ -48,7 +48,7 @@ export function FeaturedEvents({ events, onOpenDetails }: FeaturedEventsProps) {
           {events.map((ev) => (
             <div
               key={ev.id}
-              className="snap-start flex-[0_0_340px] rounded-[26px] overflow-hidden relative bg-[var(--color-card)] border border-[var(--color-border)] cursor-pointer transition-all duration-500 ease-[var(--ease-custom)] hover:-translate-y-2.5 hover:-rotate-1 hover:border-[var(--color-border-bright)] hover:shadow-[0_30px_60px_-20px_rgba(215,255,61,.25)] group"
+              className="snap-start flex-[0_0_340px] rounded-[26px] overflow-hidden relative bg-[var(--color-card)] border border-[var(--color-border)] cursor-pointer transition-all duration-500 ease-[var(--ease-custom)] hover:-translate-y-2.5 hover:-rotate-1 hover:border-[var(--color-border-bright)] hover:shadow-[0_30px_60px_-20px_rgba(var(--lime-rgb),.25)] group"
               onClick={() => onOpenDetails(ev.id)}
             >
               <div className="h-[230px] overflow-hidden relative">

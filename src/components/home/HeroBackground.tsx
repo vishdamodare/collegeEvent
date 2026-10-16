@@ -26,11 +26,11 @@ const Particles = memo(function Particles() {
   }, []);
 
   return (
-    <div className="absolute inset-0 z-[1] overflow-hidden pointer-events-none">
+    <div className="hero-particles absolute inset-0 z-[1] overflow-hidden pointer-events-none">
       {particles.map((p) => (
         <div
           key={p.id}
-          className="absolute rounded-full bg-white opacity-50 blur-[0.5px]"
+          className="absolute rounded-full bg-[var(--color-text-main)] opacity-50 blur-[0.5px]"
           style={{
             width: `${p.size}px`,
             height: `${p.size}px`,
@@ -59,8 +59,8 @@ export function HeroBackground({ events, activeIndex }: HeroBackgroundProps) {
         className="absolute inset-0 z-0 transition-colors duration-[1200ms] ease-in-out"
         style={{
           background: `
-            radial-gradient(ellipse 900px 600px at 15% 20%, rgba(215,255,61,.16), transparent 60%),
-            radial-gradient(ellipse 700px 700px at 85% 75%, rgba(255,75,51,.14), transparent 60%),
+            radial-gradient(ellipse 900px 600px at 15% 20%, rgba(var(--lime-rgb),.16), transparent 60%),
+            radial-gradient(ellipse 700px 700px at 85% 75%, rgba(var(--coral-rgb),.14), transparent 60%),
             radial-gradient(ellipse 1000px 800px at 50% 100%, rgba(36,81,255,.10), transparent 60%),
             var(--color-background)
           `
@@ -73,7 +73,7 @@ export function HeroBackground({ events, activeIndex }: HeroBackgroundProps) {
             alt="Background"
             fill
             priority={index === 0}
-            className="object-cover transition-opacity duration-1000 ease-in-out saturate-[1.1] contrast-[1.05]"
+            className="hero-photo object-cover transition-opacity duration-1000 ease-in-out saturate-[1.1] contrast-[1.05]"
             style={{
               opacity: index === activeIndex ? 0.28 : 0,
               zIndex: index === activeIndex ? 1 : 0
@@ -85,8 +85,8 @@ export function HeroBackground({ events, activeIndex }: HeroBackgroundProps) {
           className="absolute inset-0 z-[2]" 
           style={{
             background: `
-              linear-gradient(180deg, rgba(5,5,5,.2) 0%, rgba(5,5,5,.55) 60%, var(--color-background) 100%),
-              linear-gradient(90deg, rgba(5,5,5,.85) 0%, rgba(5,5,5,.2) 50%)
+              linear-gradient(180deg, rgba(var(--hero-shade),.2) 0%, rgba(var(--hero-shade),.55) 60%, var(--color-background) 100%),
+              linear-gradient(90deg, rgba(var(--hero-shade),.85) 0%, rgba(var(--hero-shade),.2) 50%)
             `
           }} 
         />

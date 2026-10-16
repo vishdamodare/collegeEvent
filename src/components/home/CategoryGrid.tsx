@@ -39,31 +39,31 @@ export function CategoryGrid({ categories }: CategoryGridProps) {
   }, []);
 
   return (
-    <section className="pb-[140px]" ref={sectionRef}>
-      <div className="max-w-[1360px] mx-auto px-10">
-        <div className="reveal max-w-[640px] mb-[56px]">
+    <section className="pb-20 sm:pb-[140px]" ref={sectionRef}>
+      <div className="max-w-[1360px] mx-auto px-5 sm:px-10">
+        <div className="reveal max-w-[640px] mb-8 sm:mb-[56px]">
           <h2 className="text-[clamp(32px,4.2vw,52px)] mb-[14px]">Explore by category</h2>
           <p className="text-[var(--color-text-muted)] text-[17px] font-normal leading-[1.6]">
             From hackathons to headliners.
           </p>
         </div>
 
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-5 stagger">
+        <div className="grid grid-cols-2 sm:grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3 sm:gap-5 stagger">
           {categories.map((cat, idx) => (
             <Link
               key={idx}
               href={`/events?category=${cat.slug}`}
-              className="p-[28px] px-[24px] rounded-[24px] bg-[var(--color-card)] border border-var(--color-border) flex items-start gap-[18px] cursor-pointer relative overflow-hidden transition-all duration-400 ease-[var(--ease-custom)] hover:-translate-y-[5px] hover:border-[var(--color-border-bright)] group"
+              className="p-4 sm:p-[28px] sm:px-[24px] rounded-[20px] sm:rounded-[24px] bg-[var(--color-card)] border border-[var(--color-border)] flex flex-col sm:flex-row items-start gap-2 sm:gap-[18px] cursor-pointer relative overflow-hidden transition-all duration-400 ease-[var(--ease-custom)] hover:-translate-y-[5px] hover:border-[var(--color-border-bright)] group"
               style={{ "--glow": cat.glow } as React.CSSProperties}
             >
               <div 
                 className="absolute inset-0 opacity-0 transition-opacity duration-500 blur-[30px] group-hover:opacity-100" 
                 style={{ background: "var(--glow, rgba(255,255,255,.1))" }}
               />
-              <div className="text-[32px] leading-none relative">{cat.icon}</div>
-              <div className="relative flex-1">
+              <div className="text-[26px] sm:text-[32px] leading-none relative">{cat.icon}</div>
+              <div className="relative flex-1 w-full min-w-0">
                 <div className="flex items-center justify-between gap-2 mb-1">
-                  <h4 className="text-[18px] font-archivo font-bold leading-tight">{cat.name}</h4>
+                  <h4 className="text-[16px] sm:text-[18px] font-archivo font-bold leading-tight">{cat.name}</h4>
                   {cat.trending && (
                     <span className="text-[9px] font-bold bg-[var(--color-lime)]/15 border border-[var(--color-lime)]/30 text-[var(--color-lime)] px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">
                       Trending
@@ -71,7 +71,7 @@ export function CategoryGrid({ categories }: CategoryGridProps) {
                   )}
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[13px] font-semibold text-white/90">{cat.count}</span>
+                  <span className="text-[13px] font-semibold text-[var(--color-text-main)]">{cat.count}</span>
                   {cat.nearestCity && (
                     <span className="text-[11px] text-[var(--color-text-faint)] font-medium font-archivo">
                       {cat.nearestCity}

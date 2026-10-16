@@ -116,13 +116,13 @@ export function EventsClient({
         </div>
 
         {/* Search + Sort row */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
+        <div className="flex items-center gap-3 sm:gap-4 mb-5">
           <SearchBar
             defaultValue={currentSearch}
-            placeholder="Search by title, venue, or description..."
+            placeholder="Search events..."
             onSearch={(q) => updateParams({ q })}
           />
-          <div className="ml-auto">
+          <div className="ml-auto shrink-0">
             <SortDropdown
               options={SORT_OPTIONS}
               value={currentSort}

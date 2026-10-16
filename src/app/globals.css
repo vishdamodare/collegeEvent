@@ -21,11 +21,22 @@
   --color-text-muted: #C9C7BA;
   --color-text-faint: #8C8C82;
 
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-anton: var(--font-anton), ui-sans-serif, system-ui, sans-serif;
-  --font-archivo: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-anton: "Anton", Impact, ui-sans-serif, sans-serif;
+  --font-archivo: "Archivo", ui-sans-serif, system-ui, sans-serif;
 
   --ease-custom: cubic-bezier(.16,1,.3,1);
+}
+
+:root {
+  --hero-shade: 5,5,5;
+  /* Always-dark overlay for photo banners that carry white text (both themes) */
+  --hero-ink: 10,10,10;
+  /* RGB copies of the accents, for rgba() glows */
+  --lime-rgb: 215,255,61;
+  --coral-rgb: 255,75,51;
+  /* Accent used as text on light backgrounds (bright accents fail contrast there) */
+  --accent-text-light: #4D7C0F;
 }
 
 :root {
@@ -40,18 +51,94 @@
 }
 
 [data-theme="light"] {
-  --color-background: #F5F3EA !important;
-  --color-foreground: #0B0B08 !important;
-  
-  --color-bg-elevated: #E5E3D5 !important;
-  --color-card: rgba(11, 11, 8, 0.05) !important;
-  --color-card-hover: rgba(11, 11, 8, 0.08) !important;
-  --color-border: rgba(11, 11, 8, 0.12) !important;
-  --color-border-bright: rgba(11, 11, 8, 0.25) !important;
-  
-  --color-text-main: #0B0B08 !important;
-  --color-text-muted: #3D3D37 !important;
-  --color-text-faint: #707067 !important;
+  --hero-shade: 250,250,248;
+  --color-background: #FAFAF8 !important;
+  --color-foreground: #0E0E0C !important;
+
+  --color-bg-elevated: #F3F3EF !important;
+  --color-card: #FFFFFF !important;
+  --color-card-hover: #FFFFFF !important;
+  --color-border: rgba(14, 14, 12, 0.08) !important;
+  --color-border-bright: rgba(14, 14, 12, 0.18) !important;
+
+  --color-text-main: #0E0E0C !important;
+  --color-text-muted: #4B4B47 !important;
+  --color-text-faint: #85857E !important;
+}
+
+/* Light theme: clean surfaces. Grain, floating specks and the faded hero
+   photo read as rich texture on black but as dirt/haze on white. */
+[data-theme="light"] body::before,
+[data-theme="light"] .hero-particles { display: none; }
+[data-theme="light"] .hero-photo { opacity: 0 !important; }
+[data-theme="light"] [class*="bg-[var(--color-card)]"] {
+  box-shadow: 0 1px 2px rgba(14,14,12,.04), 0 10px 30px -14px rgba(14,14,12,.12);
+}
+
+/* ─── Spider-Man palette ──────────────────────────────────────────────────
+   Opt-in layer: enabled by data-palette="spidey" on <html> (src/app/layout.tsx).
+   Remove that attribute to return to the original lime/coral theme.
+   "lime" = primary accent (suit red), "coral" = offset shadow / second accent (suit blue). */
+[data-palette="spidey"] {
+  --color-lime: #EE2A2F;
+  --color-coral: #1D4ED8;
+  --color-butter: #FF5459;
+  --color-cobalt: #2563EB;
+  --lime-rgb: 238,42,47;
+  --coral-rgb: 29,78,216;
+  --accent-text-light: #C8102E;
+
+  --hero-shade: 6,8,20;
+  --hero-ink: 7,9,20;
+  --color-background: #070914;
+  --color-foreground: #F3F5FB;
+  --color-bg-elevated: #0D1124;
+  --color-card: rgba(226,232,255,0.05);
+  --color-card-hover: rgba(226,232,255,0.09);
+  --color-border: rgba(226,232,255,0.13);
+  --color-border-bright: rgba(226,232,255,0.28);
+  --color-text-main: #F3F5FB;
+  --color-text-muted: #C2C8DC;
+  --color-text-faint: #8189A6;
+}
+[data-palette="spidey"][data-theme="light"] {
+  --hero-shade: 247,248,252;
+  --color-background: #F7F8FC !important;
+  --color-foreground: #0A1024 !important;
+  --color-bg-elevated: #EEF1F9 !important;
+  --color-card: #FFFFFF !important;
+  --color-card-hover: #FFFFFF !important;
+  --color-border: rgba(10, 16, 36, 0.09) !important;
+  --color-border-bright: rgba(10, 16, 36, 0.2) !important;
+  --color-text-main: #0A1024 !important;
+  --color-text-muted: #444B63 !important;
+  --color-text-faint: #7F86A0 !important;
+}
+/* Spider-web in the hero's top-right corner; mask lets one SVG work in both themes */
+[data-palette="spidey"] #home::after {
+  content: '';
+  position: absolute; top: 0; right: 0; z-index: 1;
+  width: min(520px, 90vw); aspect-ratio: 1;
+  pointer-events: none;
+  background: var(--color-text-main);
+  opacity: .14;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='520' height='520' viewBox='0 0 520 520'%3E%3Cpath d='M520 0L520 546M520 0L379 527M520 0L247 473M520 0L134 386M520 0L47 273M520 0L-7 141M520 0L-26 0M520 70Q512 62 502 68M502 68Q496 58 485 61M485 61Q482 50 471 49M471 49Q470 38 459 35M459 35Q462 24 452 18M452 18Q458 8 450 0M520 140Q504 125 484 135M484 135Q472 116 450 121M450 121Q443 100 421 99M421 99Q420 77 399 70M399 70Q404 48 385 36M385 36Q395 16 380 0M520 210Q495 187 466 203M466 203Q448 175 415 182M415 182Q405 150 372 148M372 148Q370 115 338 105M338 105Q345 72 317 54M317 54Q333 25 310 0M520 280Q487 250 448 270M448 270Q424 233 380 242M380 242Q367 200 322 198M322 198Q320 153 278 140M278 140Q287 96 250 72M250 72Q270 33 240 0M520 350Q479 312 429 338M429 338Q399 291 345 303M345 303Q328 250 273 247M273 247Q270 192 217 175M217 175Q229 121 182 91M182 91Q208 41 170 0M520 420Q471 375 411 406M411 406Q375 349 310 364M310 364Q290 300 223 297M223 297Q220 230 156 210M156 210Q171 145 114 109M114 109Q145 49 100 0M520 490Q462 437 393 473M393 473Q351 407 275 424M275 424Q252 350 174 346M174 346Q170 268 96 245M96 245Q113 169 47 127M47 127Q83 58 30 0' fill='none' stroke='white' stroke-width='1.4'/%3E%3C/svg%3E") top right / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='520' height='520' viewBox='0 0 520 520'%3E%3Cpath d='M520 0L520 546M520 0L379 527M520 0L247 473M520 0L134 386M520 0L47 273M520 0L-7 141M520 0L-26 0M520 70Q512 62 502 68M502 68Q496 58 485 61M485 61Q482 50 471 49M471 49Q470 38 459 35M459 35Q462 24 452 18M452 18Q458 8 450 0M520 140Q504 125 484 135M484 135Q472 116 450 121M450 121Q443 100 421 99M421 99Q420 77 399 70M399 70Q404 48 385 36M385 36Q395 16 380 0M520 210Q495 187 466 203M466 203Q448 175 415 182M415 182Q405 150 372 148M372 148Q370 115 338 105M338 105Q345 72 317 54M317 54Q333 25 310 0M520 280Q487 250 448 270M448 270Q424 233 380 242M380 242Q367 200 322 198M322 198Q320 153 278 140M278 140Q287 96 250 72M250 72Q270 33 240 0M520 350Q479 312 429 338M429 338Q399 291 345 303M345 303Q328 250 273 247M273 247Q270 192 217 175M217 175Q229 121 182 91M182 91Q208 41 170 0M520 420Q471 375 411 406M411 406Q375 349 310 364M310 364Q290 300 223 297M223 297Q220 230 156 210M156 210Q171 145 114 109M114 109Q145 49 100 0M520 490Q462 437 393 473M393 473Q351 407 275 424M275 424Q252 350 174 346M174 346Q170 268 96 245M96 245Q113 169 47 127M47 127Q83 58 30 0' fill='none' stroke='white' stroke-width='1.4'/%3E%3C/svg%3E") top right / contain no-repeat;
+}
+
+/* On suit-red, white text reads better than the near-black used on lime.
+   text-[#0B0B08] is only ever used on accent backgrounds. */
+[data-palette="spidey"] .text-\[\#0B0B08\],
+[data-palette="spidey"] .group:hover .group-hover\:text-\[\#0B0B08\],
+[data-palette="spidey"] .btn-primary { color: #FFFFFF; }
+
+/* Anchor jumps land below the fixed navbar */
+section[id] { scroll-margin-top: 80px; }
+
+/* Visible keyboard focus */
+a:focus-visible, button:focus-visible {
+  outline: 2px solid var(--color-lime);
+  outline-offset: 3px;
 }
 
 body::before {
@@ -123,7 +210,7 @@ h4, h5, .logo, .fc-title {
 .event-card.pos-active {
   transform: translate(-50%,-50%) translateX(0) translateY(0) scale(1) rotateY(0deg);
   z-index: 5; filter: brightness(1) blur(0);
-  box-shadow: 0 0 0 2px var(--color-lime), 0 40px 90px -20px rgba(215,255,61,.35);
+  box-shadow: 0 0 0 2px var(--color-lime), 0 40px 90px -20px rgba(var(--lime-rgb),.35);
 }
 .event-card.pos-active:hover {
   transform: translate(-50%,-50%) scale(1.03);
@@ -148,6 +235,10 @@ h4, h5, .logo, .fc-title {
   transform: translate(-50%,-50%) translateY(200px) scale(.5);
   opacity: 0; z-index: 1; pointer-events: none;
 }
+/* Light theme: fade side cards instead of darkening them (active card keeps its lime ring) */
+[data-theme="light"] .event-card:not(.pos-active) { box-shadow: 0 30px 60px -25px rgba(11,11,8,.35); }
+[data-theme="light"] .event-card.pos-r1, [data-theme="light"] .event-card.pos-l1 { filter: blur(1px); opacity: .7; }
+[data-theme="light"] .event-card.pos-r2, [data-theme="light"] .event-card.pos-l2 { filter: blur(2px); opacity: .4; }
 
 /* Utilities */
 .scrollbar-hide::-webkit-scrollbar {
@@ -174,7 +265,7 @@ h4, h5, .logo, .fc-title {
   font-size: 13px; font-weight: 500; color: var(--color-text-muted);
 }
 .meta-chip b {
-  color: #fff; font-weight: 600;
+  color: var(--color-text-main); font-weight: 600;
 }
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
@@ -190,7 +281,7 @@ h4, h5, .logo, .fc-title {
   transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--color-coral); background: var(--color-butter);
 }
 .btn-glass {
-  background: var(--color-card); border: 1px solid var(--color-border); color: #fff; backdrop-filter: blur(14px);
+  background: var(--color-card); border: 1px solid var(--color-border); color: var(--color-text-main); backdrop-filter: blur(14px);
 }
 .btn-glass:hover {
   background: var(--color-card-hover); border-color: var(--color-border-bright); transform: translateY(-3px);
@@ -207,6 +298,20 @@ h4, h5, .logo, .fc-title {
 .b-cyan { background: rgba(215,255,61,.20); color: #e4ffab; }
 .b-green { background: rgba(139,197,63,.20); color: #c3e894; }
 .b-orange { background: rgba(249,115,22,.20); color: #ffbb80; }
+
+/* Light theme: darker badge text so it reads on cream */
+[data-theme="light"] .b-blue { background: rgba(36,81,255,.12); color: #1f3fc4; }
+[data-theme="light"] .b-purple { background: rgba(214,163,0,.16); color: #8a6400; }
+[data-theme="light"] .b-pink { background: rgba(255,75,51,.13); color: #c22a14; }
+[data-theme="light"] .b-cyan { background: rgba(110,150,0,.15); color: #4d6b00; }
+[data-theme="light"] .b-green { background: rgba(80,140,20,.15); color: #3f6d10; }
+[data-theme="light"] .b-orange { background: rgba(249,115,22,.14); color: #b4520a; }
+[data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(11,11,8,.2); }
+/* Lime text is unreadable on white; use deep green instead */
+[data-theme="light"] .text-\[var\(--color-lime\)\],
+[data-theme="light"] .text-lime,
+[data-theme="light"] .hover\:text-lime:hover,
+[data-theme="light"] .group:hover .group-hover\:text-lime { color: var(--accent-text-light); }
 
 /* Scroll Reveal */
 .reveal { opacity: 0; transform: translateY(34px); transition: opacity .9s var(--ease-custom), transform .9s var(--ease-custom); }
@@ -237,8 +342,8 @@ h4, h5, .logo, .fc-title {
   color: var(--color-text-faint);
 }
 .form-input:focus {
-  border-color: rgba(215, 255, 61, 0.4);
-  box-shadow: 0 0 0 3px rgba(215, 255, 61, 0.08);
+  border-color: rgba(var(--lime-rgb), 0.4);
+  box-shadow: 0 0 0 3px rgba(var(--lime-rgb), 0.08);
 }
 .form-input:disabled {
   opacity: 0.5;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
+import { EventExtraDetails, priceLabel, type PublicEventDetails } from "@/components/events/EventExtraDetails";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -134,6 +135,7 @@ interface EventDetailClientProps {
     } | null;
   } | null;
   initialProfile?: any;
+  details?: PublicEventDetails | null;
 }
 
 export function EventDetailClient({
@@ -142,6 +144,7 @@ export function EventDetailClient({
   isRegistered: initialIsRegistered = false,
   registrationDetails: initialRegDetails = null,
   initialProfile = null,
+  details = null,
 }: EventDetailClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -210,24 +213,26 @@ export function EventDetailClient({
     <main className="min-h-screen bg-background text-text-main">
       <Navbar isAuthenticated={!!session} onLogout={handleLogout} />
 
-      {/* Hero banner */}
-      <div className="relative w-full aspect-[21/9] max-h-[480px] overflow-hidden">
-        {heroImage ? (
-          <Image
-            src={heroImage}
-            alt={event.title}
-            fill
-            className="object-cover"
-            priority
-            sizes="100vw"
-          />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-cobalt/20 to-card" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
+      {/* Hero photo: a crisp framed image below the navbar. Fading it into the page
+          background washed it out in light mode, so nothing overlaps it now. */}
+      <div className="max-w-6xl mx-auto px-5 pt-[92px] sm:pt-28">
+        <div className="relative w-full aspect-[16/10] sm:aspect-[21/9] max-h-[460px] rounded-[22px] sm:rounded-[28px] overflow-hidden border border-border bg-card">
+          {heroImage ? (
+            <Image
+              src={heroImage}
+              alt={event.title}
+              fill
+              className="object-cover"
+              priority
+              sizes="(max-width: 1152px) 100vw, 1152px"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-cobalt/20 to-card" />
+          )}
+        </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-5 -mt-24 relative z-10 pb-20">
+      <div className="max-w-6xl mx-auto px-5 pt-6 sm:pt-8 relative z-10 pb-20">
         {/* Back link */}
         <Link
           href="/events"
@@ -246,19 +251,13 @@ export function EventDetailClient({
               animate={{ opacity: 1, y: 0 }}
             >
               <div className="flex items-center gap-3 mb-4">
-                <span
-                  className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border"
-                  style={{
-                    backgroundColor: event.category.color ? `${event.category.color}20` : "rgba(255,255,255,.08)",
-                    borderColor: event.category.color ? `${event.category.color}30` : "rgba(255,255,255,.1)",
-                    color: event.category.color || "#fff",
-                  }}
-                >
+                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border border-border bg-card text-text-main">
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: event.category.color || "var(--color-lime)" }} />
                   {event.category.name}
                 </span>
                 <StatusBadge status={event.status} />
               </div>
-              <h1 className="text-4xl md:text-5xl font-anton tracking-wider text-white uppercase leading-tight">
+              <h1 className="text-4xl md:text-5xl font-anton tracking-wider text-text-main uppercase leading-tight">
                 {event.title}
               </h1>
             </motion.div>
@@ -278,7 +277,7 @@ export function EventDetailClient({
               transition={{ delay: 0.1 }}
               className="space-y-4"
             >
-              <h2 className="text-xl font-bold font-[family-name:var(--font-archivo)] normal-case text-white">
+              <h2 className="text-xl font-bold font-[family-name:var(--font-archivo)] normal-case text-text-main">
                 About this Event
               </h2>
               <p className="text-text-muted leading-relaxed whitespace-pre-line text-[15px]">
@@ -294,7 +293,7 @@ export function EventDetailClient({
                 transition={{ delay: 0.2 }}
                 className="space-y-4"
               >
-                <h2 className="text-xl font-bold font-[family-name:var(--font-archivo)] normal-case text-white">
+                <h2 className="text-xl font-bold font-[family-name:var(--font-archivo)] normal-case text-text-main">
                   Event Gallery
                 </h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -312,6 +311,8 @@ export function EventDetailClient({
                 </div>
               </motion.div>
             )}
+
+            {details && <EventExtraDetails details={details} />}
 
             {/* Organizer Profile Card */}
             <motion.div
@@ -332,7 +333,7 @@ export function EventDetailClient({
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                   {/* College Logo initials avatar */}
-                  <div className="w-12 h-12 rounded-xl bg-[var(--color-cobalt)]/10 border border-[var(--color-cobalt)]/20 flex items-center justify-center font-bold text-white text-[15px] shrink-0 shadow-lg shadow-cobalt/5">
+                  <div className="w-12 h-12 rounded-xl bg-[var(--color-cobalt)]/10 border border-[var(--color-cobalt)]/20 flex items-center justify-center font-bold text-[var(--color-cobalt)] text-[15px] shrink-0">
                     {(() => {
                       const college = event.organizer.organizerProfile?.college || "College";
                       const cleanName = college
@@ -350,12 +351,12 @@ export function EventDetailClient({
                     <span className="text-[10px] text-text-faint block uppercase font-bold tracking-wider leading-none mb-1">Hosted by</span>
                     <Link 
                       href={`/colleges/${(event.organizer.organizerProfile?.college || "college").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}`}
-                      className="text-base font-bold text-white hover:text-[var(--color-lime)] hover:underline leading-tight transition-colors"
+                      className="text-base font-bold text-text-main hover:text-[var(--color-lime)] hover:underline leading-tight transition-colors"
                     >
                       {event.organizer.organizerProfile?.college || "College Campus"}
                     </Link>
                     <span className="text-xs text-text-muted mt-1.5 block">
-                      Organized by <span className="text-white font-semibold">{event.organizer.name}</span> • {event.organizer.organizerProfile?.position || "Coordinator"}
+                      Organized by <span className="text-text-main font-semibold">{event.organizer.name}</span> • {event.organizer.organizerProfile?.position || "Coordinator"}
                     </span>
                   </div>
                 </div>
@@ -365,7 +366,7 @@ export function EventDetailClient({
                   {event.organizer.image ? (
                     <Image src={event.organizer.image} alt={event.organizer.name} fill className="object-cover" sizes="40px" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center font-bold text-xs bg-white/5 text-white/40">
+                    <div className="w-full h-full flex items-center justify-center font-bold text-xs bg-card-hover text-text-faint">
                       {event.organizer.name.charAt(0)}
                     </div>
                   )}
@@ -374,7 +375,7 @@ export function EventDetailClient({
 
               {/* Host description if available */}
               {event.organizer.organizerProfile?.description && (
-                <p className="text-xs text-text-muted leading-relaxed font-archivo italic border-l-2 border-white/10 pl-3">
+                <p className="text-xs text-text-muted leading-relaxed font-archivo italic border-l-2 border-border pl-3">
                   "{event.organizer.organizerProfile.description}"
                 </p>
               )}
@@ -390,15 +391,15 @@ export function EventDetailClient({
                 return (
                   <div className="grid grid-cols-3 gap-2 text-center text-xs border-y border-border/50 py-4 font-archivo">
                     <div>
-                      <p className="font-bold text-white text-sm">{totalPublished}</p>
+                      <p className="font-bold text-text-main text-sm">{totalPublished}</p>
                       <p className="text-[10px] text-text-faint uppercase mt-0.5">Events Hosted</p>
                     </div>
                     <div>
-                      <p className="font-bold text-white text-sm">{hostRating} ★</p>
+                      <p className="font-bold text-text-main text-sm">{hostRating} ★</p>
                       <p className="text-[10px] text-text-faint uppercase mt-0.5">Avg Rating</p>
                     </div>
                     <div>
-                      <p className="font-bold text-white text-sm">{hostRespTime}</p>
+                      <p className="font-bold text-text-main text-sm">{hostRespTime}</p>
                       <p className="text-[10px] text-text-faint uppercase mt-0.5">Response Time</p>
                     </div>
                   </div>
@@ -424,7 +425,7 @@ export function EventDetailClient({
                       href={event.organizer.organizerProfile.website.startsWith("http") ? event.organizer.organizerProfile.website : `https://${event.organizer.organizerProfile.website}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 hover:border-white/20 text-center font-bold transition-all text-[11px] flex items-center gap-1 flex-1 sm:flex-initial"
+                      className="px-3 py-2 rounded-lg bg-card-hover border border-border hover:border-border-bright text-center font-bold transition-all text-[11px] flex items-center gap-1 flex-1 sm:flex-initial"
                     >
                       <Globe className="w-3.5 h-3.5 text-text-faint" /> Website
                     </a>
@@ -434,7 +435,7 @@ export function EventDetailClient({
                       href={`https://instagram.com/${event.organizer.organizerProfile.instagram}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-9 h-9 rounded-lg bg-white/5 border border-white/10 hover:border-white/20 flex items-center justify-center text-white/80 hover:text-white transition-all shrink-0"
+                      className="w-9 h-9 rounded-lg bg-card-hover border border-border hover:border-border-bright flex items-center justify-center text-text-muted hover:text-text-main transition-all shrink-0"
                     >
                       <Instagram className="w-3.5 h-3.5" />
                     </a>
@@ -444,7 +445,7 @@ export function EventDetailClient({
                       href={event.organizer.organizerProfile.linkedin.startsWith("http") ? event.organizer.organizerProfile.linkedin : `https://linkedin.com/in/${event.organizer.organizerProfile.linkedin}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-9 h-9 rounded-lg bg-white/5 border border-white/10 hover:border-white/20 flex items-center justify-center text-white/80 hover:text-white transition-all shrink-0"
+                      className="w-9 h-9 rounded-lg bg-card-hover border border-border hover:border-border-bright flex items-center justify-center text-text-muted hover:text-text-main transition-all shrink-0"
                     >
                       <Linkedin className="w-3.5 h-3.5" />
                     </a>
@@ -460,9 +461,14 @@ export function EventDetailClient({
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="rounded-2xl border border-border bg-card p-6 sticky top-28"
+              id="register-card" className="rounded-2xl border border-border bg-card p-6 sticky top-28 scroll-mt-24"
             >
               <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-text-faint">Entry fee</span>
+                  <span className="text-lg font-bold text-text-main">{priceLabel(details)}</span>
+                </div>
+
                 {/* Seats info */}
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-text-faint">Seats remaining</span>
@@ -586,7 +592,7 @@ export function EventDetailClient({
 
                 {/* Actions */}
                 <div className="flex gap-2 pt-2 border-t border-border">
-                  <SaveButton eventId={event.id} size="md" className="flex-1 justify-center" />
+                  <SaveButton eventId={event.id} size="md" showLabel className="flex-1 rounded-xl" />
                   <button
                     onClick={handleShare}
                     className="flex-1 flex items-center justify-center gap-2 p-2 rounded-xl border border-border bg-card text-text-faint hover:text-text-main hover:border-border-bright transition-all text-sm"
@@ -598,7 +604,7 @@ export function EventDetailClient({
               </div>
 
               {/* Event info */}
-              <div className="mt-6 pt-6 border-t border-border space-y-3">
+              <div className="hidden lg:block mt-6 pt-6 border-t border-border space-y-3">
                 <InfoRow icon={Calendar} label="Date" value={format(new Date(event.date), "MMM d, yyyy")} />
                 <InfoRow icon={Clock} label="Time" value={format(new Date(event.date), "h:mm a")} />
                 <InfoRow icon={MapPin} label="Venue" value={event.location} />
@@ -658,6 +664,23 @@ export function EventDetailClient({
       />
 
       <Footer />
+
+      {/* Mobile: the registration card sits far down the page, so keep a shortcut pinned */}
+      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 px-5 pt-3 pb-[max(14px,env(safe-area-inset-bottom))] bg-[color-mix(in_srgb,var(--color-background)_92%,transparent)] backdrop-blur-md border-t border-border flex items-center gap-4">
+        <div className="min-w-0">
+          <div className="text-[11px] uppercase tracking-wider text-text-faint font-semibold">
+            {format(new Date(event.date), "MMM d, yyyy")}
+          </div>
+          <div className="text-[14px] font-bold truncate">
+            {isSoldOut ? "Sold out" : `${seatsLeft.toLocaleString()} seats left`}
+          </div>
+        </div>
+        <a href="#register-card" className="btn btn-primary ml-auto !py-3.5 !px-6 shrink-0">
+          {registered ? "My ticket" : "Register"}
+        </a>
+      </div>
+      {/* Space so the pinned bar never covers the footer's last line */}
+      <div className="h-20 lg:hidden" aria-hidden />
     </main>
   );
 }

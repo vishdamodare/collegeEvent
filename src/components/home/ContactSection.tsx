@@ -82,8 +82,8 @@ export function ContactSection() {
   ];
 
   return (
-    <section id="contact" className="py-24 bg-[#0B0B08] border-t border-[var(--color-border)]">
-      <div className="max-w-[1360px] mx-auto px-10">
+    <section id="contact" className="overflow-hidden py-16 sm:py-24 bg-[var(--color-background)] border-t border-[var(--color-border)]">
+      <div className="max-w-[1360px] mx-auto px-5 sm:px-10">
         
         {/* Section Header */}
         <motion.div 
@@ -97,7 +97,7 @@ export function ContactSection() {
             <span className="dot"></span>
             Reach Out
           </div>
-          <h2 className="font-anton text-[44px] sm:text-[64px] text-white tracking-wider leading-none mb-4">
+          <h2 className="font-anton text-[44px] sm:text-[64px] text-[var(--color-text-main)] tracking-wider leading-none mb-4">
             GET IN TOUCH
           </h2>
           <p className="text-lg sm:text-xl text-[var(--color-text-muted)] font-medium max-w-2xl">
@@ -112,14 +112,14 @@ export function ContactSection() {
             {contactInfo.map((info, i) => {
               const content = (
                 <div className="flex items-center gap-5">
-                  <div className="w-11 h-11 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center transition-colors group-hover:bg-[var(--color-lime)]/10 group-hover:border-[var(--color-lime)]/20">
+                  <div className="w-11 h-11 rounded-2xl bg-[var(--color-card)] border border-[var(--color-border)] flex items-center justify-center transition-colors group-hover:bg-[var(--color-lime)]/10 group-hover:border-[var(--color-lime)]/20">
                     {info.icon}
                   </div>
                   <div>
                     <p className="text-[12px] uppercase tracking-wider text-[var(--color-text-muted)] font-bold mb-0.5">
                       {info.label}
                     </p>
-                    <p className="text-[16px] sm:text-[17px] text-white font-medium">
+                    <p className="text-[16px] sm:text-[17px] text-[var(--color-text-main)] font-medium">
                       {info.value}
                     </p>
                   </div>
@@ -136,7 +136,7 @@ export function ContactSection() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.4, delay: i * 0.08 }}
-                  className="group p-6 rounded-[24px] bg-[var(--color-card)] border border-[var(--color-border)] hover:border-[var(--color-lime)] hover:shadow-[0_0_20px_rgba(215,255,61,0.03)] hover:scale-[1.01] transition-all duration-300 block cursor-pointer"
+                  className="group p-6 rounded-[24px] bg-[var(--color-card)] border border-[var(--color-border)] hover:border-[var(--color-lime)] hover:shadow-[0_0_20px_rgba(var(--lime-rgb),0.03)] hover:scale-[1.01] transition-all duration-300 block cursor-pointer"
                 >
                   {content}
                 </motion.a>
@@ -166,7 +166,7 @@ export function ContactSection() {
             <form onSubmit={handleSubmit} className="flex flex-col gap-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="name" className="text-[13px] font-bold text-white uppercase tracking-wide">
+                  <label htmlFor="name" className="text-[13px] font-bold text-[var(--color-text-main)] uppercase tracking-wide">
                     Full Name
                   </label>
                   <input
@@ -178,11 +178,11 @@ export function ContactSection() {
                     value={formData.name}
                     onChange={handleChange}
                     placeholder="Mahek Dembla"
-                    className="w-full rounded-[16px] px-5 py-4 bg-white/5 border border-white/10 text-white placeholder-white/20 focus:border-[var(--color-lime)] focus:outline-none transition-colors"
+                    className="w-full rounded-[16px] px-5 py-4 bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-text-main)] placeholder-white/20 focus:border-[var(--color-lime)] focus:outline-none transition-colors"
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="email" className="text-[13px] font-bold text-white uppercase tracking-wide">
+                  <label htmlFor="email" className="text-[13px] font-bold text-[var(--color-text-main)] uppercase tracking-wide">
                     Email Address
                   </label>
                   <input
@@ -194,13 +194,13 @@ export function ContactSection() {
                     value={formData.email}
                     onChange={handleChange}
                     placeholder="name@gmail.com"
-                    className="w-full rounded-[16px] px-5 py-4 bg-white/5 border border-white/10 text-white placeholder-white/20 focus:border-[var(--color-lime)] focus:outline-none transition-colors"
+                    className="w-full rounded-[16px] px-5 py-4 bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-text-main)] placeholder-white/20 focus:border-[var(--color-lime)] focus:outline-none transition-colors"
                   />
                 </div>
               </div>
 
               <div className="flex flex-col gap-2">
-                <label htmlFor="subject" className="text-[13px] font-bold text-white uppercase tracking-wide">
+                <label htmlFor="subject" className="text-[13px] font-bold text-[var(--color-text-main)] uppercase tracking-wide">
                   Subject
                 </label>
                 <input
@@ -212,12 +212,12 @@ export function ContactSection() {
                   value={formData.subject}
                   onChange={handleChange}
                   placeholder="Inquiry about Event Listing / Partnership"
-                  className="w-full rounded-[16px] px-5 py-4 bg-white/5 border border-white/10 text-white placeholder-white/20 focus:border-[var(--color-lime)] focus:outline-none transition-colors"
+                  className="w-full rounded-[16px] px-5 py-4 bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-text-main)] placeholder-white/20 focus:border-[var(--color-lime)] focus:outline-none transition-colors"
                 />
               </div>
 
               <div className="flex flex-col gap-2">
-                <label htmlFor="message" className="text-[13px] font-bold text-white uppercase tracking-wide">
+                <label htmlFor="message" className="text-[13px] font-bold text-[var(--color-text-main)] uppercase tracking-wide">
                   Message
                 </label>
                 <textarea
@@ -229,7 +229,7 @@ export function ContactSection() {
                   value={formData.message}
                   onChange={handleChange}
                   placeholder="Tell us how we can help you..."
-                  className="w-full rounded-[16px] px-5 py-4 bg-white/5 border border-white/10 text-white placeholder-white/20 focus:border-[var(--color-lime)] focus:outline-none transition-colors resize-none"
+                  className="w-full rounded-[16px] px-5 py-4 bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-text-main)] placeholder-white/20 focus:border-[var(--color-lime)] focus:outline-none transition-colors resize-none"
                 />
               </div>
 
@@ -237,7 +237,7 @@ export function ContactSection() {
                 suppressHydrationWarning
                 type="submit"
                 disabled={status === "loading"}
-                className="btn bg-[var(--color-lime)] text-[#0B0B08] font-bold py-4 rounded-[16px] w-full hover:shadow-[0_0_20px_rgba(215,255,61,0.4)] disabled:opacity-50 transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer"
+                className="btn bg-[var(--color-lime)] text-[#0B0B08] font-bold py-4 rounded-[16px] w-full hover:shadow-[0_0_20px_rgba(var(--lime-rgb),0.4)] disabled:opacity-50 transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer"
               >
                 {status === "loading" ? (
                   <>

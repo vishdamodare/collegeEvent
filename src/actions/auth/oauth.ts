@@ -39,7 +39,7 @@ export async function checkOAuthUserStatusAction() {
           data: {
             provider: account.providerId,
             providerId: account.accountId,
-            emailVerified: true, // OAuth providers (Google/GitHub) validate email ownership
+            emailVerified: true, // OAuth providers (Google) validate email ownership
           },
         });
       }
@@ -60,14 +60,26 @@ export async function checkOAuthUserStatusAction() {
   }
 }
 
-export async function completeOAuthStudentOnboardingAction(data: {
+export async function completeOAuthStudentOnboardingAction(input: {
   college: string;
-  branch: string;
-  academicYear: string;
-  graduationYear: string;
+  branch?: string;
+  academicYear?: string;
+  graduationYear?: string;
   rollNumber?: string;
-  interests: string[];
+  interests?: string[];
 }) {
+  // Only college is required at onboarding; the rest can be added from the profile page
+  const data = {
+    ...input,
+    college: input.college?.trim() ?? "",
+    branch: input.branch ?? "",
+    interests: input.interests ?? [],
+  };
+  const academicYear =
+    data.academicYear && data.graduationYear
+      ? `${data.academicYear} (${data.graduationYear})`
+      : data.academicYear ?? "";
+
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
@@ -77,12 +89,8 @@ export async function completeOAuthStudentOnboardingAction(data: {
       return { success: false, error: "Not authenticated" };
     }
 
-    if (!data.college || !data.branch || !data.academicYear || !data.graduationYear) {
-      return { success: false, error: "Please fill all required academic fields." };
-    }
-
-    if (!data.interests || data.interests.length === 0) {
-      return { success: false, error: "Please select at least one area of interest." };
+    if (!data.college) {
+      return { success: false, error: "Please enter your college." };
     }
 
     await prisma.$transaction([
@@ -98,7 +106,7 @@ export async function completeOAuthStudentOnboardingAction(data: {
           userId: session.user.id,
           college: data.college,
           branch: data.branch,
-          academicYear: `${data.academicYear} (${data.graduationYear})`,
+          academicYear,
           studentId: data.rollNumber || null,
           interests: data.interests,
           profileImage: session.user.image || null,
@@ -106,7 +114,7 @@ export async function completeOAuthStudentOnboardingAction(data: {
         update: {
           college: data.college,
           branch: data.branch,
-          academicYear: `${data.academicYear} (${data.graduationYear})`,
+          academicYear,
           studentId: data.rollNumber || null,
           interests: data.interests,
           ...(session.user.image ? { profileImage: session.user.image } : {}),

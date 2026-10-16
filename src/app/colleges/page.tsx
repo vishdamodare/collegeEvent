@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Building2, MapPin, CalendarDays, ArrowRight, GraduationCap } from "lucide-react";
-import Navbar from "@/components/home/Navbar";
-import Footer from "@/components/home/Footer";
+import { Navbar } from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
 
 export const dynamic = "force-dynamic";
 

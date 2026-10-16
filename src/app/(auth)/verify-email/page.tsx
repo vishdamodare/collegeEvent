@@ -52,7 +52,7 @@ function VerifyEmailContent() {
               ✓
             </div>
             <h2 className="text-[26px] font-anton uppercase mb-2">Verification Success</h2>
-            <p className="text-[14.5px] text-white/70 mb-8 max-w-xs leading-relaxed">
+            <p className="text-[14.5px] text-text-muted mb-8 max-w-xs leading-relaxed">
               Your email address has been verified successfully. You can now log in to your account.
             </p>
             <Link 
@@ -85,7 +85,7 @@ function VerifyEmailContent() {
 
 export default function VerifyEmailPage() {
   return (
-    <Suspense fallback={<div className="text-white text-center p-8">Loading verification parameters...</div>}>
+    <Suspense fallback={<div className="text-text-main text-center p-8">Loading verification parameters...</div>}>
       <VerifyEmailContent />
     </Suspense>
   );

@@ -32,8 +32,8 @@ export function Testimonials({ testimonials }: TestimonialsProps) {
   const items = [...testimonials, ...testimonials];
 
   return (
-    <section className="pt-[140px] pb-10 overflow-hidden" ref={sectionRef}>
-      <div className="max-w-[1360px] mx-auto px-10 text-center">
+    <section className="pt-20 sm:pt-[140px] pb-10 overflow-hidden" ref={sectionRef}>
+      <div className="max-w-[1360px] mx-auto px-5 sm:px-10 text-center">
         <div className="reveal max-w-[640px] mx-auto mb-[50px]">
           <h2 className="text-[clamp(32px,4.2vw,52px)] m-0">Word on campus</h2>
         </div>

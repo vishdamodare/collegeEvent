@@ -62,7 +62,8 @@ export async function registerStudentAction(formData: any) {
             userId: result.user.id,
             college,
             branch,
-            academicYear: `${academicYear} (${graduationYear})`,
+            // Optional at sign-up; stored as "" until the student fills it in on their profile
+            academicYear: academicYear && graduationYear ? `${academicYear} (${graduationYear})` : academicYear,
             interests,
             profileImage,
           },
@@ -86,7 +87,9 @@ export async function registerStudentAction(formData: any) {
     console.error("Student registration failed:", error);
     return {
       success: false,
-      error: error.message || "An unexpected error occurred during registration.",
+      // Better Auth errors carry a user-facing body.message; anything else (e.g. DB errors)
+      // stays in the server log so internals never reach the browser
+      error: error?.body?.message || "Something went wrong creating your account. Please try again.",
     };
   }
 }

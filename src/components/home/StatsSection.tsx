@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
-export function StatsSection() {
+export function StatsSection({ stats }: { stats: { totalColleges: number; totalStudents: number; totalEvents: number } }) {
   const sectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -41,23 +41,23 @@ export function StatsSection() {
   }, []);
 
   return (
-    <section className="pb-[180px]" ref={sectionRef}>
-      <div className="max-w-[1360px] mx-auto px-10">
+    <section className="pb-24 sm:pb-[180px]" ref={sectionRef}>
+      <div className="max-w-[1360px] mx-auto px-5 sm:px-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 stagger">
           <div className="p-[34px] px-[28px] rounded-[24px] bg-[var(--color-card)] border border-[var(--color-border)] flex flex-col justify-center">
-            <h3 className="stat-num text-[56px] font-anton text-[var(--color-lime)] leading-none mb-1" data-target="120">
+            <h3 className="stat-num text-[56px] font-anton text-[var(--color-lime)] leading-none mb-1" data-target={stats.totalColleges}>
               0
             </h3>
             <p className="text-[15px] text-[var(--color-text-muted)] font-medium">Campuses</p>
           </div>
           <div className="p-[34px] px-[28px] rounded-[24px] bg-[var(--color-card)] border border-[var(--color-border)] flex flex-col justify-center">
-            <h3 className="stat-num text-[56px] font-anton text-[var(--color-lime)] leading-none mb-1" data-target="15000">
+            <h3 className="stat-num text-[56px] font-anton text-[var(--color-lime)] leading-none mb-1" data-target={stats.totalStudents}>
               0
             </h3>
-            <p className="text-[15px] text-[var(--color-text-muted)] font-medium">Active Users</p>
+            <p className="text-[15px] text-[var(--color-text-muted)] font-medium">Students</p>
           </div>
           <div className="p-[34px] px-[28px] rounded-[24px] bg-[var(--color-card)] border border-[var(--color-border)] flex flex-col justify-center">
-            <h3 className="stat-num text-[56px] font-anton text-[var(--color-lime)] leading-none mb-1" data-target="850">
+            <h3 className="stat-num text-[56px] font-anton text-[var(--color-lime)] leading-none mb-1" data-target={stats.totalEvents}>
               0
             </h3>
             <p className="text-[15px] text-[var(--color-text-muted)] font-medium">Events Listed</p>

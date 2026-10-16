@@ -14,6 +14,7 @@ const organizerProfileSchema = z.object({
   college: z.string().min(2, "College name is required"),
   department: z.string().min(2, "Department name is required"),
   position: z.string().min(2, "Organizer position is required"),
+  phone: z.string().regex(/^\+?[0-9\s-]{10,15}$/, "Enter a valid phone number"),
 });
 
 type FormValues = z.infer<typeof organizerProfileSchema>;
@@ -24,6 +25,8 @@ interface OrganizerProfileFormProps {
     college: string;
     department: string;
     position: string;
+    phone: string;
+    email: string;
     verificationStatus: string;
   };
 }
@@ -48,6 +51,7 @@ export function OrganizerProfileForm({ initialData }: OrganizerProfileFormProps)
       college: initialData.college,
       department: initialData.department,
       position: initialData.position,
+      phone: initialData.phone,
     },
   });
 
@@ -82,6 +86,18 @@ export function OrganizerProfileForm({ initialData }: OrganizerProfileFormProps)
             <label className="block text-sm font-semibold mb-2 text-text-muted">Display Name</label>
             <input type="text" {...register("name")} className="form-input" />
             {errors.name && <p className="text-xs text-red-400 mt-1.5">{errors.name.message}</p>}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-semibold mb-2 text-text-muted">Email</label>
+              <input type="email" value={initialData.email} readOnly disabled className="form-input opacity-60" />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-2 text-text-muted">Phone Number</label>
+              <input type="tel" {...register("phone")} className="form-input" placeholder="+91 98765 43210" />
+              {errors.phone && <p className="text-xs text-red-400 mt-1.5">{errors.phone.message}</p>}
+            </div>
           </div>
 
           {/* College */}

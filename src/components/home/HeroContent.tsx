@@ -45,7 +45,7 @@ export function HeroContent({ event, onRegisterClick, onDetailsClick }: HeroCont
             <span className="meta-chip">📅 <b>{event.date}</b></span>
             <span className="meta-chip">📍 <b>{event.venue}</b></span>
             <span className="meta-chip">👥 <b>{event.participants}</b></span>
-            <span className="meta-chip">🏆 <b>{event.prize}</b></span>
+            {event.prize && <span className="meta-chip">🏆 <b>{event.prize}</b></span>}
           </div>
         </motion.div>
       </AnimatePresence>

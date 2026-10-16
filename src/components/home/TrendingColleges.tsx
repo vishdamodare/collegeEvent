@@ -46,10 +46,10 @@ export function TrendingColleges({ colleges }: TrendingCollegesProps) {
   return (
     <section 
       id="colleges" 
-      className="py-[140px] bg-[#0F0F0B] border-y border-[var(--color-border)]"
+      className="py-20 sm:py-[140px] bg-[var(--color-bg-elevated)] border-y border-[var(--color-border)]"
       ref={sectionRef}
     >
-      <div className="max-w-[1360px] mx-auto px-10">
+      <div className="max-w-[1360px] mx-auto px-5 sm:px-10">
         <div className="reveal max-w-[640px] mx-auto text-center mb-[60px]">
           <span className="eyebrow">
             <span className="dot" style={{ background: "var(--color-cobalt)", boxShadow: "0 0 10px var(--color-cobalt)" }}></span> 
@@ -70,7 +70,7 @@ export function TrendingColleges({ colleges }: TrendingCollegesProps) {
             >
               <div>
                 <div className="h-[200px] relative overflow-hidden">
-                  <div className="absolute top-4 left-4 w-[34px] h-[34px] rounded-full bg-[#05050599] backdrop-blur-[10px] border border-white/10 flex items-center justify-center font-bold text-[14px] font-anton z-[2]">
+                  <div className="absolute top-4 left-4 w-[34px] h-[34px] rounded-full bg-[#05050599] backdrop-blur-[10px] border border-white/10 text-white flex items-center justify-center font-bold text-[14px] font-anton z-[2]">
                     #{idx + 1}
                   </div>
                   {college.verified && (
@@ -109,19 +109,19 @@ export function TrendingColleges({ colleges }: TrendingCollegesProps) {
                 </div>
               </div>
 
-              <div className="p-[22px] px-[24px] pt-0 border-t border-white/5 mt-4">
+              <div className="p-[22px] px-[24px] pt-0 border-t border-[var(--color-border)] mt-4">
                 <div className="flex gap-[18px] pt-4">
                   <div className="text-[12px] text-[var(--color-text-muted)] flex flex-col gap-[3px]">
-                    <span className="text-white text-[14px] font-bold leading-none">{college.events}</span>
+                    <span className="text-[var(--color-text-main)] text-[14px] font-bold leading-none">{college.events}</span>
                     <span>events active</span>
                   </div>
                   <div className="text-[12px] text-[var(--color-text-muted)] flex flex-col gap-[3px]">
-                    <span className="text-white text-[14px] font-bold leading-none">{college.students}</span>
+                    <span className="text-[var(--color-text-main)] text-[14px] font-bold leading-none">{college.students}</span>
                     <span>students registered</span>
                   </div>
                   {college.followers && (
                     <div className="text-[12px] text-[var(--color-text-muted)] flex flex-col gap-[3px]">
-                      <span className="text-white text-[14px] font-bold leading-none">{college.followers}</span>
+                      <span className="text-[var(--color-text-main)] text-[14px] font-bold leading-none">{college.followers}</span>
                       <span>followers</span>
                     </div>
                   )}

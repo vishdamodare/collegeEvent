@@ -15,7 +15,6 @@ import {
   LogOut 
 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
-import { MOCK_SETTINGS } from "@/data/admin";
 
 function getCollegeInitials(college: string): string {
   if (!college) return "ORG";

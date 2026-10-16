@@ -4,13 +4,10 @@ import { motion } from "framer-motion";
 
 export function AuthBackground() {
   return (
-    <div className="fixed inset-0 z-[-1] overflow-hidden bg-[#0A0A0A]">
-      {/* Dark gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#0A0A0A] via-[#111] to-[#0A0A0A] opacity-90"></div>
-      
+    <div className="fixed inset-0 z-[-1] overflow-hidden bg-[var(--color-background)]">
       {/* Animated glowing orbs */}
-      <motion.div 
-        className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-[var(--color-lime)] opacity-[0.03] blur-[120px]"
+      <motion.div
+        className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-[var(--color-lime)] opacity-[0.06] blur-[120px]"
         animate={{
           x: [0, 50, 0],
           y: [0, 30, 0],
@@ -19,7 +16,7 @@ export function AuthBackground() {
       />
       
       <motion.div 
-        className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-[var(--color-cobalt)] opacity-[0.03] blur-[150px]"
+        className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-[var(--color-cobalt)] opacity-[0.06] blur-[150px]"
         animate={{
           x: [0, -40, 0],
           y: [0, -60, 0],

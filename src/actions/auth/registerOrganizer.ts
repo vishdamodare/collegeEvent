@@ -14,7 +14,7 @@ export async function registerOrganizerAction(formData: any) {
     };
   }
 
-  const { name, email, password, college, department, position, verificationDocument } = validation.data;
+  const { name, email, phone, password, college, department, position, verificationDocument } = validation.data;
 
   try {
     // 2. Check for duplicate email
@@ -61,6 +61,9 @@ export async function registerOrganizerAction(formData: any) {
             college,
             department,
             position,
+            phone,
+            // NOTE: auto-approved because no admin approval screen exists yet;
+            // the admin layout already blocks non-APPROVED organizers.
             verificationStatus: "APPROVED",
             verificationDocument: verificationDocument || null,
           },
@@ -78,13 +81,15 @@ export async function registerOrganizerAction(formData: any) {
 
     return {
       success: true,
-      message: "Organizer account created! Please await admin approval.",
+      message: "Organizer account created!",
     };
   } catch (error: any) {
     console.error("Organizer registration failed:", error);
     return {
       success: false,
-      error: error.message || "An unexpected error occurred during registration.",
+      // Better Auth errors carry a user-facing body.message; anything else (e.g. DB errors)
+      // stays in the server log so internals never reach the browser
+      error: error?.body?.message || "Something went wrong creating your account. Please try again.",
     };
   }
 }

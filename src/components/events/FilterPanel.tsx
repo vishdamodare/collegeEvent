@@ -1,6 +1,5 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
 import { Filter, X } from "lucide-react";
 import { useState } from "react";
 
@@ -79,15 +78,9 @@ export function FilterPanel({
         )}
       </div>
 
-      {/* Filter content — always visible on desktop, toggle on mobile */}
-      <AnimatePresence>
-        {(expanded || typeof window !== "undefined") && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="space-y-4 overflow-hidden lg:!h-auto lg:!opacity-100"
-          >
+      {/* Filter content — always visible on desktop, toggle on mobile.
+          CSS decides visibility so server and client render the same markup. */}
+      <div className={`space-y-4 lg:block ${expanded ? "block" : "hidden"}`}>
             {/* Category pills */}
             <div className="space-y-2">
               <label className="text-xs font-medium text-text-faint uppercase tracking-wider">
@@ -105,7 +98,6 @@ export function FilterPanel({
                     key={cat.value}
                     active={selectedCategory === cat.value}
                     onClick={() => onCategoryChange(cat.value)}
-                    color={cat.color}
                   >
                     {cat.label}
                     {cat.count !== undefined && (
@@ -162,9 +154,7 @@ export function FilterPanel({
                 Clear all filters
               </button>
             )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </div>
     </div>
   );
 }
@@ -173,26 +163,19 @@ function PillButton({
   active,
   onClick,
   children,
-  color,
 }: {
   active: boolean;
   onClick: () => void;
   children: React.ReactNode;
-  color?: string | null;
 }) {
   return (
     <button
       onClick={onClick}
-      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+      className={`px-3.5 py-2 rounded-full text-xs font-semibold border transition-all ${
         active
-          ? "bg-lime/15 border-lime/30 text-lime"
-          : "bg-card border-border text-text-faint hover:border-border-bright hover:text-text-muted"
+          ? "bg-lime border-lime text-[#0B0B08]"
+          : "bg-card border-border text-text-muted hover:border-border-bright hover:text-text-main"
       }`}
-      style={
-        active && color
-          ? { backgroundColor: `${color}20`, borderColor: `${color}40`, color }
-          : undefined
-      }
     >
       {children}
     </button>

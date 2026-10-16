@@ -69,10 +69,9 @@ export async function registerForFreeEvent(
       studentProfile.college,
       studentProfile.branch,
       studentProfile.academicYear,
-      studentProfile.gender
     ];
     if (requiredFields.some(field => !field)) {
-      return { error: "PROFILE_INCOMPLETE", message: "Please fill out all required profile fields (Name, Email, Phone, College, Branch, Year, Gender) before registering." };
+      return { error: "PROFILE_INCOMPLETE", message: "Please fill out all required profile fields (Name, Email, Phone, College, Branch, Year) before registering." };
     }
 
     // Check event details
@@ -80,7 +79,7 @@ export async function registerForFreeEvent(
       where: { id: eventId },
       include: {
         _count: {
-          select: { registrations: true },
+          select: { registrations: { where: { status: { not: RegistrationStatus.CANCELLED } } } },
         },
       },
     });
@@ -93,7 +92,9 @@ export async function registerForFreeEvent(
       return { error: "This event is not open for registration." };
     }
 
-    if (event.isClosed || new Date(event.date) < new Date()) {
+    const { details } = (await prisma.event.findUnique({ where: { id: eventId }, select: { details: true } })) ?? {};
+    const closesAt = (details as any)?.schedule?.registrationCloses;
+    if (event.isClosed || new Date(event.date) < new Date() || (closesAt && new Date(closesAt) < new Date())) {
       return { error: "Registration for this event is closed." };
     }
 
@@ -120,6 +121,13 @@ export async function registerForFreeEvent(
 
     const eventType = event.eventType || "INDIVIDUAL";
 
+    // Organizer-defined required questions (answers are keyed by question label)
+    const questions = Array.isArray(event.additionalQuestions) ? (event.additionalQuestions as any[]) : [];
+    const missing = questions.find((q) => q?.required && !String(params?.answers?.[q.label] ?? "").trim());
+    if (missing) {
+      return { error: `"${missing.label}" is a required question.` };
+    }
+
     // Validate team details
     if (eventType === "TEAM") {
       const teamName = params?.teamName?.trim();
@@ -131,6 +139,37 @@ export async function registerForFreeEvent(
       if (totalSize < event.teamMinSize || totalSize > event.teamMaxSize) {
         return { error: `Team size must be between ${event.teamMinSize} and ${event.teamMaxSize} members.` };
       }
+
+      const emails = members.map((m) => m.email.trim().toLowerCase());
+      if (emails.some((e) => !e)) {
+        return { error: "Every team member needs an email address." };
+      }
+      if (new Set(emails).size !== emails.length) {
+        return { error: "Each team member must have a different email address." };
+      }
+      if (emails.includes(studentProfile.user.email.toLowerCase())) {
+        return { error: "You are the team captain — don't add yourself as a member." };
+      }
+      const conflicts = await prisma.user.findMany({
+        where: {
+          email: { in: emails, mode: "insensitive" },
+          OR: [
+            { role: { not: "STUDENT" } },
+            { studentProfile: { registrations: { some: { eventId, status: { not: RegistrationStatus.CANCELLED } } } } },
+          ],
+        },
+        select: { email: true, role: true },
+      });
+      if (conflicts.length) {
+        const c = conflicts[0];
+        return {
+          error: c.role !== "STUDENT"
+            ? `${c.email} is not a student account and can't be added to a team.`
+            : `${c.email} is already registered for this event.`,
+        };
+      }
+      // Normalise so lookups/creates below use the same casing
+      members.forEach((m, i) => (m.email = emails[i]));
     }
 
     // Transaction to create registration, generate ticket, and notify
@@ -283,6 +322,7 @@ export async function registerForFreeEvent(
       });
 
       // 2. Handle Team Members if TEAM type
+      await tx.teamMember.deleteMany({ where: { registrationId: captainReg.id } });
       if (eventType === "TEAM") {
         const members = params?.members || [];
         for (const member of members) {
@@ -451,6 +491,7 @@ export async function cancelRegistration(registrationId: string) {
         student: true,
         event: true,
         ticket: true,
+        teamMembers: { select: { email: true } },
       },
     });
 
@@ -495,6 +536,31 @@ export async function cancelRegistration(registrationId: string) {
           message: `Your registration for ${registration.event.title} has been cancelled.`,
         },
       });
+
+      // Captain cancelling a team frees the members' seats and tickets too
+      const memberEmails = registration.teamMembers.map((m) => m.email);
+      if (memberEmails.length) {
+        const memberRegs = await tx.registration.findMany({
+          where: {
+            eventId: registration.eventId,
+            status: { not: RegistrationStatus.CANCELLED },
+            student: { user: { email: { in: memberEmails, mode: "insensitive" } } },
+          },
+          select: { id: true, student: { select: { userId: true } } },
+        });
+        const ids = memberRegs.map((r) => r.id);
+        await tx.registration.updateMany({
+          where: { id: { in: ids } },
+          data: { status: RegistrationStatus.CANCELLED, cancelledAt: new Date() },
+        });
+        await tx.ticket.updateMany({ where: { registrationId: { in: ids } }, data: { status: "CANCELLED" } });
+        await tx.notification.createMany({
+          data: memberRegs.map((r) => ({
+            userId: r.student.userId,
+            message: `Your team registration for ${registration.event.title} was cancelled by the team captain.`,
+          })),
+        });
+      }
     });
 
     revalidatePath(`/events/${registration.event.slug}`);
@@ -630,8 +696,10 @@ export async function getTicket(ticketId: string) {
  */
 export async function incrementTicketDownloadCount(ticketId: string) {
   try {
+    const user = await getCurrentUser();
+    if (!user) return { error: "Unauthorized" };
     const ticket = await prisma.ticket.update({
-      where: { id: ticketId },
+      where: { id: ticketId, student: { userId: user.id } },
       data: {
         downloadCount: { increment: 1 },
         lastDownloadedAt: new Date(),
@@ -649,8 +717,10 @@ export async function incrementTicketDownloadCount(ticketId: string) {
  */
 export async function recordTicketShared(ticketId: string) {
   try {
+    const user = await getCurrentUser();
+    if (!user) return { error: "Unauthorized" };
     const ticket = await prisma.ticket.update({
-      where: { id: ticketId },
+      where: { id: ticketId, student: { userId: user.id } },
       data: {
         lastSharedAt: new Date(),
       },
@@ -726,14 +796,8 @@ export async function verifyCheckInTicket(ticketIdentifier: string, verification
     }
 
     // Verify organizer permission
-    const isSuperAdmin = user.role === "SUPER_ADMIN";
-    if (!isSuperAdmin && ticket.event.organizerId !== user.id) {
-      const organizerProfile = await prisma.organizerProfile.findUnique({
-        where: { userId: user.id },
-      });
-      if (!organizerProfile || organizerProfile.verificationStatus !== "APPROVED") {
-        return { error: "You are not authorized to check in participants for this event." };
-      }
+    if (user.role !== "SUPER_ADMIN" && ticket.event.organizerId !== user.id) {
+      return { error: "This ticket belongs to another organizer's event." };
     }
 
     let checkedInByName = "";
@@ -803,18 +867,16 @@ export async function confirmCheckInAction(
       return { error: "Ticket not found." };
     }
 
-    const isSuperAdmin = user.role === "SUPER_ADMIN";
-    if (!isSuperAdmin && ticket.event.organizerId !== user.id) {
-      const organizerProfile = await prisma.organizerProfile.findUnique({
-        where: { userId: user.id },
-      });
-      if (!organizerProfile || organizerProfile.verificationStatus !== "APPROVED") {
-        return { error: "Unauthorized check-in permission." };
-      }
+    if (user.role !== "SUPER_ADMIN" && ticket.event.organizerId !== user.id) {
+      return { error: "Unauthorized check-in permission." };
     }
 
     if (ticket.registration.checkInStatus === "CHECKED_IN") {
       return { error: "Participant has already checked in." };
+    }
+
+    if (ticket.status !== "ACTIVE" || ticket.registration.status === RegistrationStatus.CANCELLED) {
+      return { error: `This ticket is ${ticket.status === "ACTIVE" ? "cancelled" : ticket.status.toLowerCase()} and can't be checked in.` };
     }
 
     // Append to registration timeline log

@@ -49,9 +49,9 @@ export function SearchBar({
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="relative w-full max-w-md"
+      className="relative flex-1 min-w-0 sm:max-w-md"
     >
-      <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-faint pointer-events-none" />
+      <Search className="absolute z-10 left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-faint pointer-events-none" />
       <input
         type="text"
         value={value}

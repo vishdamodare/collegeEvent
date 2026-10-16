@@ -15,7 +15,8 @@ export function AuthCard({ children, className }: AuthCardProps) {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
       className={cn(
-        "w-full p-8 sm:p-10 rounded-[32px] bg-[var(--color-card)]/80 backdrop-blur-xl border border-white/10 shadow-2xl",
+        // Phones: no outer frame (content uses the full width); card chrome from sm up
+        "w-full sm:p-10 sm:rounded-[32px] sm:bg-card sm:backdrop-blur-xl sm:border sm:border-[var(--color-border)] sm:shadow-2xl",
         className
       )}
     >

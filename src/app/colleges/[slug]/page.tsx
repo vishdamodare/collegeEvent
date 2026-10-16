@@ -61,7 +61,7 @@ export default async function CollegeDetailPage({ params }: CollegePageProps) {
         include: {
           events: {
             where: { status: "PUBLISHED" },
-            include: { category: true, images: true, registrations: true }
+            include: { category: true, images: true, registrations: { where: { status: { not: "CANCELLED" } }, select: { id: true } } }
           }
         }
       }
@@ -100,7 +100,7 @@ export default async function CollegeDetailPage({ params }: CollegePageProps) {
     ? "https://images.unsplash.com/photo-1562774053-701939374585?q=80&w=1200&auto=format&fit=crop"
     : hash % 3 === 1
       ? "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?q=80&w=1200&auto=format&fit=crop"
-      : "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=1200&auto=format&fit=crop";
+      : "https://images.unsplash.com/photo-1562774053-701939374585?q=80&w=1200&auto=format&fit=crop";
 
   // Mock team members
   const team = [

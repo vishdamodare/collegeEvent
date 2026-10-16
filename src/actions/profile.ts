@@ -204,32 +204,18 @@ export async function updateStudentPasswordAction(currentPassword: string, newPa
   }
 
   try {
-    // In Better Auth, password update is handled via auth server client or direct account update
-    const account = await prisma.account.findFirst({
-      where: { userId: user.id, providerId: "credentials" },
+    // Better Auth verifies the current password and stores a proper hash
+    await auth.api.changePassword({
+      body: { currentPassword, newPassword, revokeOtherSessions: true },
+      headers: await headers(),
     });
-
-    if (!account) {
-      return {
-        error: "This account is authenticated via OAuth (Google/GitHub). Password change is not applicable.",
-      };
-    }
-
-    // Update password hash
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { passwordHash: newPassword },
-    });
-
-    await prisma.account.updateMany({
-      where: { userId: user.id, providerId: "credentials" },
-      data: { password: newPassword },
-    });
-
     return { success: true };
   } catch (error: any) {
-    console.error("Failed to update password:", error);
-    return { error: error.message || "Failed to update password." };
+    const msg = error?.body?.message || error?.message || "";
+    if (/credential account not found/i.test(msg)) {
+      return { error: "This account signs in with Google, so it has no password to change." };
+    }
+    return { error: msg || "Failed to update password." };
   }
 }
 

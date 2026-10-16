@@ -17,6 +17,16 @@ async function getAuthenticatedAdmin() {
   if (!user || (user.role !== UserRole.ORGANIZER && user.role !== UserRole.SUPER_ADMIN)) {
     throw new Error("Unauthorized access");
   }
+  // Mirror admin/layout.tsx: blocked/rejected organizers can't call actions directly either
+  if (user.role === UserRole.ORGANIZER) {
+    const profile = await prisma.organizerProfile.findUnique({
+      where: { userId: user.id },
+      select: { verificationStatus: true },
+    });
+    if (profile?.verificationStatus !== "APPROVED") {
+      throw new Error("Unauthorized access");
+    }
+  }
   return user;
 }
 
@@ -83,9 +93,35 @@ const eventFormSchema = z.object({
   capacity: z.coerce.number().int().min(1, "Capacity must be at least 1"),
   status: z.nativeEnum(EventStatus).default(EventStatus.DRAFT),
   imageUrl: z.string().url().or(z.literal("")).optional().nullable(),
+  // Optional EventWizard extras — the simple EventForm omits them
+  eventType: z.enum(["INDIVIDUAL", "TEAM"]).optional(),
+  teamMinSize: z.coerce.number().int().min(1).optional(),
+  teamMaxSize: z.coerce.number().int().min(1).optional(),
+  additionalQuestions: z.array(z.any()).optional(),
+  galleryUrls: z.array(z.string().url()).optional(),
+  details: z.record(z.string(), z.any()).optional(),
 });
 
 export type EventFormData = z.infer<typeof eventFormSchema>;
+
+// Wizard-only columns; undefined keys are skipped by Prisma so EventForm edits keep them
+function wizardFields(d: EventFormData) {
+  return {
+    eventType: d.eventType,
+    teamMinSize: d.teamMinSize,
+    teamMaxSize: d.teamMaxSize,
+    additionalQuestions: d.additionalQuestions,
+    details: d.details,
+  };
+}
+
+async function syncGallery(eventId: string, urls?: string[]) {
+  if (!urls) return;
+  await prisma.eventImage.deleteMany({ where: { eventId, isHero: false } });
+  if (urls.length) {
+    await prisma.eventImage.createMany({ data: urls.map((url) => ({ eventId, url, isHero: false })) });
+  }
+}
 
 // Helper to generate unique slug
 async function generateUniqueSlug(title: string, currentId?: string): Promise<string> {
@@ -152,6 +188,7 @@ export async function createEvent(data: EventFormData) {
         status: parsed.data.status,
         organizerId: user.id,
         categoryId,
+        ...wizardFields(parsed.data),
         ...(parsed.data.imageUrl
           ? {
               images: {
@@ -164,6 +201,8 @@ export async function createEvent(data: EventFormData) {
           : {}),
       },
     });
+
+    await syncGallery(event.id, parsed.data.galleryUrls);
 
     revalidatePath("/admin/events");
     revalidatePath("/");
@@ -193,12 +232,7 @@ export async function updateEvent(id: string, data: EventFormData) {
   }
 
   if (!isSuperAdmin && existingEvent.organizerId !== user.id) {
-    const userOrganizer = await prisma.organizerProfile.findUnique({
-      where: { userId: user.id },
-    });
-    if (!userOrganizer || userOrganizer.verificationStatus !== "APPROVED") {
-      return { error: "You are not authorized to edit this event" };
-    }
+    return { error: "You are not authorized to edit this event" };
   }
 
   try {
@@ -229,8 +263,11 @@ export async function updateEvent(id: string, data: EventFormData) {
         capacity: parsed.data.capacity,
         status: parsed.data.status,
         categoryId,
+        ...wizardFields(parsed.data),
       },
     });
+
+    await syncGallery(id, parsed.data.galleryUrls);
 
     if (parsed.data.imageUrl) {
       // Upsert hero image
@@ -268,6 +305,7 @@ export async function duplicateEvent(id: string) {
   const event = await prisma.event.findFirst({
     where: { id, organizerId: user.id },
     include: { images: true },
+    omit: { details: false },
   });
 
   if (!event) {
@@ -289,6 +327,11 @@ export async function duplicateEvent(id: string) {
         status: EventStatus.DRAFT,
         organizerId: user.id,
         categoryId: event.categoryId,
+        eventType: event.eventType,
+        teamMinSize: event.teamMinSize,
+        teamMaxSize: event.teamMaxSize,
+        additionalQuestions: event.additionalQuestions ?? undefined,
+        details: event.details ?? undefined,
         images: {
           create: event.images.map((img) => ({
             url: img.url,
@@ -400,7 +443,7 @@ export async function getAdminEvents(options?: {
       include: {
         category: true,
         images: { where: { isHero: true }, take: 1 },
-        _count: { select: { registrations: true } },
+        _count: { select: { registrations: { where: { status: { not: "CANCELLED" } } } } },
       },
       orderBy,
       take: perPage,
@@ -492,6 +535,8 @@ const organizerProfileSchema = z.object({
   college: z.string().min(2, "College name is required"),
   department: z.string().min(2, "Department is required"),
   position: z.string().min(2, "Position is required"),
+  // Omitted by the College page; undefined leaves the stored phone untouched
+  phone: z.string().regex(/^\+?[0-9\s-]{10,15}$/, "Enter a valid phone number").optional(),
   description: z.string().optional().nullable(),
   website: z.string().optional().nullable(),
   instagram: z.string().optional().nullable(),
@@ -509,7 +554,7 @@ export async function updateOrganizerProfile(data: OrganizerProfileData) {
     return { error: parsed.error.issues[0].message };
   }
 
-  const { name, college, department, position, description, website, instagram, linkedin, address } = parsed.data;
+  const { name, college, department, position, phone, description, website, instagram, linkedin, address } = parsed.data;
 
   try {
     await prisma.user.update({
@@ -519,8 +564,8 @@ export async function updateOrganizerProfile(data: OrganizerProfileData) {
 
     await prisma.organizerProfile.upsert({
       where: { userId: user.id },
-      update: { college, department, position, description, website, instagram, linkedin, address },
-      create: { userId: user.id, college, department, position, description, website, instagram, linkedin, address },
+      update: { college, department, position, phone, description, website, instagram, linkedin, address },
+      create: { userId: user.id, college, department, position, phone, description, website, instagram, linkedin, address },
     });
 
     revalidatePath("/admin/profile");
@@ -546,8 +591,91 @@ export async function getOrganizerProfile() {
     instagram: profile?.instagram || "",
     linkedin: profile?.linkedin || "",
     address: profile?.address || "",
+    phone: profile?.phone || "",
+    email: user.email,
+    emailAlerts: profile?.emailAlerts ?? true,
+    weeklyDigest: profile?.weeklyDigest ?? false,
+    deletionRequestedAt: profile?.deletionRequestedAt?.toISOString() ?? null,
     verificationStatus: profile?.verificationStatus || "PENDING",
   };
+}
+
+// ─── Admin Settings (notifications, password, team, deletion) ──────────────
+
+export async function updateNotificationPrefs(prefs: { emailAlerts: boolean; weeklyDigest: boolean }) {
+  const user = await getAuthenticatedAdmin();
+  const result = await prisma.organizerProfile.updateMany({
+    where: { userId: user.id },
+    data: { emailAlerts: !!prefs.emailAlerts, weeklyDigest: !!prefs.weeklyDigest },
+  });
+  if (result.count === 0) return { error: "Complete your organizer profile first." };
+  return { success: true };
+}
+
+export async function changeAdminPassword(currentPassword: string, newPassword: string) {
+  await getAuthenticatedAdmin();
+  if (!newPassword || newPassword.length < 8) return { error: "New password must be at least 8 characters." };
+  try {
+    // Better Auth verifies the current password and stores the new hash in Account
+    await auth.api.changePassword({
+      body: { currentPassword, newPassword, revokeOtherSessions: true },
+      headers: await headers(),
+    });
+    return { success: true };
+  } catch (err: any) {
+    return { error: err?.body?.message || err?.message || "Failed to change password." };
+  }
+}
+
+export async function getTeamMembers() {
+  const user = await getAuthenticatedAdmin();
+  const members = await prisma.organizerTeamMember.findMany({
+    where: { organizerId: user.id },
+    orderBy: { createdAt: "asc" },
+  });
+  return {
+    owner: { name: user.name, email: user.email },
+    members: members.map((m) => ({ ...m, createdAt: m.createdAt.toISOString() })),
+  };
+}
+
+const teamInviteSchema = z.object({
+  email: z.string().email("Enter a valid email address"),
+  role: z.enum(["ADMIN", "EDITOR", "VIEWER"]),
+});
+
+export async function addTeamMember(email: string, role: string) {
+  const user = await getAuthenticatedAdmin();
+  const parsed = teamInviteSchema.safeParse({ email: email.trim().toLowerCase(), role });
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  if (parsed.data.email === user.email.toLowerCase()) return { error: "You are already the owner." };
+  try {
+    await prisma.organizerTeamMember.create({
+      data: { organizerId: user.id, email: parsed.data.email, role: parsed.data.role },
+    });
+    revalidatePath("/admin/settings");
+    return { success: true };
+  } catch (err: any) {
+    if (err?.code === "P2002") return { error: "This email is already on your team." };
+    return { error: "Failed to add team member." };
+  }
+}
+
+export async function removeTeamMember(id: string) {
+  const user = await getAuthenticatedAdmin();
+  await prisma.organizerTeamMember.deleteMany({ where: { id, organizerId: user.id } });
+  revalidatePath("/admin/settings");
+  return { success: true };
+}
+
+export async function requestAccountDeletion() {
+  const user = await getAuthenticatedAdmin();
+  const result = await prisma.organizerProfile.updateMany({
+    where: { userId: user.id },
+    data: { deletionRequestedAt: new Date() },
+  });
+  if (result.count === 0) return { error: "No organizer profile found." };
+  return { success: true };
 }
 
 // ─── Extra Multi-Tenant SaaS Actions ────────────────────────────────────────
@@ -616,7 +744,7 @@ export async function getAdminAnalytics() {
   // Top events by signups count
   const topEventsRaw = await prisma.event.findMany({
     where: { organizerId: user.id },
-    include: { _count: { select: { registrations: true } } },
+    include: { _count: { select: { registrations: { where: { status: { not: "CANCELLED" } } } } } },
     orderBy: { registrations: { _count: "desc" } },
     take: 5
   });
@@ -631,7 +759,7 @@ export async function getAdminAnalytics() {
     include: {
       events: {
         where: { organizerId: user.id },
-        include: { _count: { select: { registrations: true } } }
+        include: { _count: { select: { registrations: { where: { status: { not: "CANCELLED" } } } } } }
       }
     }
   });
@@ -735,7 +863,7 @@ export async function getEligibleCertificateEvents() {
       registrations: { some: { checkedIn: true } },
     },
     include: {
-      _count: { select: { registrations: true } },
+      _count: { select: { registrations: { where: { status: { not: "CANCELLED" } } } } },
       registrations: {
         where: { checkedIn: true },
         select: { id: true },
@@ -1052,7 +1180,7 @@ export async function getAdminRegistrationsAction(options?: {
         slug: true,
         capacity: true,
         isClosed: true,
-        _count: { select: { registrations: true } },
+        _count: { select: { registrations: { where: { status: { not: "CANCELLED" } } } } },
       },
       orderBy: { title: "asc" },
     }),

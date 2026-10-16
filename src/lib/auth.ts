@@ -40,15 +40,11 @@ export const auth = betterAuth({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
     },
-    github: {
-      clientId: process.env.GITHUB_CLIENT_ID || "",
-      clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
-    },
   },
   account: {
     accountLinking: {
       enabled: true,
-      trustedProviders: ["google", "github"],
+      trustedProviders: ["google"],
     },
   },
   emailVerification: {
@@ -62,6 +58,10 @@ export const auth = betterAuth({
       await sendVerificationEmail(user.email, customUrl);
     },
   },
+  session: {
+    // Signed cookie holds the session for 5 min so each page skips ~2 DB round trips to Neon
+    cookieCache: { enabled: true, maxAge: 5 * 60 },
+  },
   user: {
     additionalFields: {
       role: {
@@ -71,6 +71,7 @@ export const auth = betterAuth({
       passwordHash: {
         type: "string",
         required: false,
+        returned: false, // never ship the hash to the browser/session cookie
       },
       provider: {
         type: "string",

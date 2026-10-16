@@ -19,13 +19,13 @@ export default function PendingApprovalPage() {
           ⏳
         </div>
         <h2 className="text-[26px] font-anton uppercase mb-2">Pending Approval</h2>
-        <p className="text-[14.5px] text-white/70 mb-8 max-w-sm leading-relaxed">
+        <p className="text-[14.5px] text-text-muted mb-8 max-w-sm leading-relaxed">
           Your event organizer application has been received. Our team will review your verification documents within 24-48 hours. We will email you once your account is activated.
         </p>
         
         <button 
           onClick={handleLogout} 
-          className="w-full py-[16px] rounded-xl bg-white/5 border border-white/10 text-white font-bold hover:bg-white/10 transition-colors cursor-pointer"
+          className="w-full py-[16px] rounded-xl bg-card border border-border text-text-main font-bold hover:bg-card-hover transition-colors cursor-pointer"
         >
           Return to Login
         </button>

@@ -21,7 +21,7 @@ export async function getFeaturedEvents() {
       organizer: {
         select: { id: true, name: true, image: true },
       },
-      _count: { select: { registrations: true, savedBy: true } },
+      _count: { select: { registrations: { where: { status: { not: "CANCELLED" } } }, savedBy: true } },
     },
     orderBy: { date: "asc" },
     take: 6,
@@ -75,7 +75,7 @@ export async function getPublishedEvents(options?: {
         category: true,
         images: { where: { isHero: true }, take: 1 },
         organizer: { select: { id: true, name: true, image: true } },
-        _count: { select: { registrations: true, savedBy: true } },
+        _count: { select: { registrations: { where: { status: { not: "CANCELLED" } } }, savedBy: true } },
       },
       orderBy,
       take,
@@ -125,17 +125,15 @@ export async function getEventBySlug(slug: string) {
               verificationStatus: true,
             },
           },
+          _count: { select: { events: { where: { status: EventStatus.PUBLISHED } } } },
         },
       },
-      _count: { select: { registrations: true, savedBy: true } },
+      _count: { select: { registrations: { where: { status: { not: "CANCELLED" } } }, savedBy: true } },
     },
   });
 
-  if (event?.organizerId && event.organizer) {
-    const totalEvents = await prisma.event.count({
-      where: { organizerId: event.organizerId, status: EventStatus.PUBLISHED }
-    });
-    (event.organizer as any).totalEvents = totalEvents;
+  if (event?.organizer) {
+    (event.organizer as any).totalEvents = event.organizer._count.events;
   }
 
   return event;
@@ -154,7 +152,7 @@ export async function getEventsByOrganizer(organizerId: string, excludeEventId?:
     include: {
       category: true,
       images: { where: { isHero: true }, take: 1 },
-      _count: { select: { registrations: true } },
+      _count: { select: { registrations: { where: { status: { not: "CANCELLED" } } } } },
     },
     orderBy: { date: "asc" },
     take: 4,
@@ -165,13 +163,15 @@ export async function getEventsByOrganizer(organizerId: string, excludeEventId?:
  * Fetch homepage stats (counts).
  */
 export async function getHomepageStats() {
-  const [totalEvents, totalCategories, totalOrganizers] = await Promise.all([
+  const [totalEvents, totalCategories, totalOrganizers, totalStudents, colleges] = await Promise.all([
     prisma.event.count({ where: { status: EventStatus.PUBLISHED } }),
     prisma.category.count({ where: { isArchived: false } }),
     prisma.user.count({ where: { role: { in: ["ORGANIZER", "SUPER_ADMIN"] } } }),
+    prisma.user.count({ where: { role: "STUDENT" } }),
+    prisma.organizerProfile.findMany({ distinct: ["college"], select: { college: true } }),
   ]);
 
-  return { totalEvents, totalCategories, totalOrganizers };
+  return { totalEvents, totalCategories, totalOrganizers, totalStudents, totalColleges: colleges.length };
 }
 
 function getCityFromLocation(location: string): string {
@@ -206,7 +206,7 @@ export async function getRecommendedEvents() {
           }
         }
       },
-      _count: { select: { registrations: true, savedBy: true } }
+      _count: { select: { registrations: { where: { status: { not: "CANCELLED" } } }, savedBy: true } }
     },
     orderBy: { date: "asc" },
     take: 8
@@ -239,7 +239,7 @@ export async function getRecommendedEvents() {
           }
         }
       },
-      _count: { select: { registrations: true, savedBy: true } }
+      _count: { select: { registrations: { where: { status: { not: "CANCELLED" } } }, savedBy: true } }
     }
   });
 
@@ -372,7 +372,7 @@ export async function getDynamicColleges() {
             where: { status: EventStatus.PUBLISHED },
             include: {
               category: true,
-              registrations: true,
+              registrations: { where: { status: { not: "CANCELLED" } }, select: { id: true } },
             }
           }
         }
@@ -474,7 +474,7 @@ function getCollegeBanner(name: string): string {
     return "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?q=80&w=1000&auto=format&fit=crop";
   }
   if (upper.includes("BITS PILANI")) {
-    return "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=1000&auto=format&fit=crop";
+    return "https://images.unsplash.com/photo-1562774053-701939374585?q=80&w=1000&auto=format&fit=crop";
   }
   return "https://images.unsplash.com/photo-1562774053-701939374585?q=80&w=1000&auto=format&fit=crop";
 }

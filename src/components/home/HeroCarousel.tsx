@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Event } from "@/types";
 import { cn } from "@/utils/cn";
@@ -14,6 +14,15 @@ interface HeroCarouselProps {
 
 export function HeroCarousel({ events, activeIndex, onEventSelect, onDetailsClick }: HeroCarouselProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const storiesRef = useRef<HTMLDivElement>(null);
+
+  // Keep the active story visible in the mobile strip (horizontal only, no page jump)
+  useEffect(() => {
+    const strip = storiesRef.current;
+    const item = strip?.children[activeIndex] as HTMLElement | undefined;
+    if (!strip || !item) return;
+    strip.scrollTo({ left: item.offsetLeft - strip.clientWidth / 2 + item.offsetWidth / 2, behavior: "smooth" });
+  }, [activeIndex]);
 
   // Auto-play timer
   useEffect(() => {
@@ -40,7 +49,48 @@ export function HeroCarousel({ events, activeIndex, onEventSelect, onDetailsClic
   };
 
   return (
-    <div className="relative h-[440px] md:h-[640px] w-full mt-5 md:mt-0" style={{ perspective: "1400px" }}>
+    <>
+    {/* Mobile: story-style picker; the hero text above already shows the active event */}
+    <div
+      ref={storiesRef}
+      className="lg:hidden -mx-5 px-5 py-2 flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory"
+    >
+      {events.map((ev, index) => {
+        const isActive = index === activeIndex;
+        return (
+          <button
+            key={ev.id}
+            onClick={() => onEventSelect(index)}
+            className="snap-center flex-none w-[72px] flex flex-col items-center gap-2"
+            aria-label={`Show ${ev.title}`}
+            aria-current={isActive}
+          >
+            <span
+              className={cn(
+                "block w-[68px] h-[68px] rounded-full p-[3px] transition-all duration-500 ease-[var(--ease-custom)]",
+                isActive
+                  ? "bg-[conic-gradient(var(--color-lime),var(--color-butter),var(--color-coral),var(--color-lime))] scale-105"
+                  : "bg-[var(--color-border-bright)]"
+              )}
+            >
+              <span className="relative block w-full h-full rounded-full overflow-hidden border-[3px] border-[var(--color-background)]">
+                <Image src={ev.img} alt="" fill className="object-cover" sizes="68px" />
+              </span>
+            </span>
+            <span
+              className={cn(
+                "text-[11px] leading-tight text-center line-clamp-2 transition-colors",
+                isActive ? "text-[var(--color-text-main)] font-semibold" : "text-[var(--color-text-faint)]"
+              )}
+            >
+              {ev.title}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+
+    <div className="hidden lg:block relative h-[640px] w-full" style={{ perspective: "1400px" }}>
       <div 
         className="relative h-full w-full"
         onMouseEnter={() => setIsHovered(true)}
@@ -91,12 +141,13 @@ export function HeroCarousel({ events, activeIndex, onEventSelect, onDetailsClic
               "h-[7px] transition-all duration-400 ease-[var(--ease-custom)]",
               index === activeIndex
                 ? "w-[22px] rounded-[6px] bg-[var(--color-lime)]"
-                : "w-[7px] rounded-full bg-white/25 hover:bg-white/50"
+                : "w-[7px] rounded-full bg-[var(--color-border-bright)] hover:bg-[var(--color-text-faint)]"
             )}
             aria-label={`Go to slide ${index + 1}`}
           />
         ))}
       </div>
     </div>
+    </>
   );
 }

@@ -10,9 +10,11 @@ interface SaveButtonProps {
   initialSaved?: boolean;
   size?: "sm" | "md";
   className?: string;
+  /** Show "Save"/"Saved" next to the icon (for wide buttons) */
+  showLabel?: boolean;
 }
 
-export function SaveButton({ eventId, initialSaved = false, size = "md", className }: SaveButtonProps) {
+export function SaveButton({ eventId, initialSaved = false, size = "md", className, showLabel = false }: SaveButtonProps) {
   const [saved, setSaved] = useState(initialSaved);
   const [isPending, startTransition] = useTransition();
 
@@ -37,7 +39,7 @@ export function SaveButton({ eventId, initialSaved = false, size = "md", classNa
       }}
       disabled={isPending}
       className={cn(
-        "group rounded-full border backdrop-blur-sm transition-all",
+        "group inline-flex items-center justify-center gap-2 rounded-full border backdrop-blur-sm transition-all",
         saved
           ? "bg-lime/15 border-lime/30 text-lime"
           : "bg-card/80 border-border text-text-faint hover:text-lime hover:border-lime/30",
@@ -54,6 +56,7 @@ export function SaveButton({ eventId, initialSaved = false, size = "md", classNa
           saved && "fill-current"
         )}
       />
+      {showLabel && <span className="text-sm font-medium">{saved ? "Saved" : "Save"}</span>}
     </button>
   );
 }

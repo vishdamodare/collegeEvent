@@ -48,10 +48,13 @@ import { SponsorBuilder } from "./SponsorBuilder";
 import { FAQBuilder } from "./FAQBuilder";
 import { PreviewFrame } from "./PreviewFrame";
 import { getTemplates } from "@/data/admin/templates";
-import { getDefaultFormFields } from "@/data/admin/registrationForm";
+import { getDefaultFormFields, DEFAULT_FORM_FIELDS } from "@/data/admin/registrationForm";
+
+const DEFAULT_FIELD_IDS = new Set(DEFAULT_FORM_FIELDS.map((f) => f.id));
 
 interface EventWizardProps {
   initialData?: AdminEvent;
+  categories: { id: string; name: string; slug: string }[];
 }
 
 const STEPS = [
@@ -72,7 +75,12 @@ const STEPS = [
   "Responsive Preview"
 ];
 
-export function EventWizard({ initialData }: EventWizardProps) {
+export function EventWizard({ initialData, categories }: EventWizardProps) {
+  // Templates/older payloads store a category name; map it to the DB category id
+  const resolveCategory = (v?: string) =>
+    categories.find((c) => c.id === v || c.slug === v?.toLowerCase() || c.name.toLowerCase() === v?.toLowerCase())?.id ??
+    categories[0]?.id ??
+    "";
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
@@ -88,7 +96,7 @@ export function EventWizard({ initialData }: EventWizardProps) {
   // Form States - Step 1: Basic Info
   const [title, setTitle] = useState(initialData?.basic.title || "");
   const [slug, setSlug] = useState(initialData?.basic.slug || "");
-  const [category, setCategory] = useState(initialData?.basic.category || "TECHNICAL");
+  const [category, setCategory] = useState(resolveCategory(initialData?.basic.category || "technical"));
   const [subcategory, setSubcategory] = useState(initialData?.basic.subcategory || "");
   const [eventType, setEventType] = useState(initialData?.basic.eventType || "GENERAL");
   const [shortDescription, setShortDescription] = useState(initialData?.basic.shortDescription || "");
@@ -231,7 +239,7 @@ export function EventWizard({ initialData }: EventWizardProps) {
     if (data.basic) {
       setTitle(data.basic.title);
       setSlug(data.basic.slug);
-      setCategory(data.basic.category);
+      setCategory(resolveCategory(data.basic.category));
       setSubcategory(data.basic.subcategory || "");
       setEventType(data.basic.eventType || "GENERAL");
       setShortDescription(data.basic.shortDescription);
@@ -483,6 +491,15 @@ export function EventWizard({ initialData }: EventWizardProps) {
       capacity: assembled.registration?.maxRegistrations || 100,
       status: toPrismaStatus(statusOverride || "DRAFT"),
       imageUrl: assembled.media?.banner || null,
+      eventType: (assembled.registration.isTeam ? "TEAM" : "INDIVIDUAL") as "TEAM" | "INDIVIDUAL",
+      teamMinSize: assembled.registration.isTeam ? assembled.registration.minTeamSize || 1 : 1,
+      teamMaxSize: assembled.registration.isTeam ? assembled.registration.maxTeamSize || 1 : 1,
+      // Name/email/phone/college/branch/year come from the student profile step already
+      additionalQuestions: (assembled.registration.registrationFormFields || []).filter(
+        (f: any) => !DEFAULT_FIELD_IDS.has(f.id)
+      ),
+      galleryUrls: assembled.media.gallery.filter((u: string) => /^https?:\/\//.test(u)),
+      details: assembled as unknown as Record<string, any>,
     };
 
     try {
@@ -648,9 +665,9 @@ export function EventWizard({ initialData }: EventWizardProps) {
                     onChange={(e) => setCategory(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl bg-[#181818] border border-white/5 text-white text-[13.5px] outline-none cursor-pointer"
                   >
-                    <option value="TECHNICAL">Technical</option>
-                    <option value="CULTURAL">Cultural</option>
-                    <option value="SPORTS">Sports</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
                   </select>
                 </div>
                 <div>
@@ -1825,7 +1842,7 @@ export function EventWizard({ initialData }: EventWizardProps) {
                     <div className="absolute bottom-4 left-4 right-4">
                       <div className="flex gap-2 mb-1.5 flex-wrap">
                         <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-[var(--color-lime)] text-[#0b0b0b]">
-                          {category}
+                          {categories.find((c) => c.id === category)?.name}
                         </span>
                         <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-white/10 text-white border border-white/5">
                           {eventType}

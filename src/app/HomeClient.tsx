@@ -26,6 +26,8 @@ interface HomeClientProps {
     totalEvents: number;
     totalCategories: number;
     totalOrganizers: number;
+    totalStudents: number;
+    totalColleges: number;
   };
 }
 
@@ -82,9 +84,9 @@ export function HomeClient({ events, categories, colleges, stats }: HomeClientPr
 
       <Testimonials testimonials={TESTIMONIALS} />
 
-      <StatsSection />
+      <StatsSection stats={stats} />
 
-      <AboutSection />
+      <AboutSection stats={stats} />
 
       <ContactSection />
 

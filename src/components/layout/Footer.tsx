@@ -2,18 +2,18 @@ import Link from "next/link";
 
 export function Footer() {
   return (
-    <footer id="footer" className="border-t border-[var(--color-border)] pt-[80px] pb-[30px]">
-      <div className="max-w-[1360px] mx-auto px-10">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr] gap-10 mb-[60px]">
+    <footer id="footer" className="border-t border-[var(--color-border)] pt-14 sm:pt-[80px] pb-[30px]">
+      <div className="max-w-[1360px] mx-auto px-5 sm:px-10">
+        <div className="grid grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr] gap-x-6 gap-y-10 mb-10 sm:mb-[60px]">
           
           {/* Brand Col */}
-          <div>
+          <div className="col-span-2 lg:col-span-1">
             <Link href="#" className="flex items-center gap-[10px] font-archivo font-bold text-[19px]">
               <svg viewBox="0 0 40 40" fill="none" className="w-[30px] h-[30px]">
                 <defs>
                   <linearGradient id="lgFooter" x1="0" y1="0" x2="40" y2="40">
-                    <stop offset="0%" stopColor="#D7FF3D" />
-                    <stop offset="100%" stopColor="#FF4B33" />
+                    <stop offset="0%" style={{ stopColor: "var(--color-lime)" }} />
+                    <stop offset="100%" style={{ stopColor: "var(--color-coral)" }} />
                   </linearGradient>
                 </defs>
                 <path
@@ -23,7 +23,7 @@ export function Footer() {
                   strokeLinecap="round"
                   fill="none"
                 />
-                <circle cx="30" cy="9" r="3.4" fill="#FFD84D" />
+                <circle cx="30" cy="9" r="3.4" style={{ fill: "var(--color-butter)" }} />
               </svg>
               CollegeEvents
             </Link>
@@ -46,26 +46,26 @@ export function Footer() {
           {/* Links Cols */}
           <div className="flex flex-col">
             <h5 className="text-[13px] tracking-[.06em] uppercase text-[var(--color-text-faint)] mb-[18px]">Explore</h5>
-            <Link href="#events" className="text-[14.5px] text-[var(--color-text-muted)] mb-[13px] hover:text-white transition-colors">Events</Link>
-            <Link href="#colleges" className="text-[14.5px] text-[var(--color-text-muted)] mb-[13px] hover:text-white transition-colors">Colleges</Link>
-            <Link href="#" className="text-[14.5px] text-[var(--color-text-muted)] mb-[13px] hover:text-white transition-colors">Categories</Link>
-            <Link href="#" className="text-[14.5px] text-[var(--color-text-muted)] mb-[13px] hover:text-white transition-colors">Cities</Link>
+            <Link href="#events" className="text-[14.5px] text-[var(--color-text-muted)] mb-[13px] hover:text-[var(--color-text-main)] transition-colors">Events</Link>
+            <Link href="#colleges" className="text-[14.5px] text-[var(--color-text-muted)] mb-[13px] hover:text-[var(--color-text-main)] transition-colors">Colleges</Link>
+            <Link href="#" className="text-[14.5px] text-[var(--color-text-muted)] mb-[13px] hover:text-[var(--color-text-main)] transition-colors">Categories</Link>
+            <Link href="#" className="text-[14.5px] text-[var(--color-text-muted)] mb-[13px] hover:text-[var(--color-text-main)] transition-colors">Cities</Link>
           </div>
 
           <div className="flex flex-col">
             <h5 className="text-[13px] tracking-[.06em] uppercase text-[var(--color-text-faint)] mb-[18px]">Company</h5>
-            <Link href="#about" className="text-[14.5px] text-[var(--color-text-muted)] mb-[13px] hover:text-white transition-colors">About</Link>
-            <Link href="#" className="text-[14.5px] text-[var(--color-text-muted)] mb-[13px] hover:text-white transition-colors">Careers</Link>
-            <Link href="#" className="text-[14.5px] text-[var(--color-text-muted)] mb-[13px] hover:text-white transition-colors">Press</Link>
-            <Link href="#" className="text-[14.5px] text-[var(--color-text-muted)] mb-[13px] hover:text-white transition-colors">Blog</Link>
+            <Link href="#about" className="text-[14.5px] text-[var(--color-text-muted)] mb-[13px] hover:text-[var(--color-text-main)] transition-colors">About</Link>
+            <Link href="#" className="text-[14.5px] text-[var(--color-text-muted)] mb-[13px] hover:text-[var(--color-text-main)] transition-colors">Careers</Link>
+            <Link href="#" className="text-[14.5px] text-[var(--color-text-muted)] mb-[13px] hover:text-[var(--color-text-main)] transition-colors">Press</Link>
+            <Link href="#" className="text-[14.5px] text-[var(--color-text-muted)] mb-[13px] hover:text-[var(--color-text-main)] transition-colors">Blog</Link>
           </div>
 
           <div className="flex flex-col">
             <h5 className="text-[13px] tracking-[.06em] uppercase text-[var(--color-text-faint)] mb-[18px]">Support</h5>
-            <Link href="#" className="text-[14.5px] text-[var(--color-text-muted)] mb-[13px] hover:text-white transition-colors">Help center</Link>
-            <Link href="#" className="text-[14.5px] text-[var(--color-text-muted)] mb-[13px] hover:text-white transition-colors">Organizer login</Link>
-            <Link href="#" className="text-[14.5px] text-[var(--color-text-muted)] mb-[13px] hover:text-white transition-colors">Privacy</Link>
-            <Link href="#" className="text-[14.5px] text-[var(--color-text-muted)] mb-[13px] hover:text-white transition-colors">Terms</Link>
+            <Link href="#" className="text-[14.5px] text-[var(--color-text-muted)] mb-[13px] hover:text-[var(--color-text-main)] transition-colors">Help center</Link>
+            <Link href="/organizer" className="text-[14.5px] text-[var(--color-text-muted)] mb-[13px] hover:text-[var(--color-text-main)] transition-colors">Organizer login</Link>
+            <Link href="#" className="text-[14.5px] text-[var(--color-text-muted)] mb-[13px] hover:text-[var(--color-text-main)] transition-colors">Privacy</Link>
+            <Link href="#" className="text-[14.5px] text-[var(--color-text-muted)] mb-[13px] hover:text-[var(--color-text-main)] transition-colors">Terms</Link>
           </div>
 
         </div>

@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 
-export function AboutSection() {
+export function AboutSection({ stats }: { stats: { totalColleges: number; totalEvents: number; totalStudents: number; totalOrganizers: number } }) {
   const containerVariants = {
     hidden: {},
     visible: {
@@ -82,8 +82,8 @@ export function AboutSection() {
   ];
 
   return (
-    <section id="about" className="py-24 bg-[#0A0A0A] border-t border-[var(--color-border)] overflow-hidden">
-      <div className="max-w-[1360px] mx-auto px-10">
+    <section id="about" className="py-16 sm:py-24 bg-[var(--color-bg-elevated)] border-t border-[var(--color-border)] overflow-hidden">
+      <div className="max-w-[1360px] mx-auto px-5 sm:px-10">
         
         {/* Section Header */}
         <motion.div 
@@ -91,13 +91,13 @@ export function AboutSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="mb-16"
+          className="mb-10 sm:mb-16"
         >
           <div className="eyebrow mb-4">
             <span className="dot"></span>
             Overview
           </div>
-          <h2 className="font-anton text-[44px] sm:text-[64px] text-white tracking-wider leading-none mb-4">
+          <h2 className="font-anton text-[44px] sm:text-[64px] text-[var(--color-text-main)] tracking-wider leading-none mb-4">
             ABOUT COLLEGEEVENTS
           </h2>
           <p className="text-lg sm:text-xl text-[var(--color-text-muted)] font-medium max-w-2xl">
@@ -106,7 +106,7 @@ export function AboutSection() {
         </motion.div>
 
         {/* Narrative & Statistics Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start mb-24">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-start mb-14 sm:mb-24">
           <motion.div 
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -126,12 +126,12 @@ export function AboutSection() {
           </motion.div>
 
           {/* Stat Cards Grid */}
-          <div className="grid grid-cols-2 gap-5 w-full">
+          <div className="grid grid-cols-2 gap-3 sm:gap-5 w-full">
             {[
-              { num: "120+", label: "Partner Colleges" },
-              { num: "850+", label: "Events Listed" },
-              { num: "15K+", label: "Students Connected" },
-              { num: "50+", label: "Cities" },
+              { num: stats.totalColleges.toLocaleString(), label: "Partner Colleges" },
+              { num: stats.totalEvents.toLocaleString(), label: "Events Listed" },
+              { num: stats.totalStudents.toLocaleString(), label: "Students Connected" },
+              { num: stats.totalOrganizers.toLocaleString(), label: "Organizers" },
             ].map((stat, i) => (
               <motion.div
                 key={i}
@@ -139,7 +139,7 @@ export function AboutSection() {
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: i * 0.1 }}
-                className="p-[34px] px-[28px] rounded-[24px] bg-[var(--color-card)] border border-[var(--color-border)] hover:border-[var(--color-lime)] hover:shadow-[0_0_30px_rgba(215,255,61,0.05)] transition-all duration-300 flex flex-col justify-center"
+                className="p-5 sm:p-[34px] sm:px-[28px] rounded-[24px] bg-[var(--color-card)] border border-[var(--color-border)] hover:border-[var(--color-lime)] hover:shadow-[0_0_30px_rgba(var(--lime-rgb),0.05)] transition-all duration-300 flex flex-col justify-center"
               >
                 <h3 className="font-anton text-[40px] sm:text-[56px] text-[var(--color-lime)] leading-none mb-1">
                   {stat.num}
@@ -153,13 +153,13 @@ export function AboutSection() {
         </div>
 
         {/* Why CollegeEvents Section */}
-        <div className="mb-24">
+        <div className="mb-14 sm:mb-24">
           <motion.h3 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="font-anton text-[28px] sm:text-[36px] text-white tracking-wider mb-10 text-center"
+            className="font-anton text-[28px] sm:text-[36px] text-[var(--color-text-main)] tracking-wider mb-6 sm:mb-10 text-center"
           >
             WHY COLLEGEEVENTS?
           </motion.h3>
@@ -169,21 +169,21 @@ export function AboutSection() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6"
           >
             {features.map((feat, i) => (
               <motion.div
                 key={i}
                 variants={itemVariants}
-                className="p-8 rounded-[24px] bg-[var(--color-card)] border border-[var(--color-border)] hover:shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)] transition-all duration-300 flex flex-col gap-4"
+                className="p-5 sm:p-8 rounded-[24px] bg-[var(--color-card)] border border-[var(--color-border)] hover:shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)] transition-all duration-300 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 sm:flex sm:flex-col sm:gap-4"
               >
-                <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                <div className="row-span-2 w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[var(--color-card)] border border-[var(--color-border)] flex items-center justify-center">
                   {feat.icon}
                 </div>
-                <h4 className="font-archivo text-[18px] text-white font-extrabold">
+                <h4 className="font-archivo text-[16px] sm:text-[18px] text-[var(--color-text-main)] font-extrabold self-center">
                   {feat.title}
                 </h4>
-                <p className="text-[14.5px] text-[var(--color-text-muted)] leading-relaxed font-light">
+                <p className="text-[14px] sm:text-[14.5px] text-[var(--color-text-muted)] leading-relaxed font-light">
                   {feat.desc}
                 </p>
               </motion.div>
@@ -197,14 +197,14 @@ export function AboutSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.7 }}
-          className="p-10 sm:p-14 rounded-[24px] bg-[var(--color-card)] border border-[var(--color-border)] text-center max-w-4xl mx-auto backdrop-blur-[10px]"
+          className="p-6 sm:p-14 rounded-[24px] bg-[var(--color-card)] border border-[var(--color-border)] text-center max-w-4xl mx-auto backdrop-blur-[10px]"
         >
           <div className="w-10 h-10 mx-auto rounded-full bg-[var(--color-lime)]/10 flex items-center justify-center mb-6">
             <svg className="w-5 h-5 text-[var(--color-lime)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
           </div>
-          <h3 className="font-anton text-[32px] text-white tracking-wider mb-4">
+          <h3 className="font-anton text-[32px] text-[var(--color-text-main)] tracking-wider mb-4">
             OUR MISSION
           </h3>
           <p className="text-[16px] sm:text-[18px] leading-relaxed text-[var(--color-text-muted)] max-w-2xl mx-auto font-light">

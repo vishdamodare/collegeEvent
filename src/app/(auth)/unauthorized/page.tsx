@@ -11,7 +11,7 @@ export default function UnauthorizedPage() {
           ⚠️
         </div>
         <h2 className="text-[26px] font-anton uppercase mb-2">Access Denied</h2>
-        <p className="text-[14.5px] text-white/70 mb-8 max-w-xs leading-relaxed">
+        <p className="text-[14.5px] text-text-muted mb-8 max-w-xs leading-relaxed">
           You do not have the permission to access this resource. Please verify your login credentials or switch accounts.
         </p>
         

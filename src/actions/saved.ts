@@ -91,7 +91,7 @@ export async function getSavedEvents() {
           category: true,
           images: { where: { isHero: true }, take: 1 },
           organizer: { select: { id: true, name: true, image: true } },
-          _count: { select: { registrations: true } },
+          _count: { select: { registrations: { where: { status: { not: "CANCELLED" } } } } },
         },
       },
     },

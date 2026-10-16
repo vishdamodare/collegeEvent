@@ -11,50 +11,82 @@ import {
   Mail, 
   Shield 
 } from "lucide-react";
-import { MOCK_SETTINGS } from "@/data/admin";
-import { TeamMember } from "@/types/admin";
-import { getOrganizerProfile } from "@/actions/admin";
+import { toast } from "sonner";
+import {
+  getOrganizerProfile,
+  updateNotificationPrefs,
+  changeAdminPassword,
+  getTeamMembers,
+  addTeamMember,
+  removeTeamMember,
+  requestAccountDeletion,
+} from "@/actions/admin";
+
+type Member = { id: string; name: string; email: string; role: string; status: string };
 
 export default function SettingsPage() {
-  const [team, setTeam] = useState<TeamMember[]>(MOCK_SETTINGS.team);
-  const [emailAlerts, setEmailAlerts] = useState(MOCK_SETTINGS.notifications.emailAlerts);
-  const [weeklyDigest, setWeeklyDigest] = useState(MOCK_SETTINGS.notifications.weeklyDigest);
+  const [team, setTeam] = useState<Member[]>([]);
+  const [emailAlerts, setEmailAlerts] = useState(true);
+  const [weeklyDigest, setWeeklyDigest] = useState(false);
   const [newMemberEmail, setNewMemberEmail] = useState("");
   const [newMemberRole, setNewMemberRole] = useState<"ADMIN" | "EDITOR" | "VIEWER">("EDITOR");
   const [collegeName, setCollegeName] = useState("college");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [deletionRequested, setDeletionRequested] = useState(false);
+
+  const loadTeam = () =>
+    getTeamMembers()
+      .then(({ owner, members }) =>
+        setTeam([
+          { id: "owner", name: owner.name, email: owner.email, role: "OWNER", status: "ACTIVE" },
+          ...members.map((m) => ({ ...m, name: m.email.split("@")[0] })),
+        ])
+      )
+      .catch(() => {});
 
   useEffect(() => {
     getOrganizerProfile()
       .then((res) => {
-        if (res?.college) {
-          setCollegeName(res.college);
-        }
+        if (res?.college) setCollegeName(res.college);
+        setEmailAlerts(res.emailAlerts);
+        setWeeklyDigest(res.weeklyDigest);
+        setDeletionRequested(!!res.deletionRequestedAt);
       })
       .catch(() => {});
+    loadTeam();
   }, []);
 
-  const handleAddMember = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMemberEmail) return;
-
-    const newMember: TeamMember = {
-      id: `team-${Math.random().toString(36).substr(2, 9)}`,
-      name: newMemberEmail.split("@")[0],
-      email: newMemberEmail,
-      role: newMemberRole,
-      status: "PENDING",
-      addedAt: new Date().toISOString(),
-    };
-
-    setTeam([...team, newMember]);
-    setNewMemberEmail("");
-    alert("Invitation successfully sent to " + newMemberEmail);
+  const savePrefs = async (prefs: { emailAlerts: boolean; weeklyDigest: boolean }) => {
+    setEmailAlerts(prefs.emailAlerts);
+    setWeeklyDigest(prefs.weeklyDigest);
+    const res = await updateNotificationPrefs(prefs);
+    if (res.error) toast.error(res.error);
+    else toast.success("Notification preferences saved");
   };
 
-  const handleRemoveMember = (id: string) => {
-    if (confirm("Are you sure you want to remove this team member?")) {
-      setTeam(team.filter(m => m.id !== id));
-    }
+  const handleChangePassword = async () => {
+    const res = await changeAdminPassword(currentPassword, newPassword);
+    if (res.error) return toast.error(res.error);
+    toast.success("Password updated");
+    setCurrentPassword("");
+    setNewPassword("");
+  };
+
+  const handleAddMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMemberEmail) return;
+    const res = await addTeamMember(newMemberEmail, newMemberRole);
+    if (res.error) return toast.error(res.error);
+    toast.success("Team member added: " + newMemberEmail);
+    setNewMemberEmail("");
+    loadTeam();
+  };
+
+  const handleRemoveMember = async (id: string) => {
+    if (!confirm("Are you sure you want to remove this team member?")) return;
+    await removeTeamMember(id);
+    setTeam(team.filter((m) => m.id !== id));
   };
 
   return (
@@ -82,7 +114,7 @@ export default function SettingsPage() {
                 <input 
                   type="checkbox" 
                   checked={emailAlerts}
-                  onChange={(e) => setEmailAlerts(e.target.checked)}
+                  onChange={(e) => savePrefs({ emailAlerts: e.target.checked, weeklyDigest })}
                   className="rounded border-gray-600 bg-gray-800 text-[var(--color-lime)] focus:ring-[var(--color-lime)] cursor-pointer"
                 />
               </label>
@@ -95,7 +127,7 @@ export default function SettingsPage() {
                 <input 
                   type="checkbox" 
                   checked={weeklyDigest}
-                  onChange={(e) => setWeeklyDigest(e.target.checked)}
+                  onChange={(e) => savePrefs({ emailAlerts, weeklyDigest: e.target.checked })}
                   className="rounded border-gray-600 bg-gray-800 text-[var(--color-lime)] focus:ring-[var(--color-lime)] cursor-pointer"
                 />
               </label>
@@ -112,6 +144,8 @@ export default function SettingsPage() {
                 <label className="block text-[12px] font-bold mb-2 text-white/60">Current Password</label>
                 <input 
                   type="password" 
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
                   className="w-full px-4 py-2.5 rounded-xl bg-[#141414] border border-white/5 text-white text-[13px] outline-none" 
                   placeholder="••••••••"
                 />
@@ -120,6 +154,8 @@ export default function SettingsPage() {
                 <label className="block text-[12px] font-bold mb-2 text-white/60">New Password</label>
                 <input 
                   type="password" 
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
                   className="w-full px-4 py-2.5 rounded-xl bg-[#141414] border border-white/5 text-white text-[13px] outline-none" 
                   placeholder="Minimum 8 characters"
                 />
@@ -127,7 +163,7 @@ export default function SettingsPage() {
             </div>
             <div className="flex justify-end pt-2">
               <button 
-                onClick={() => alert("Password successfully updated!")}
+                onClick={handleChangePassword}
                 className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-white text-[12px] font-bold cursor-pointer transition-colors"
               >
                 Change Password
@@ -146,14 +182,17 @@ export default function SettingsPage() {
                 <p className="text-[11px] text-white/55 mt-1">Permanently remove your {collegeName} organizer access and cancel all active fests.</p>
               </div>
               <button 
-                onClick={() => {
-                  if (confirm("CRITICAL WARNING: This will permanently delete your organizer profile. Are you sure?")) {
-                    alert("Account deletion request submitted to CampusEvents admin.");
-                  }
+                disabled={deletionRequested}
+                onClick={async () => {
+                  if (!confirm("CRITICAL WARNING: This will permanently delete your organizer profile. Are you sure?")) return;
+                  const res = await requestAccountDeletion();
+                  if (res.error) return toast.error(res.error);
+                  setDeletionRequested(true);
+                  toast.success("Account deletion request submitted to CampusEvents admin.");
                 }}
                 className="px-4 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/25 border border-red-500/20 text-red-400 font-bold text-[12.5px] cursor-pointer transition-colors whitespace-nowrap"
               >
-                Request Deletion
+                {deletionRequested ? "Deletion Requested" : "Request Deletion"}
               </button>
             </div>
           </div>

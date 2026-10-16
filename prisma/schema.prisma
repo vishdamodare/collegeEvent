@@ -3,7 +3,9 @@ datasource db {
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  // One SQL query per findMany/include instead of one round trip per relation (Neon is ~250ms away)
+  previewFeatures = ["relationJoins"]
 }
 
 // ─── Enums ──────────────────────────────────────────────────────────────────
@@ -58,6 +60,7 @@ model User {
   // Events created by this user (when role = ORGANIZER or SUPER_ADMIN)
   events Event[]
   savedEvents SavedEvent[]
+  teamMembers OrganizerTeamMember[]
 
   @@index([email])
   @@index([role])
@@ -144,6 +147,7 @@ model OrganizerProfile {
   college              String
   department           String
   position             String
+  phone                String?   // required by the /organizer sign-up form; nullable for older rows
   description          String?
   website              String?
   instagram            String?
@@ -151,6 +155,9 @@ model OrganizerProfile {
   address              String?
   verificationStatus   String    @default("PENDING") // PENDING | APPROVED | REJECTED | BLOCKED
   verificationDocument String?
+  emailAlerts          Boolean   @default(true)
+  weeklyDigest         Boolean   @default(false)
+  deletionRequestedAt  DateTime?
   approvedBy           String?
   approvedAt           DateTime?
   createdAt            DateTime  @default(now())
@@ -187,6 +194,7 @@ model Event {
   teamMinSize         Int         @default(1)
   teamMaxSize         Int         @default(1)
   additionalQuestions Json?
+  details             Json? // full EventWizard payload (schedule, venue, pricing, rules, sponsors…)
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
 
@@ -329,4 +337,18 @@ model Notification {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+// Co-organizers invited from Admin → Settings
+model OrganizerTeamMember {
+  id          String   @id @default(uuid())
+  organizerId String
+  organizer   User     @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  email       String
+  role        String   @default("EDITOR") // ADMIN | EDITOR | VIEWER
+  status      String   @default("PENDING") // PENDING | ACTIVE
+  createdAt   DateTime @default(now())
+
+  @@unique([organizerId, email])
+  @@index([organizerId])
 }

@@ -42,11 +42,12 @@ export default async function AdminEventDetailPage({ params }: PageProps) {
       category: true,
       images: { where: { isHero: true }, take: 1 },
       organizer: true,
-      _count: { select: { registrations: true } },
+      _count: { select: { registrations: { where: { status: { not: "CANCELLED" } } } } },
     },
   });
 
-  if (!event) {
+  // Only the owning organizer or a super admin may see an event's console
+  if (!event || (session.user.role !== UserRole.SUPER_ADMIN && event.organizerId !== session.user.id)) {
     notFound();
   }
 

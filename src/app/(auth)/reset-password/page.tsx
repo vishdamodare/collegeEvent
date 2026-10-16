@@ -78,26 +78,26 @@ function ResetPasswordContent() {
       {token && !message && (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 mb-6">
           <div>
-            <label className="block text-[13px] font-semibold mb-2 text-white/70">New Password</label>
+            <label className="block text-[13px] font-semibold mb-2 text-text-muted">New Password</label>
             <input 
               type="password" 
               placeholder="••••••••" 
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3.5 rounded-[12px] bg-[#141414] border border-[#2A2A2A] text-white text-[15px] outline-none transition-colors focus:border-[var(--color-lime)] placeholder:text-[#555]" 
+              className="w-full px-4 py-3.5 rounded-[12px] bg-card border border-border text-text-main text-[15px] outline-none transition-colors focus:border-[var(--color-lime)] placeholder:text-text-faint" 
             />
           </div>
 
           <div>
-            <label className="block text-[13px] font-semibold mb-2 text-white/70">Confirm New Password</label>
+            <label className="block text-[13px] font-semibold mb-2 text-text-muted">Confirm New Password</label>
             <input 
               type="password" 
               placeholder="••••••••" 
               required
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-4 py-3.5 rounded-[12px] bg-[#141414] border border-[#2A2A2A] text-white text-[15px] outline-none transition-colors focus:border-[var(--color-lime)] placeholder:text-[#555]" 
+              className="w-full px-4 py-3.5 rounded-[12px] bg-card border border-border text-text-main text-[15px] outline-none transition-colors focus:border-[var(--color-lime)] placeholder:text-text-faint" 
             />
           </div>
 
@@ -123,7 +123,7 @@ function ResetPasswordContent() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div className="text-white text-center p-8">Loading reset parameters...</div>}>
+    <Suspense fallback={<div className="text-text-main text-center p-8">Loading reset parameters...</div>}>
       <ResetPasswordContent />
     </Suspense>
   );
