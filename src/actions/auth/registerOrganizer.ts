@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { organizerSignupSchema } from "@/validators/organizerSignupSchema";
 
-export async function registerOrganizerAction(formData: any) {
+export async function registerOrganizerAction(formData: unknown) {
   // 1. Server-side validation
   const validation = organizerSignupSchema.safeParse(formData);
   if (!validation.success) {
@@ -83,13 +83,13 @@ export async function registerOrganizerAction(formData: any) {
       success: true,
       message: "Organizer account created!",
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Organizer registration failed:", error);
     return {
       success: false,
       // Better Auth errors carry a user-facing body.message; anything else (e.g. DB errors)
       // stays in the server log so internals never reach the browser
-      error: error?.body?.message || "Something went wrong creating your account. Please try again.",
+      error: (error as { body?: { message?: string } })?.body?.message || "Something went wrong creating your account. Please try again.",
     };
   }
 }

@@ -12,8 +12,8 @@ import { getAdminAnalytics, getAdminDashboardStats } from "@/actions/admin";
 import { ChartsSection } from "@/components/admin/ChartsSection";
 
 export default function AnalyticsPage() {
-  const [analytics, setAnalytics] = useState<any>(null);
-  const [stats, setStats] = useState<any>(null);
+  const [analytics, setAnalytics] = useState<Awaited<ReturnType<typeof getAdminAnalytics>> | null>(null);
+  const [stats, setStats] = useState<Awaited<ReturnType<typeof getAdminDashboardStats>>["quickStats"] | null>(null);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -87,7 +87,7 @@ export default function AnalyticsPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {analytics.topEvents.map((evt: any, idx: number) => (
+                {analytics.topEvents.map((evt, idx: number) => (
                   <div key={idx} className="flex justify-between items-center pb-4 border-b border-white/5 last:border-0 last:pb-0">
                     <div className="flex items-center gap-3">
                       <span className="text-sm font-bold text-white/40">#{idx + 1}</span>

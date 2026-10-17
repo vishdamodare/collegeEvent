@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Search, X } from "lucide-react";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useRef } from "react";
 
 interface SearchBarProps {
   placeholder?: string;
@@ -18,21 +18,19 @@ export function SearchBar({
   debounceMs = 400 
 }: SearchBarProps) {
   const [value, setValue] = useState(defaultValue);
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  const debouncedSearch = useCallback(
-    (() => {
-      let timer: NodeJS.Timeout;
-      return (query: string) => {
-        clearTimeout(timer);
-        timer = setTimeout(() => onSearch(query), debounceMs);
-      };
-    })(),
-    [onSearch, debounceMs]
-  );
-
-  useEffect(() => {
+  // Re-sync when the parent changes defaultValue (e.g. filters reset) — React's "adjust state on prop change"
+  const [syncedDefault, setSyncedDefault] = useState(defaultValue);
+  if (defaultValue !== syncedDefault) {
+    setSyncedDefault(defaultValue);
     setValue(defaultValue);
-  }, [defaultValue]);
+  }
+
+  const debouncedSearch = (query: string) => {
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => onSearch(query), debounceMs);
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
@@ -41,6 +39,7 @@ export function SearchBar({
   };
 
   const handleClear = () => {
+    clearTimeout(timer.current);
     setValue("");
     onSearch("");
   };

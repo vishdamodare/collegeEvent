@@ -101,7 +101,7 @@ export function ContactSection() {
             GET IN TOUCH
           </h2>
           <p className="text-lg sm:text-xl text-[var(--color-text-muted)] font-medium max-w-2xl">
-            Questions, partnerships or support? We're here to help.
+            Questions, partnerships or support? We&apos;re here to help.
           </p>
         </motion.div>
 

@@ -25,8 +25,8 @@ export async function uploadFileAction(formData: FormData) {
     // Perform upload
     const fileUrl = await storageService.uploadFile(file, folder);
     return { success: true, url: fileUrl };
-  } catch (error: any) {
+  } catch (error) {
     console.error("File upload action failed:", error);
-    return { success: false, error: error.message || "Failed to upload file" };
+    return { success: false, error: (error as Error).message || "Failed to upload file" };
   }
 }

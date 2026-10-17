@@ -3,7 +3,7 @@
 import { auth } from "@/lib/auth";
 import { resetPasswordSchema } from "@/validators/passwordSchema";
 
-export async function resetPasswordAction(formData: any) {
+export async function resetPasswordAction(formData: { token?: string } & Record<string, unknown>) {
   const validation = resetPasswordSchema.safeParse(formData);
   if (!validation.success) {
     return {
@@ -35,11 +35,11 @@ export async function resetPasswordAction(formData: any) {
       success: true,
       message: "Password reset successfully! Redirecting to login page...",
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Reset password action error:", error);
     return {
       success: false,
-      error: error.message || "Failed to reset password. Link may be invalid or expired.",
+      error: (error as Error).message || "Failed to reset password. Link may be invalid or expired.",
     };
   }
 }

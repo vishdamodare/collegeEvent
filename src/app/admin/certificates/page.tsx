@@ -15,7 +15,7 @@ import { getEligibleCertificateEvents, issueBulkCertificatesAction } from "@/act
 import { toast } from "sonner";
 
 export default function CertificatesPage() {
-  const [events, setEvents] = useState<any[]>([]);
+  const [events, setEvents] = useState<Awaited<ReturnType<typeof getEligibleCertificateEvents>>>([]);
   const [selectedEventId, setSelectedEventId] = useState<string>("");
   const [templateFile, setTemplateFile] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -59,8 +59,8 @@ export default function CertificatesPage() {
         toast.success(`Certificates successfully issued and emailed to ${res.count} attendees!`);
         loadEligibleEvents();
       }
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to issue certificates.");
+    } catch (err) {
+      toast.error((err as Error)?.message || "Failed to issue certificates.");
     } finally {
       setIsSending(false);
     }

@@ -66,11 +66,11 @@ export function EventTimeline({ events, onOpenDetails }: EventTimelineProps) {
       <div className="max-w-[900px] mx-auto px-5 sm:px-10">
         <div className="reveal mb-8 sm:mb-[56px]">
           <span className="eyebrow">
-            <span className="dot"></span> Don't miss out
+            <span className="dot"></span> Don&apos;t miss out
           </span>
           <h2 className="text-[clamp(32px,4.2vw,52px)] mt-4 mb-[14px]">Upcoming on your radar</h2>
           <p className="text-[var(--color-text-muted)] text-[17px] font-normal leading-[1.6]">
-            A running order of what's next across your favorite campuses.
+            A running order of what&apos;s next across your favorite campuses.
           </p>
         </div>
 

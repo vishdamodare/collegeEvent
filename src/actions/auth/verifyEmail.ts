@@ -17,11 +17,11 @@ export async function verifyEmailAction(token: string) {
     });
 
     return { success: true, message: "Email verified successfully! You can now log in." };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Email verification action error:", error);
     return {
       success: false,
-      error: error.message || "Verification link is invalid or has expired.",
+      error: (error as Error).message || "Verification link is invalid or has expired.",
     };
   }
 }
@@ -52,11 +52,11 @@ export async function resendVerificationAction(email: string) {
     });
 
     return { success: true, message: "Verification email sent successfully." };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Resend verification action error:", error);
     return {
       success: false,
-      error: error.message || "Failed to resend verification email.",
+      error: (error as Error).message || "Failed to resend verification email.",
     };
   }
 }

@@ -3,7 +3,7 @@
 import { auth } from "@/lib/auth";
 import { forgotPasswordSchema } from "@/validators/passwordSchema";
 
-export async function forgotPasswordAction(formData: any) {
+export async function forgotPasswordAction(formData: unknown) {
   const validation = forgotPasswordSchema.safeParse(formData);
   if (!validation.success) {
     return {
@@ -28,7 +28,7 @@ export async function forgotPasswordAction(formData: any) {
       success: true,
       message: "If that email is registered, we have sent a password reset link.",
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Forgot password request failed:", error);
     return {
       success: true,

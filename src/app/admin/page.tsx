@@ -137,7 +137,7 @@ export default async function AdminDashboard() {
               </div>
             ) : (
               <div className="space-y-4">
-                {recentRegistrations.map((reg: any) => (
+                {recentRegistrations.map((reg) => (
                   <div key={reg.id} className="flex justify-between items-start pb-4 border-b border-white/5 last:border-0 last:pb-0">
                     <div>
                       <h4 className="text-[13px] font-bold text-white leading-tight">{reg.participantName}</h4>
@@ -175,7 +175,7 @@ export default async function AdminDashboard() {
               </div>
             ) : (
               <div className="space-y-4">
-                {recentPayments.map((pay: any) => (
+                {recentPayments.map((pay) => (
                   <div key={pay.id} className="flex justify-between items-center pb-4 border-b border-white/5 last:border-0 last:pb-0">
                     <div>
                       <h4 className="text-[13px] font-bold text-white leading-tight">{pay.participantName}</h4>

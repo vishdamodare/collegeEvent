@@ -44,8 +44,8 @@ export function StudentSignupWizard({ onBack }: StudentSignupWizardProps) {
       const res = await registerStudentAction({ name, email, college, password });
       if (res.success) setDone(true);
       else setError(res.error || "Sign up failed");
-    } catch (err: any) {
-      setError(err?.message || "Something went wrong. Please try again.");
+    } catch (err) {
+      setError((err as Error)?.message || "Something went wrong. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

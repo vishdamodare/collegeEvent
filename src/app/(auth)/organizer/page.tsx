@@ -70,8 +70,8 @@ export default function OrganizerAuthPage() {
         return;
       }
       await signIn();
-    } catch (err: any) {
-      setError(err?.message || "Something went wrong. Please try again.");
+    } catch (err) {
+      setError((err as Error)?.message || "Something went wrong. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -92,8 +92,8 @@ export default function OrganizerAuthPage() {
         return;
       }
       await signIn();
-    } catch (err: any) {
-      setError(err?.message || "Something went wrong. Please try again.");
+    } catch (err) {
+      setError((err as Error)?.message || "Something went wrong. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

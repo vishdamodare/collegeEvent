@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { EventStatus, UserRole, RegistrationStatus } from "@prisma/client";
+import { EventStatus, UserRole, RegistrationStatus, Prisma } from "@prisma/client";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { sendCertificateIssuedEmail } from "@/lib/email";
@@ -77,8 +77,8 @@ export async function getAdminDashboardStats() {
       college: reg.student.college,
       eventName: reg.event.title,
     })),
-    recentPayments: [], // No payments for free events
-    pendingTasks: [], // Start completely clean
+    recentPayments: [] as { id: string; participantName: string; eventName: string; amount: number; status: string }[], // No payments for free events
+    pendingTasks: [] as { id: string; title: string; type: string }[], // Start completely clean
   };
 }
 
@@ -207,9 +207,9 @@ export async function createEvent(data: EventFormData) {
     revalidatePath("/admin/events");
     revalidatePath("/");
     return { success: true, event };
-  } catch (err: any) {
+  } catch (err) {
     console.error("Failed to create event:", err);
-    return { error: `Failed to create event: ${err.message}` };
+    return { error: `Failed to create event: ${(err as Error).message}` };
   }
 }
 
@@ -293,9 +293,9 @@ export async function updateEvent(id: string, data: EventFormData) {
     revalidatePath("/admin/events");
     revalidatePath("/");
     return { success: true };
-  } catch (err: any) {
+  } catch (err) {
     console.error("Failed to update event:", err);
-    return { error: `Failed to update event: ${err.message}` };
+    return { error: `Failed to update event: ${(err as Error).message}` };
   }
 }
 
@@ -343,7 +343,7 @@ export async function duplicateEvent(id: string) {
 
     revalidatePath("/admin/events");
     return { success: true, event: newEvent };
-  } catch (err: any) {
+  } catch (err) {
     console.error("Failed to duplicate event:", err);
     return { error: "Failed to duplicate event." };
   }
@@ -362,7 +362,7 @@ export async function deleteEvent(id: string) {
     revalidatePath("/admin/events");
     revalidatePath("/");
     return { success: true };
-  } catch (err: any) {
+  } catch (err) {
     console.error("Failed to delete event:", err);
     return { error: "Failed to delete event." };
   }
@@ -388,7 +388,7 @@ export async function archiveEvent(id: string) {
     revalidatePath(`/events/${event.slug}`);
     revalidatePath("/");
     return { success: true };
-  } catch (err: any) {
+  } catch (err) {
     console.error("Failed to archive event:", err);
     return { error: "Failed to archive event." };
   }
@@ -408,7 +408,7 @@ export async function getAdminEvents(options?: {
   const { search, category, status, sortBy = "date", page = 1, perPage = 10 } = options ?? {};
   const skip = (page - 1) * perPage;
 
-  const where: Record<string, any> = {
+  const where: Prisma.EventWhereInput = {
     organizerId: user.id,
   };
 
@@ -471,7 +471,7 @@ export async function createCategory(name: string, icon: string, description: st
     });
     revalidatePath("/admin/categories");
     return { success: true, category };
-  } catch (err: any) {
+  } catch (err) {
     return { error: "Category name or slug already exists." };
   }
 }
@@ -491,7 +491,7 @@ export async function updateCategory(id: string, name: string, icon: string, des
     });
     revalidatePath("/admin/categories");
     return { success: true };
-  } catch (err: any) {
+  } catch (err) {
     return { error: "Failed to update category." };
   }
 }
@@ -523,7 +523,7 @@ export async function archiveCategory(id: string, isArchived: boolean) {
     });
     revalidatePath("/admin/categories");
     return { success: true };
-  } catch (err: any) {
+  } catch (err) {
     return { error: "Failed to modify category archive status." };
   }
 }
@@ -571,7 +571,7 @@ export async function updateOrganizerProfile(data: OrganizerProfileData) {
     revalidatePath("/admin/profile");
     revalidatePath("/admin/college");
     return { success: true };
-  } catch (err: any) {
+  } catch (err) {
     return { error: "Failed to update organizer profile." };
   }
 }
@@ -622,8 +622,8 @@ export async function changeAdminPassword(currentPassword: string, newPassword: 
       headers: await headers(),
     });
     return { success: true };
-  } catch (err: any) {
-    return { error: err?.body?.message || err?.message || "Failed to change password." };
+  } catch (err) {
+    return { error: (err as { body?: { message?: string } })?.body?.message || (err as Error)?.message || "Failed to change password." };
   }
 }
 
@@ -655,8 +655,8 @@ export async function addTeamMember(email: string, role: string) {
     });
     revalidatePath("/admin/settings");
     return { success: true };
-  } catch (err: any) {
-    if (err?.code === "P2002") return { error: "This email is already on your team." };
+  } catch (err) {
+    if ((err as { code?: string })?.code === "P2002") return { error: "This email is already on your team." };
     return { error: "Failed to add team member." };
   }
 }
@@ -931,7 +931,7 @@ export async function getAdminAttendanceAction(options?: { eventId?: string; sea
   const user = await getAuthenticatedAdmin();
   const { eventId, search, status = "ALL" } = options ?? {};
 
-  const where: any = {
+  const where: Prisma.RegistrationWhereInput = {
     event: {
       organizerId: user.role === "SUPER_ADMIN" ? undefined : user.id,
       ...(eventId ? { id: eventId } : {}),
@@ -1011,7 +1011,7 @@ export async function getAdminTicketsAction(options?: { eventId?: string; search
   const user = await getAuthenticatedAdmin();
   const { eventId, search, status } = options ?? {};
 
-  const where: any = {
+  const where: Prisma.TicketWhereInput = {
     event: {
       organizerId: user.role === "SUPER_ADMIN" ? undefined : user.id,
       ...(eventId ? { id: eventId } : {}),
@@ -1104,7 +1104,7 @@ export async function toggleEventRegistrationStatusAction(eventId: string, isClo
     revalidatePath("/");
 
     return { success: true, isClosed: updated.isClosed };
-  } catch (err: any) {
+  } catch (err) {
     console.error("Failed to toggle event registration status:", err);
     return { error: "Failed to update registration status." };
   }
@@ -1121,7 +1121,7 @@ export async function getAdminRegistrationsAction(options?: {
   const user = await getAuthenticatedAdmin();
   const { eventId, search, status } = options ?? {};
 
-  const where: any = {
+  const where: Prisma.RegistrationWhereInput = {
     event: {
       organizerId: user.role === "SUPER_ADMIN" ? undefined : user.id,
       ...(eventId ? { id: eventId } : {}),

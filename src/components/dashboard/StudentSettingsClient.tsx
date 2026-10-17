@@ -75,8 +75,8 @@ export function StudentSettingsClient({ user, profile }: StudentSettingsClientPr
         setNewPassword("");
         setConfirmPassword("");
       }
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to update password.");
+    } catch (err) {
+      toast.error((err as Error)?.message || "Failed to update password.");
     } finally {
       setIsUpdatingPassword(false);
     }
@@ -95,8 +95,8 @@ export function StudentSettingsClient({ user, profile }: StudentSettingsClientPr
       } else {
         toast.success("Notification preferences saved successfully!");
       }
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to save preferences.");
+    } catch (err) {
+      toast.error((err as Error)?.message || "Failed to save preferences.");
     } finally {
       setIsSavingPreferences(false);
     }

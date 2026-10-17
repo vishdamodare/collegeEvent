@@ -3,7 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useState, useEffect } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2, ShieldCheck, Clock } from "lucide-react";
@@ -31,14 +31,12 @@ interface OrganizerProfileFormProps {
   };
 }
 
+const subscribeNoop = () => () => {};
+
 export function OrganizerProfileForm({ initialData }: OrganizerProfileFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(subscribeNoop, () => true, () => false);
 
   const {
     register,

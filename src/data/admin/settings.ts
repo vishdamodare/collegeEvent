@@ -1,6 +1,6 @@
 import { AdminSettings } from "@/types/admin";
 
-export let MOCK_SETTINGS: AdminSettings = {
+export const MOCK_SETTINGS: AdminSettings = {
   profile: {
     name: "Dr. Sandeep Kamble",
     email: "sandeep.kamble@vit.edu",

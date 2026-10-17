@@ -19,11 +19,49 @@ import {
   Users
 } from "lucide-react";
 import { getAdminEvents, duplicateEvent, deleteEvent, archiveEvent } from "@/actions/admin";
-import { AdminEvent, EventStatus } from "@/types/admin";
+import { EventStatus } from "@/types/admin";
 import { toast } from "sonner";
 
+type AdminEventsResult = NonNullable<Awaited<ReturnType<typeof getAdminEvents>>["events"]>;
+
+// List-row view of an event (a subset of AdminEvent plus signup stats)
+const toRow = (e: AdminEventsResult[number]) => ({
+    id: e.id,
+    status: e.status,
+    createdAt: e.createdAt.toISOString(),
+    updatedAt: e.updatedAt.toISOString(),
+    basic: {
+      title: e.title,
+      slug: e.slug,
+      category: e.category?.name || "General",
+      date: e.date.toLocaleDateString(),
+      venue: e.location,
+      tags: [],
+      shortDescription: e.description.substring(0, 100),
+    },
+    media: {
+      banner: e.images.find((img) => img.isHero)?.url || ""
+    },
+    schedule: {
+      start: e.date.toISOString(),
+    },
+    pricing: {
+      isFree: true,
+      fee: 0,
+    },
+    capacity: e.capacity,
+    stats: {
+      currentRegistrations: e._count?.registrations || 0,
+      waitingList: 0,
+      attendance: 0,
+      revenue: 0,
+      certificatesIssued: 0
+    }
+});
+type AdminEventRow = ReturnType<typeof toRow>;
+
 export default function AdminEventsPage() {
-  const [events, setEvents] = useState<AdminEvent[]>([]);
+  const [events, setEvents] = useState<AdminEventRow[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [activeTab, setActiveTab] = useState<"ALL" | "PUBLISHED" | "DRAFT" | "ARCHIVED">("ALL");
@@ -34,40 +72,8 @@ export default function AdminEventsPage() {
   const loadEvents = async () => {
     const res = await getAdminEvents();
     if (res.events) {
-      const mapped = res.events.map((e: any) => ({
-        id: e.id,
-        status: e.status,
-        createdAt: e.createdAt.toISOString(),
-        updatedAt: e.updatedAt.toISOString(),
-        basic: {
-          title: e.title,
-          slug: e.slug,
-          category: e.category?.name || "General",
-          date: e.date.toLocaleDateString(),
-          venue: e.location,
-          tags: [],
-          shortDescription: e.description.substring(0, 100),
-        },
-        media: {
-          banner: e.images.find((img: any) => img.isHero)?.url || ""
-        },
-        schedule: {
-          start: e.date.toISOString(),
-        },
-        pricing: {
-          isFree: true,
-          fee: 0,
-        },
-        capacity: e.capacity,
-        stats: {
-          currentRegistrations: e._count?.registrations || 0,
-          waitingList: 0,
-          attendance: 0,
-          revenue: 0,
-          certificatesIssued: 0
-        }
-      }));
-      setEvents(mapped as any);
+      const mapped = res.events.map(toRow);
+      setEvents(mapped);
     }
   };
 
@@ -89,9 +95,9 @@ export default function AdminEventsPage() {
     // 3. Tab Filter
     let matchesTab = true;
     if (activeTab === "PUBLISHED") {
-      matchesTab = evt.status === "PUBLISHED" || evt.status === "REGISTRATION_OPEN" || evt.status === "EVENT_LIVE";
+      matchesTab = evt.status === "PUBLISHED";
     } else if (activeTab === "DRAFT") {
-      matchesTab = evt.status === "DRAFT" || evt.status === "PENDING_REVIEW";
+      matchesTab = evt.status === "DRAFT";
     } else if (activeTab === "ARCHIVED") {
       matchesTab = evt.status === "ARCHIVED";
     }
@@ -100,7 +106,7 @@ export default function AdminEventsPage() {
   });
 
   // Action Handlers
-  const handleDuplicate = (evt: AdminEvent) => {
+  const handleDuplicate = (evt: AdminEventRow) => {
     startTransition(async () => {
       const res = await duplicateEvent(evt.id);
       if (res.error) {
@@ -141,7 +147,7 @@ export default function AdminEventsPage() {
     setOpenDropdownId(null);
   };
 
-  const getStatusBadge = (status: EventStatus) => {
+  const getStatusBadge = (status: EventStatus | AdminEventRow["status"]) => {
     switch (status) {
       case "PUBLISHED":
       case "REGISTRATION_OPEN":
@@ -348,7 +354,7 @@ export default function AdminEventsPage() {
                     <p className="text-[10px] text-white/30 leading-none">TOTAL SIGNUPS</p>
                     <p className="text-[13px] font-bold text-white mt-1 flex items-center gap-1 justify-end">
                       <Users className="w-3.5 h-3.5 text-white/40" />
-                      {(evt as any).stats?.currentRegistrations ?? 0}
+                      {evt.stats.currentRegistrations}
                     </p>
                   </div>
                 </div>

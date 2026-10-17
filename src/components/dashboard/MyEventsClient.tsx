@@ -113,7 +113,7 @@ export function MyEventsClient({ registrations }: MyEventsClientProps) {
     });
   };
 
-  const getGoogleCalendarUrl = (event: any) => {
+  const getGoogleCalendarUrl = (event: { title: string; description?: string | null; location: string; date: Date | string }) => {
     const title = encodeURIComponent(event.title);
     const details = encodeURIComponent(event.description || "");
     const location = encodeURIComponent(event.location);

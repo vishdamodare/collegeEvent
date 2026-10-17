@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { loginSchema } from "@/validators/loginSchema";
 
-export async function loginAction(formData: any) {
+export async function loginAction(formData: unknown) {
   // 1. Validate credentials format using Zod
   const validation = loginSchema.safeParse(formData);
   if (!validation.success) {
@@ -34,7 +34,7 @@ export async function loginAction(formData: any) {
 
     // Return success to proceed with Better Auth client signIn
     return { success: true, role: user.role };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Login action validation error:", error);
     return {
       success: false,

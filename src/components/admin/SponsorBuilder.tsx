@@ -136,7 +136,7 @@ export function SponsorBuilder({ sponsors, onChange }: SponsorBuilderProps) {
                       <label className="block text-[11px] font-bold text-white/40 uppercase mb-1.5">Category Tier</label>
                       <select
                         value={s.category}
-                        onChange={(e) => updateSponsor(s.id, { category: e.target.value as any })}
+                        onChange={(e) => updateSponsor(s.id, { category: e.target.value as SponsorType["category"] })}
                         className="w-full px-3 py-2.5 rounded-lg bg-[#181818] border border-white/5 text-white text-[13px] outline-none cursor-pointer"
                       >
                         {CATEGORIES.map(c => (

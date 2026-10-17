@@ -29,10 +29,10 @@ export async function POST(req: NextRequest) {
       ...signatureData,
       folder: paramsToSign.folder,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Cloudinary sign error:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to generate upload signature" },
+      { error: (error as Error).message || "Failed to generate upload signature" },
       { status: 500 }
     );
   }

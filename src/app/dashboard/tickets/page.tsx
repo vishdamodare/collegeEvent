@@ -55,7 +55,7 @@ export default async function StudentTicketsPage() {
         <div className="py-20 text-center text-white/30 space-y-4 rounded-3xl border border-white/10 bg-[#121212]/40">
           <Ticket className="w-12 h-12 mx-auto text-white/20" />
           <p className="text-base font-bold uppercase tracking-wider">No event tickets found</p>
-          <p className="text-sm text-white/30">You haven't registered for any events yet.</p>
+          <p className="text-sm text-white/30">You haven&apos;t registered for any events yet.</p>
           <Link
             href="/events"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--color-lime)] text-black font-bold text-xs uppercase tracking-wider hover:bg-[var(--color-lime)]/90 transition-colors"

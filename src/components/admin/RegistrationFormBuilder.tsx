@@ -67,7 +67,7 @@ export function RegistrationFormBuilder({ fields, onChange }: RegistrationFormBu
           <select
             onChange={(e) => {
               if (e.target.value) {
-                addCustomField(e.target.value as any);
+                addCustomField(e.target.value as FormField["type"]);
                 e.target.value = "";
               }
             }}

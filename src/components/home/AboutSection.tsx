@@ -115,7 +115,7 @@ export function AboutSection({ stats }: { stats: { totalColleges: number; totalE
             className="text-lg leading-relaxed text-[var(--color-text-muted)] space-y-6 font-light animate-text"
           >
             <p>
-              CollegeEvents is India's platform dedicated to discovering, exploring and registering for inter-college festivals, cultural events, sports tournaments, workshops, hackathons and competitions.
+              CollegeEvents is India&apos;s platform dedicated to discovering, exploring and registering for inter-college festivals, cultural events, sports tournaments, workshops, hackathons and competitions.
             </p>
             <p>
               Instead of following dozens of college Instagram pages and websites, students can discover everything in one place.
@@ -208,7 +208,7 @@ export function AboutSection({ stats }: { stats: { totalColleges: number; totalE
             OUR MISSION
           </h3>
           <p className="text-[16px] sm:text-[18px] leading-relaxed text-[var(--color-text-muted)] max-w-2xl mx-auto font-light">
-            To become India's largest student event ecosystem where every student can discover opportunities beyond their own campus.
+            To become India&apos;s largest student event ecosystem where every student can discover opportunities beyond their own campus.
           </p>
         </motion.div>
 

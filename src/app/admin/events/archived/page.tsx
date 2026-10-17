@@ -4,44 +4,49 @@ import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { ArrowLeft, Trash2, Loader2, Inbox } from "lucide-react";
 import { getAdminEvents, deleteEvent } from "@/actions/admin";
-import { AdminEvent } from "@/types/admin";
 import { toast } from "sonner";
 
+type AdminEventsResult = NonNullable<Awaited<ReturnType<typeof getAdminEvents>>["events"]>;
+
+// List-row view of an event (a subset of AdminEvent plus signup stats)
+const toRow = (e: AdminEventsResult[number]) => ({
+    id: e.id,
+    status: e.status,
+    createdAt: e.createdAt.toISOString(),
+    updatedAt: e.updatedAt.toISOString(),
+    basic: {
+      title: e.title,
+      slug: e.slug,
+      category: e.category?.name || "General",
+      date: e.date.toLocaleDateString(),
+      venue: e.location,
+      tags: [],
+      shortDescription: e.description.substring(0, 120),
+    },
+    media: {
+      banner: e.images.find((img) => img.isHero)?.url || ""
+    },
+    pricing: { isFree: true, fee: 0 },
+    capacity: e.capacity,
+    stats: {
+      currentRegistrations: e._count?.registrations || 0,
+      waitingList: 0,
+      attendance: 0,
+      revenue: 0,
+      certificatesIssued: 0
+    }
+});
+type AdminEventRow = ReturnType<typeof toRow>;
+
 export default function ArchivedEventsPage() {
-  const [archived, setArchived] = useState<AdminEvent[]>([]);
+  const [archived, setArchived] = useState<AdminEventRow[]>([]);
   const [isPending, startTransition] = useTransition();
 
   const loadArchived = async () => {
     const res = await getAdminEvents({ status: "ARCHIVED" });
     if (res.events) {
-      const mapped = res.events.map((e: any) => ({
-        id: e.id,
-        status: e.status,
-        createdAt: e.createdAt.toISOString(),
-        updatedAt: e.updatedAt.toISOString(),
-        basic: {
-          title: e.title,
-          slug: e.slug,
-          category: e.category?.name || "General",
-          date: e.date.toLocaleDateString(),
-          venue: e.location,
-          tags: [],
-          shortDescription: e.description.substring(0, 120),
-        },
-        media: {
-          banner: e.images.find((img: any) => img.isHero)?.url || ""
-        },
-        pricing: { isFree: true, fee: 0 },
-        capacity: e.capacity,
-        stats: {
-          currentRegistrations: e._count?.registrations || 0,
-          waitingList: 0,
-          attendance: 0,
-          revenue: 0,
-          certificatesIssued: 0
-        }
-      }));
-      setArchived(mapped as any);
+      const mapped = res.events.map(toRow);
+      setArchived(mapped);
     }
   };
 

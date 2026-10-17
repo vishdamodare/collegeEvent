@@ -93,7 +93,7 @@ export async function registerForFreeEvent(
     }
 
     const { details } = (await prisma.event.findUnique({ where: { id: eventId }, select: { details: true } })) ?? {};
-    const closesAt = (details as any)?.schedule?.registrationCloses;
+    const closesAt = (details as { schedule?: { registrationCloses?: string } } | null)?.schedule?.registrationCloses;
     if (event.isClosed || new Date(event.date) < new Date() || (closesAt && new Date(closesAt) < new Date())) {
       return { error: "Registration for this event is closed." };
     }
@@ -122,7 +122,7 @@ export async function registerForFreeEvent(
     const eventType = event.eventType || "INDIVIDUAL";
 
     // Organizer-defined required questions (answers are keyed by question label)
-    const questions = Array.isArray(event.additionalQuestions) ? (event.additionalQuestions as any[]) : [];
+    const questions = Array.isArray(event.additionalQuestions) ? (event.additionalQuestions as { label: string; required?: boolean }[]) : [];
     const missing = questions.find((q) => q?.required && !String(params?.answers?.[q.label] ?? "").trim());
     if (missing) {
       return { error: `"${missing.label}" is a required question.` };
@@ -251,7 +251,7 @@ export async function registerForFreeEvent(
         update: {
           status: RegistrationStatus.CONFIRMED,
           phoneVerified: true,
-          registrationAnswers: (params?.answers || null) as any,
+          registrationAnswers: params?.answers || undefined,
           teamName: eventType === "TEAM" ? params?.teamName : null,
           registrationType: eventType,
           timeline: initialTimeline,
@@ -262,7 +262,7 @@ export async function registerForFreeEvent(
           studentId: studentProfile.id,
           status: RegistrationStatus.CONFIRMED,
           phoneVerified: true,
-          registrationAnswers: (params?.answers || null) as any,
+          registrationAnswers: params?.answers || undefined,
           teamName: eventType === "TEAM" ? params?.teamName : null,
           registrationType: eventType,
           timeline: initialTimeline,
@@ -367,7 +367,7 @@ export async function registerForFreeEvent(
             update: {
               status: RegistrationStatus.CONFIRMED,
               phoneVerified: true,
-              registrationAnswers: (params?.answers || null) as any,
+              registrationAnswers: params?.answers || undefined,
               teamName: params?.teamName,
               registrationType: "TEAM",
               timeline: memberTimeline,
@@ -378,7 +378,7 @@ export async function registerForFreeEvent(
               studentId: mProfile.id,
               status: RegistrationStatus.CONFIRMED,
               phoneVerified: true,
-              registrationAnswers: (params?.answers || null) as any,
+              registrationAnswers: params?.answers || undefined,
               teamName: params?.teamName,
               registrationType: "TEAM",
               timeline: memberTimeline,
@@ -469,9 +469,9 @@ export async function registerForFreeEvent(
       registration: result.registration,
       ticket: result.ticket,
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error registering for free event:", error);
-    return { error: error.message || "An unexpected error occurred." };
+    return { error: (error as Error).message || "An unexpected error occurred." };
   }
 }
 
@@ -570,9 +570,9 @@ export async function cancelRegistration(registrationId: string) {
     revalidatePath("/dashboard/notifications");
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error cancelling registration:", error);
-    return { error: error.message || "An unexpected error occurred." };
+    return { error: (error as Error).message || "An unexpected error occurred." };
   }
 }
 
@@ -746,9 +746,9 @@ export async function clearNotifications() {
 
     revalidatePath("/dashboard/notifications");
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error clearing notifications:", error);
-    return { error: error.message || "Failed to clear notifications" };
+    return { error: (error as Error).message || "Failed to clear notifications" };
   }
 }
 
@@ -838,7 +838,7 @@ export async function verifyCheckInTicket(ticketIdentifier: string, verification
         title: ticket.event.title,
       },
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error verifying check-in ticket:", error);
     return { error: "Failed to verify ticket details." };
   }
@@ -935,7 +935,7 @@ export async function confirmCheckInAction(
     revalidatePath("/dashboard/notifications");
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error confirming check-in:", error);
     return { error: "Failed to confirm check-in." };
   }
@@ -954,8 +954,8 @@ export async function createRazorpayOrderAction(eventId: string, amountInRupees:
     const keyId = process.env.RAZORPAY_KEY_ID || "rzp_test_samplekey123";
     const keySecret = process.env.RAZORPAY_KEY_SECRET || "sample_secret_key_12345";
 
-    // Dynamic import/require of Razorpay
-    const Razorpay = require("razorpay");
+    // Loaded lazily so the SDK only ships with this action
+    const { default: Razorpay } = await import("razorpay");
     const razorpay = new Razorpay({
       key_id: keyId,
       key_secret: keySecret,
@@ -975,9 +975,9 @@ export async function createRazorpayOrderAction(eventId: string, amountInRupees:
       currency: order.currency,
       keyId,
     };
-  } catch (err: any) {
+  } catch (err) {
     console.error("Razorpay order creation error:", err);
-    return { error: err.message || "Failed to create payment order." };
+    return { error: (err as Error).message || "Failed to create payment order." };
   }
 }
 

@@ -49,7 +49,7 @@ export function Testimonials({ testimonials }: TestimonialsProps) {
               key={idx}
               className="w-[420px] p-[32px] rounded-[24px] bg-[var(--color-card)] border border-[var(--color-border)]"
             >
-              <p className="text-[16px] leading-[1.6] mb-[24px] font-normal">"{t.quote}"</p>
+              <p className="text-[16px] leading-[1.6] mb-[24px] font-normal">&quot;{t.quote}&quot;</p>
               <div className="flex items-center gap-[14px]">
                 <Image
                   src={t.avatar}

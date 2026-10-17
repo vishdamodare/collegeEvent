@@ -28,6 +28,8 @@ export function Navbar({ isAuthenticated: propIsAuthenticated, onLogout: propOnL
   const [menuOpen, setMenuOpen] = useState(false);
 
   const { data: session } = authClient.useSession();
+  const role = (session?.user as { role?: string } | undefined)?.role;
+  const isOrganizer = role === "ORGANIZER" || role === "SUPER_ADMIN";
   const isAuthenticated = propIsAuthenticated !== undefined ? propIsAuthenticated : !!session;
 
   const handleLogout = async () => {
@@ -111,7 +113,7 @@ export function Navbar({ isAuthenticated: propIsAuthenticated, onLogout: propOnL
               <ThemeToggle />
               {isAuthenticated ? (
                 <div className="hidden md:flex items-center gap-4">
-                  {(session?.user as any)?.role === "ORGANIZER" || (session?.user as any)?.role === "SUPER_ADMIN" ? (
+                  {isOrganizer ? (
                     <Link href="/admin" className="text-[13.5px] font-bold text-[var(--color-lime)] hover:text-[var(--color-text-main)] transition-colors duration-350 mr-1">
                       Admin Panel
                     </Link>
@@ -237,7 +239,7 @@ export function Navbar({ isAuthenticated: propIsAuthenticated, onLogout: propOnL
         <div className="mt-auto pt-6 border-t border-[var(--color-border)] flex flex-col gap-3">
         {isAuthenticated ? (
           <>
-            {(session?.user as any)?.role === "ORGANIZER" || (session?.user as any)?.role === "SUPER_ADMIN" ? (
+            {isOrganizer ? (
               <Link href="/admin" onClick={closeMenu} className="text-[17px] font-bold text-[var(--color-lime)] hover:text-[var(--color-text-main)]">
                 Admin Panel
               </Link>

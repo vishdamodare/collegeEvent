@@ -13,7 +13,7 @@ import { getAdminParticipants, toggleParticipantAttendance } from "@/actions/adm
 import { toast } from "sonner";
 
 export default function ParticipantsPage() {
-  const [participants, setParticipants] = useState<any[]>([]);
+  const [participants, setParticipants] = useState<Awaited<ReturnType<typeof getAdminParticipants>>>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [attendanceFilter, setAttendanceFilter] = useState("ALL");
   const [isPending, startTransition] = useTransition();

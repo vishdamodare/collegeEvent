@@ -6,10 +6,7 @@ import { getAdminTicketsAction } from "@/actions/admin";
 import { format } from "date-fns";
 
 interface TicketsClientProps {
-  initialData: {
-    tickets: any[];
-    events: { id: string; title: string }[];
-  };
+  initialData: Awaited<ReturnType<typeof getAdminTicketsAction>>;
 }
 
 export function TicketsClient({ initialData }: TicketsClientProps) {
@@ -17,7 +14,7 @@ export function TicketsClient({ initialData }: TicketsClientProps) {
   const [search, setSearch] = useState("");
   const [selectedEventId, setSelectedEventId] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [qrModalTicket, setQrModalTicket] = useState<any | null>(null);
+  const [qrModalTicket, setQrModalTicket] = useState<TicketsClientProps["initialData"]["tickets"][number] | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const handleFilter = (eventId?: string, searchQuery?: string, status?: string) => {
@@ -197,7 +194,7 @@ export function TicketsClient({ initialData }: TicketsClientProps) {
             <p className="text-xs text-white/40">{qrModalTicket.studentName} ({qrModalTicket.ticketNumber})</p>
 
             <div className="bg-white p-4 rounded-xl inline-block mx-auto shadow-inner">
-              <img src={qrModalTicket.qrCode} alt="Ticket QR Code" className="w-48 h-48 mx-auto" />
+              <img src={qrModalTicket.qrCode ?? undefined} alt="Ticket QR Code" className="w-48 h-48 mx-auto" />
             </div>
 
             <div className="text-[11px] text-white/50 font-mono bg-white/5 py-2 px-3 rounded-lg border border-white/5">

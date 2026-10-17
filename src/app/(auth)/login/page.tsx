@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AuthCard } from "@/components/auth/AuthCard";
@@ -8,6 +8,8 @@ import { SocialLogin } from "@/components/auth/SocialLogin";
 import { authClient } from "@/lib/auth-client";
 import { loginAction } from "@/actions/auth/login";
 import { safeRedirect } from "@/utils/safeRedirect";
+
+const subscribeNoop = () => () => {};
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,11 +19,8 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // true only in the browser (reads window.location below)
+  const mounted = useSyncExternalStore(subscribeNoop, () => true, () => false);
 
   if (!mounted) {
     return null;
@@ -64,7 +63,7 @@ export default function LoginPage() {
           router.push(callbackUrl ?? "/dashboard");
         }
       }
-    } catch (err: any) {
+    } catch (err) {
       setIsSubmitting(false);
       console.error("Login authentication error:", err);
       setError("An unexpected error occurred. Please try again.");
@@ -156,7 +155,7 @@ export default function LoginPage() {
       />
 
       <div className="text-center mt-8 text-[14px] text-[var(--color-text-muted)]">
-        Don't have an account?{" "}
+        Don&apos;t have an account?{" "}
         <Link href="/signup" className="text-[var(--color-lime)] font-bold hover:underline transition-all">
           Create one
         </Link>

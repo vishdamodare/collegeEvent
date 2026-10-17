@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { RegistrationStatus } from "@prisma/client";
+import { RegistrationStatus, Prisma } from "@prisma/client";
 
 /**
  * GET /api/attendance/verify?ticketId=[id]&token=[token]
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const whereClause: any = {};
+    const whereClause: Prisma.TicketWhereInput = {};
     if (token) {
       whereClause.verificationToken = token.trim();
     }
@@ -110,10 +110,10 @@ export async function GET(req: NextRequest) {
         status: ticket.event.status,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Ticket verification error:", error);
     return NextResponse.json(
-      { valid: false, error: error.message || "Failed to verify ticket" },
+      { valid: false, error: (error as Error).message || "Failed to verify ticket" },
       { status: 500 }
     );
   }
@@ -236,10 +236,10 @@ export async function POST(req: NextRequest) {
         title: ticket.event.title,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Check-in execution error:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to process check-in" },
+      { error: (error as Error).message || "Failed to process check-in" },
       { status: 500 }
     );
   }

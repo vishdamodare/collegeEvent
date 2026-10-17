@@ -5,6 +5,13 @@ import { CreditCard, Loader2, Lock, ShieldCheck, X } from "lucide-react";
 import { createRazorpayOrderAction } from "@/actions/registrations";
 import { toast } from "sonner";
 
+// Razorpay Checkout is loaded from their CDN at runtime
+declare global {
+  interface Window {
+    Razorpay?: new (options: Record<string, unknown>) => { open: () => void };
+  }
+}
+
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -38,7 +45,7 @@ export function PaymentModal({
     }
 
     // Load Razorpay checkout script if not present
-    if (typeof window !== "undefined" && !(window as any).Razorpay) {
+    if (typeof window !== "undefined" && !window.Razorpay) {
       const script = document.createElement("script");
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
       script.async = true;
@@ -53,7 +60,7 @@ export function PaymentModal({
       name: "CollegeEvents",
       description: `Registration Fee: ${eventTitle}`,
       order_id: orderRes.orderId,
-      handler: function (response: any) {
+      handler: function (response: { razorpay_payment_id: string }) {
         toast.success("Payment Received Successfully!");
         onSuccess(response.razorpay_payment_id);
         onClose();
@@ -68,7 +75,8 @@ export function PaymentModal({
     };
 
     try {
-      const rzp = new (window as any).Razorpay(options);
+      if (!window.Razorpay) throw new Error("Razorpay SDK not loaded");
+      const rzp = new window.Razorpay(options);
       rzp.open();
     } catch (e) {
       console.error("Razorpay Modal launch error:", e);

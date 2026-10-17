@@ -221,7 +221,7 @@ export default function SettingsPage() {
                 <label className="block text-[11px] font-bold mb-1.5 text-white/50">Access Role</label>
                 <select
                   value={newMemberRole}
-                  onChange={(e) => setNewMemberRole(e.target.value as any)}
+                  onChange={(e) => setNewMemberRole(e.target.value as typeof newMemberRole)}
                   className="w-full px-4 py-2.5 rounded-xl bg-[#141414] border border-white/5 text-white/70 text-[12.5px] outline-none cursor-pointer"
                 >
                   <option value="ADMIN">Admin (Full Edit + Team)</option>

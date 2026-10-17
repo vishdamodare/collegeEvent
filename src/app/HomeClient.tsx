@@ -1,5 +1,7 @@
 "use client";
 
+import type { ComponentProps } from "react";
+
 import { useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -20,8 +22,8 @@ import { COLLEGES, COLLEGE_INFO, TESTIMONIALS } from "@/constants/events";
 
 interface HomeClientProps {
   events: Event[];
-  categories: any[];
-  colleges: any[];
+  categories: ComponentProps<typeof CategoryGrid>["categories"];
+  colleges: ComponentProps<typeof TrendingColleges>["colleges"];
   stats: {
     totalEvents: number;
     totalCategories: number;

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { studentSignupSchema } from "@/validators/studentSignupSchema";
 
-export async function registerStudentAction(formData: any) {
+export async function registerStudentAction(formData: unknown) {
   // 1. Server-side validation
   const validation = studentSignupSchema.safeParse(formData);
   if (!validation.success) {
@@ -83,13 +83,13 @@ export async function registerStudentAction(formData: any) {
       success: true,
       message: "Student account created successfully!",
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Student registration failed:", error);
     return {
       success: false,
       // Better Auth errors carry a user-facing body.message; anything else (e.g. DB errors)
       // stays in the server log so internals never reach the browser
-      error: error?.body?.message || "Something went wrong creating your account. Please try again.",
+      error: (error as { body?: { message?: string } })?.body?.message || "Something went wrong creating your account. Please try again.",
     };
   }
 }

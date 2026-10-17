@@ -87,7 +87,7 @@ export function EventsTableClient({
         router.refresh();
         return "Event duplicated successfully! Opened in draft.";
       },
-      error: (err: any) => err.message || "Failed to duplicate event.",
+      error: (err: Error) => err.message || "Failed to duplicate event.",
     });
   };
 
@@ -99,7 +99,7 @@ export function EventsTableClient({
         router.refresh();
         return "Event archived successfully!";
       },
-      error: (err: any) => err.message || "Failed to archive event.",
+      error: (err: Error) => err.message || "Failed to archive event.",
     });
   };
 

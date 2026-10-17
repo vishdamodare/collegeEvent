@@ -10,16 +10,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 
 interface AttendanceClientProps {
-  initialData: {
-    registrations: any[];
-    stats: {
-      totalCount: number;
-      checkedInCount: number;
-      pendingCount: number;
-      percentage: number;
-    };
-    events: { id: string; title: string }[];
-  };
+  initialData: Awaited<ReturnType<typeof getAdminAttendanceAction>>;
 }
 
 export function AttendanceClient({ initialData }: AttendanceClientProps) {
@@ -53,8 +44,8 @@ export function AttendanceClient({ initialData }: AttendanceClientProps) {
         toast.success("Attendance status updated!");
         handleFilter();
       }
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to update attendance");
+    } catch (err) {
+      toast.error((err as Error)?.message || "Failed to update attendance");
     }
   };
 
@@ -261,7 +252,7 @@ export function AttendanceClient({ initialData }: AttendanceClientProps) {
                       {reg.checkedIn ? (
                         <div>
                           <p className="text-white/80">
-                            {format(new Date(reg.checkedInAt), "MMM dd, hh:mm a")}
+                            {reg.checkedInAt ? format(new Date(reg.checkedInAt), "MMM dd, hh:mm a") : "—"}
                           </p>
                           <p className="text-[10px] text-white/30">
                             Method: {reg.checkInMethod}

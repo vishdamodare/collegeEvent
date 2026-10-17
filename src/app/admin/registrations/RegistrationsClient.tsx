@@ -35,23 +35,7 @@ import {
 import Link from "next/link";
 
 interface RegistrationsClientProps {
-  initialData: {
-    registrations: any[];
-    stats: {
-      totalCount: number;
-      confirmedCount: number;
-      checkedInCount: number;
-      cancelledCount: number;
-    };
-    events: Array<{
-      id: string;
-      title: string;
-      slug: string;
-      capacity: number;
-      isClosed: boolean;
-      registeredCount: number;
-    }>;
-  };
+  initialData: Awaited<ReturnType<typeof getAdminRegistrationsAction>>;
 }
 
 export function RegistrationsClient({ initialData }: RegistrationsClientProps) {
@@ -60,7 +44,7 @@ export function RegistrationsClient({ initialData }: RegistrationsClientProps) {
   const [selectedEventId, setSelectedEventId] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("ALL");
   const [isPending, startTransition] = useTransition();
-  const [selectedRegistration, setSelectedRegistration] = useState<any | null>(null);
+  const [selectedRegistration, setSelectedRegistration] = useState<RegistrationsClientProps["initialData"]["registrations"][number] | null>(null);
 
   const selectedEvent = data.events.find((e) => e.id === selectedEventId);
 
@@ -105,7 +89,7 @@ export function RegistrationsClient({ initialData }: RegistrationsClientProps) {
           ? "Event registrations closed successfully."
           : "Event registrations opened successfully.";
       },
-      error: (err: any) => err.message || "Failed to update registration status.",
+      error: (err: Error) => err.message || "Failed to update registration status.",
     });
   };
 

@@ -22,9 +22,9 @@ export function SocialLogin({ callbackURL = "/auth-callback?targetRole=student" 
         provider,
         callbackURL,
       });
-    } catch (err: any) {
+    } catch (err) {
       console.error(`Failed to initiate ${provider} sign-in:`, err);
-      setError(err?.message || `Failed to connect with ${provider}. Please try again.`);
+      setError((err as Error)?.message || `Failed to connect with ${provider}. Please try again.`);
       setLoadingProvider(null);
     }
   };

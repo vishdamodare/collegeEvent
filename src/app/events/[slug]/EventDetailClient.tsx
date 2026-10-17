@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition } from "react";
 import { EventExtraDetails, priceLabel, type PublicEventDetails } from "@/components/events/EventExtraDetails";
 import Image from "next/image";
 import Link from "next/link";
@@ -69,7 +69,7 @@ import { EventGridCard } from "@/components/events/EventGridCard";
 import { authClient } from "@/lib/auth-client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { cancelRegistration } from "@/actions/registrations";
-import { RegistrationWizard } from "@/components/shared/RegistrationWizard";
+import { RegistrationWizard, type WizardProfile } from "@/components/shared/RegistrationWizard";
 import { toast } from "sonner";
 import { cn } from "@/utils/cn";
 
@@ -92,6 +92,7 @@ interface EventDetailClientProps {
     organizer: {
       id: string;
       name: string;
+      totalEvents?: number;
       email: string;
       image: string | null;
       organizerProfile?: {
@@ -134,7 +135,7 @@ interface EventDetailClientProps {
       status: string;
     } | null;
   } | null;
-  initialProfile?: any;
+  initialProfile?: WizardProfile | null;
   details?: PublicEventDetails | null;
 }
 
@@ -152,18 +153,13 @@ export function EventDetailClient({
   const [registered, setRegistered] = useState(initialIsRegistered);
   const [regDetails, setRegDetails] = useState(initialRegDetails);
   const [isPending, startTransition] = useTransition();
-  const [isWizardOpen, setIsWizardOpen] = useState(false);
-
-  useEffect(() => {
-    if (
-      searchParams.get("register") === "true" &&
-      session &&
-      (session.user as any).role === "STUDENT" &&
-      !registered
-    ) {
-      setIsWizardOpen(true);
-    }
-  }, [searchParams, session, registered]);
+  const [wizardOpened, setIsWizardOpen] = useState(false);
+  // ?register=true (back from login) opens the wizard once the student session is known
+  const autoOpen =
+    searchParams.get("register") === "true" &&
+    (session?.user as { role?: string } | undefined)?.role === "STUDENT" &&
+    !registered;
+  const isWizardOpen = wizardOpened || autoOpen;
 
   const heroImage = event.images.find((i) => i.isHero)?.url || event.images[0]?.url;
   const gallery = event.images.filter((i) => !i.isHero);
@@ -380,7 +376,7 @@ export function EventDetailClient({
               {/* Host description if available */}
               {event.organizer.organizerProfile?.description && (
                 <p className="text-xs text-text-muted leading-relaxed font-archivo italic border-l-2 border-border pl-3">
-                  "{event.organizer.organizerProfile.description}"
+                  &quot;{event.organizer.organizerProfile.description}&quot;
                 </p>
               )}
 
@@ -390,7 +386,7 @@ export function EventDetailClient({
                 const charCodeSum = oId.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
                 const hostRating = (4.5 + (charCodeSum % 5) * 0.1).toFixed(1);
                 const hostRespTime = charCodeSum % 2 === 0 ? "Within 2 hours" : "Within 24 hours";
-                const totalPublished = (event.organizer as any).totalEvents || 1;
+                const totalPublished = event.organizer.totalEvents || 1;
 
                 return (
                   <div className="grid grid-cols-3 gap-2 text-center text-xs border-y border-border/50 py-4 font-archivo">
@@ -506,7 +502,7 @@ export function EventDetailClient({
                     >
                       Login to Register
                     </Link>
-                  ) : (session.user as any).role !== "STUDENT" ? (
+                  ) : (session.user as { role?: string }).role !== "STUDENT" ? (
                     <button
                       disabled
                       className="w-full btn btn-primary opacity-60 cursor-not-allowed bg-card-hover border border-border text-text-faint py-2.5 rounded-xl text-sm font-semibold"

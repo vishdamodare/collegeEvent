@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useSyncExternalStore, useTransition } from "react";
 import Image from "next/image";
 import { 
   X, Check, Loader2, Users, User, Plus, Trash2, 
@@ -10,19 +10,45 @@ import {
 import { registerForFreeEvent } from "@/actions/registrations";
 import { updateStudentProfile } from "@/actions/profile";
 import { authClient } from "@/lib/auth-client";
+import type { StudentProfile } from "@prisma/client";
 import { cn } from "@/utils/cn";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
+type WizardEvent = {
+  id: string;
+  title: string;
+  date: Date | string;
+  location: string;
+  capacity: number;
+  eventType?: string;
+  teamMinSize?: number;
+  teamMaxSize?: number;
+  additionalQuestions?: unknown; // organizer questions: JSON array (or legacy JSON string)
+  // Optional display fields some callers provide
+  cat?: string;
+  college?: string;
+  img?: string;
+  venue?: string;
+};
+
+type WizardQuestion = { label: string; type?: string; required?: boolean; options?: string[]; placeholder?: string };
+
+export type WizardProfile = Partial<Pick<StudentProfile,
+  "academicYear" | "bio" | "branch" | "college" | "gender" | "interests" | "phoneNumber" | "profileImage" | "studentId"
+>> & { user?: { name: string | null; email: string } | null };
+
 interface RegistrationWizardProps {
   isOpen: boolean;
   onClose: () => void;
-  event: any; // Event details
-  initialProfile: any; // Student Profile details
+  event: WizardEvent;
+  initialProfile: WizardProfile | null;
 }
 
+const subscribeNoop = () => () => {};
+
 export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: RegistrationWizardProps) {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(subscribeNoop, () => true, () => false);
   
   // Step indicator matching implementation plan: 
   // 1: Profile Verification
@@ -49,7 +75,7 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
 
   // Step 3 & 4: Team configuration
   const [teamName, setTeamName] = useState("");
-  const [teamSize, setTeamSize] = useState("2");
+  const [teamSize, setTeamSize] = useState(String(event?.teamMinSize || 2));
   const [teamMembers, setTeamMembers] = useState<Array<{
     name: string;
     email: string;
@@ -59,12 +85,6 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
     academicYear: string;
   }>>([]);
 
-  useEffect(() => {
-    if (event) {
-      setTeamSize((event.teamMinSize || 2).toString());
-    }
-  }, [event]);
-
   // Step 5: Dynamic Questions
   const [answers, setAnswers] = useState<Record<string, string>>({});
 
@@ -72,14 +92,10 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
   const [confirmCorrect, setConfirmCorrect] = useState(false);
 
   // Step 7: Generated Ticket details
-  const [generatedTicket, setGeneratedTicket] = useState<any>(null);
+  const [generatedTicket, setGeneratedTicket] = useState<{ id: string; ticketNumber: string; qrCode: string | null } | null>(null);
 
   // Transitions
   const [isPending, startTransition] = useTransition();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   if (!mounted || !isOpen || !event) return null;
 
@@ -88,7 +104,7 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
   const teamMax = event.teamMaxSize || 4;
 
   // Parse dynamic organizer-created questions from Event.additionalQuestions
-  let dynamicQuestions: any[] = [];
+  let dynamicQuestions: WizardQuestion[] = [];
   if (event.additionalQuestions) {
     try {
       dynamicQuestions = typeof event.additionalQuestions === "string"
@@ -132,9 +148,9 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
           toast.success("Profile verified!");
           setStep(2);
         }
-      } catch (err: any) {
+      } catch (err) {
         console.error("Profile save error:", err);
-        toast.error(err?.message || "Could not save your profile. Please try again.");
+        toast.error((err as Error)?.message || "Could not save your profile. Please try again.");
       }
     });
   };
@@ -234,12 +250,12 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
           toast.error(res.message || res.error);
         } else {
           toast.success("Registration completed!");
-          setGeneratedTicket(res.ticket);
+          setGeneratedTicket(res.ticket ?? null);
           setStep(7);
         }
-      } catch (err: any) {
+      } catch (err) {
         console.error("Submit Error:", err);
-        toast.error(err.message || "An unexpected error occurred during submission.");
+        toast.error((err as Error).message || "An unexpected error occurred during submission.");
       }
     });
   };
@@ -673,7 +689,7 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
             </div>
 
             <div className="space-y-4 mb-6">
-              {dynamicQuestions.map((q: any, idx: number) => (
+              {dynamicQuestions.map((q, idx: number) => (
                 <div key={idx} className="space-y-1.5">
                   <label className="block text-xs font-bold text-text-muted uppercase">
                     {q.label} {q.required && <span className="text-coral">*</span>}

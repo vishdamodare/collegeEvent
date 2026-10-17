@@ -1,6 +1,6 @@
 import { Participant } from "@/types/admin";
 
-export let MOCK_PARTICIPANTS: Participant[] = [
+export const MOCK_PARTICIPANTS: Participant[] = [
   {
     id: "part-1",
     name: "Rohan Sawant",

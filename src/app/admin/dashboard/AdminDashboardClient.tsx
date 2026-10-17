@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { getAdminDashboardStats } from "@/actions/admin";
 import {
   Calendar,
   Users,
@@ -12,23 +13,7 @@ import {
 } from "lucide-react";
 
 interface AdminDashboardClientProps {
-  initialData: {
-    quickStats: {
-      totalEvents: number;
-      totalRegistrations: number;
-      revenue: number;
-      certificates: number;
-      pendingCheckIns: number;
-    };
-    recentRegistrations: Array<{
-      id: string;
-      participantName: string;
-      college: string;
-      eventName: string;
-    }>;
-    recentPayments: any[];
-    pendingTasks: any[];
-  };
+  initialData: Awaited<ReturnType<typeof getAdminDashboardStats>>;
 }
 
 export function AdminDashboardClient({ initialData }: AdminDashboardClientProps) {

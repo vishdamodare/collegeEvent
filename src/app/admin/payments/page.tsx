@@ -12,7 +12,7 @@ import {
 import { getAdminPayments } from "@/actions/admin";
 
 export default function PaymentsPage() {
-  const [data, setData] = useState<any>({
+  const [data, setData] = useState<Awaited<ReturnType<typeof getAdminPayments>>>({
     revenue: 0,
     settled: 0,
     pending: 0,

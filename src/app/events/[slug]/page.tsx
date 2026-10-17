@@ -1,3 +1,5 @@
+import type { ComponentProps } from "react";
+import type { AdminEvent } from "@/types/admin";
 import { appUrl } from "@/lib/app-url";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -71,7 +73,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
   }
 
   let isRegistered = false;
-  let registrationDetails: any = null;
+  let registrationDetails: ComponentProps<typeof EventDetailClient>["registrationDetails"] = null;
 
   let profile = null;
   if (user && user.role === "STUDENT") {
@@ -147,7 +149,8 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
 // online meeting link/password only for registered students.
 function toPublicDetails(raw: unknown, isRegistered: boolean): PublicEventDetails | null {
   if (!raw || typeof raw !== "object") return null;
-  const d = raw as any;
+  // Stored by the admin EventWizard in AdminEvent shape; any field may be missing on older events
+  const d = raw as Partial<AdminEvent>;
   return {
     end: d.schedule?.end || null,
     registrationCloses: d.schedule?.registrationCloses || null,
@@ -160,7 +163,7 @@ function toPublicDetails(raw: unknown, isRegistered: boolean): PublicEventDetail
     isFree: d.pricing?.isFree ?? true,
     fee: Number(d.pricing?.fee) || 0,
     tickets: d.pricing?.ticketingEnabled
-      ? (d.pricing?.tickets || []).map((t: any) => ({ name: t.name, price: Number(t.price) || 0, description: t.description || "" }))
+      ? (d.pricing?.tickets || []).map((t) => ({ name: t.name, price: Number(t.price) || 0, description: t.description || "" }))
       : [],
     refundPolicy: d.pricing?.refundPolicy || "",
     rules: {
@@ -171,16 +174,16 @@ function toPublicDetails(raw: unknown, isRegistered: boolean): PublicEventDetail
       codeOfConduct: d.rules?.codeOfConduct || "",
       judgingCriteria: d.rules?.judgingCriteria || "",
     },
-    prizes: (d.rules?.prizes || []).filter((p: any) => p?.title),
-    faqs: (d.rules?.faqs || []).filter((f: any) => f?.question),
+    prizes: (d.rules?.prizes || []).filter((p) => p?.title),
+    faqs: (d.rules?.faqs || []).filter((f) => f?.question),
     contact: {
       name: d.contact?.coordinatorName || "",
       email: d.contact?.coordinatorEmail || "",
       phone: d.contact?.coordinatorPhone || "",
     },
     sponsors: (d.sponsors || [])
-      .filter((s: any) => s?.name && s.visibility !== false)
-      .map((s: any) => ({ name: s.name, category: s.category, logoUrl: s.logoUrl || "", websiteUrl: s.websiteUrl || "" })),
+      .filter((s) => s?.name && s.visibility !== false)
+      .map((s) => ({ name: s.name, category: s.category, logoUrl: s.logoUrl || "", websiteUrl: s.websiteUrl || "" })),
     links: {
       promoVideo: d.media?.promoVideoUrl || "",
       brochure: d.media?.brochurePdfUrl || "",

@@ -24,6 +24,7 @@ import { RegistrationStatusBadge } from "@/components/shared/RegistrationStatusB
 import { toast } from "sonner";
 import { incrementTicketDownloadCount, recordTicketShared } from "@/actions/registrations";
 import { EventGridCard } from "@/components/events/EventGridCard";
+import type { getEventsByOrganizer } from "@/actions/events";
 
 interface TicketDetailClientProps {
   ticket: {
@@ -40,6 +41,7 @@ interface TicketDetailClientProps {
       description: string;
       category: { name: string; color?: string | null };
       images: Array<{ url: string }>;
+      organizer?: { name: string; organizerProfile?: { college: string } | null } | null;
     };
     student: {
       college: string;
@@ -54,19 +56,19 @@ interface TicketDetailClientProps {
       status: string;
       checkedIn: boolean;
       checkedInAt: Date | string | null;
-      timeline: any;
+      timeline: unknown; // JSON: [{ label, time }] (legacy rows may store it as a string)
       teamName?: string | null;
     };
   };
-  moreEvents?: any[];
+  moreEvents?: Awaited<ReturnType<typeof getEventsByOrganizer>>;
 }
 
 export function TicketDetailClient({ ticket, moreEvents = [] }: TicketDetailClientProps) {
   const [isPending, startTransition] = useTransition();
   const ticketRef = useRef<HTMLDivElement>(null);
   const heroImage = ticket.event.images[0]?.url;
-  const eventOrganizerName = (ticket.event as any).organizer?.name || "Host";
-  const eventOrganizerCollege = (ticket.event as any).organizer?.organizerProfile?.college || "Campus";
+  const eventOrganizerName = ticket.event.organizer?.name || "Host";
+  const eventOrganizerCollege = ticket.event.organizer?.organizerProfile?.college || "Campus";
 
   const eventDate = new Date(ticket.event.date);
 
@@ -291,7 +293,7 @@ export function TicketDetailClient({ ticket, moreEvents = [] }: TicketDetailClie
           </div>
 
           {/* Registration Timeline Step Indicator */}
-          {ticket.registration.timeline && (
+          {!!ticket.registration.timeline && (
             <div className="pt-6 border-t border-border/60 print:border-gray-200 space-y-4">
               <h4 className="text-xs uppercase font-bold tracking-wider text-text-faint print:text-gray-500">
                 Registration History & Progress
@@ -301,7 +303,7 @@ export function TicketDetailClient({ ticket, moreEvents = [] }: TicketDetailClie
                 <div className="absolute top-4 left-6 right-6 h-0.5 bg-border/40 hidden sm:block z-0" />
                 
                 {(() => {
-                  let timeline = [];
+                  let timeline: { label: string; time: string }[] = [];
                   try {
                     timeline = typeof ticket.registration.timeline === 'string'
                       ? JSON.parse(ticket.registration.timeline)
@@ -312,7 +314,7 @@ export function TicketDetailClient({ ticket, moreEvents = [] }: TicketDetailClie
                   
                   if (!Array.isArray(timeline)) timeline = [];
                   
-                  return timeline.map((item: any, idx: number) => (
+                  return timeline.map((item, idx: number) => (
                     <div key={idx} className="flex sm:flex-col items-center text-center gap-3 relative z-10 flex-1">
                       <div className="w-8 h-8 rounded-full bg-lime text-black font-bold flex items-center justify-center text-xs shrink-0 shadow-lg shadow-lime/20">
                         {idx + 1}
@@ -413,8 +415,8 @@ export function TicketDetailClient({ ticket, moreEvents = [] }: TicketDetailClie
             <p className="text-xs text-text-muted mt-1">Discover other exciting events hosted by this organizer</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
-            {moreEvents.map((re: any, i: number) => {
-              const heroImg = re.images.find((img: any) => img.isHero)?.url || re.images[0]?.url || "";
+            {moreEvents.map((re, i: number) => {
+              const heroImg = re.images.find((img) => img.isHero)?.url || re.images[0]?.url || "";
               const locationParts = re.location.split(",");
               const venue = locationParts[0]?.trim() || re.location;
               const college = locationParts.length > 1 ? locationParts.slice(1).join(",").trim() : "Campus";

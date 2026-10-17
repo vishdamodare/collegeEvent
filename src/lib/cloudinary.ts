@@ -57,8 +57,8 @@ export async function deleteFromCloudinary(publicId: string) {
   try {
     const result = await cloudinary.uploader.destroy(publicId);
     return { success: result.result === "ok" };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Cloudinary destroy error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error as Error).message };
   }
 }

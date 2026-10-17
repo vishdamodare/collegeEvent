@@ -130,9 +130,9 @@ export async function updateStudentProfile(data: ProfileFormData) {
     });
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to update student profile:", error);
-    return { error: error?.message || "Failed to update profile details." };
+    return { error: (error as Error)?.message || "Failed to update profile details." };
   }
 }
 
@@ -210,8 +210,8 @@ export async function updateStudentPasswordAction(currentPassword: string, newPa
       headers: await headers(),
     });
     return { success: true };
-  } catch (error: any) {
-    const msg = error?.body?.message || error?.message || "";
+  } catch (error) {
+    const msg = (error as { body?: { message?: string } })?.body?.message || (error as Error)?.message || "";
     if (/credential account not found/i.test(msg)) {
       return { error: "This account signs in with Google, so it has no password to change." };
     }
@@ -235,7 +235,7 @@ export async function updateStudentPreferencesAction(preferences: {
   try {
     // Log preference receipt & confirm
     return { success: true, preferences };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to update preferences:", error);
     return { error: "Failed to update notification preferences." };
   }

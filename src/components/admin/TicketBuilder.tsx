@@ -186,7 +186,7 @@ export function TicketBuilder({ tickets, onChange }: TicketBuilderProps) {
                       <label className="block text-[11px] font-bold text-white/40 uppercase mb-1.5">Visibility Mode</label>
                       <select
                         value={t.visibility || "PUBLIC"}
-                        onChange={(e) => updateTicketTier(t.id, { visibility: e.target.value as any })}
+                        onChange={(e) => updateTicketTier(t.id, { visibility: e.target.value as TicketType["visibility"] })}
                         className="w-full px-3 py-2.5 rounded-lg bg-[#181818] border border-white/5 text-white text-[13px] outline-none cursor-pointer"
                       >
                         <option value="PUBLIC">Publicly Visible</option>

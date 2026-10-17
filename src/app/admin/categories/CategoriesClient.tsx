@@ -53,7 +53,7 @@ export function CategoriesClient({ initialCategories }: CategoriesClientProps) {
         router.refresh();
         return "Category created successfully!";
       },
-      error: (err: any) => err.message || "Failed to create category.",
+      error: (err: Error) => err.message || "Failed to create category.",
     });
   };
 
@@ -69,7 +69,7 @@ export function CategoriesClient({ initialCategories }: CategoriesClientProps) {
         router.refresh();
         return "Category updated successfully!";
       },
-      error: (err: any) => err.message || "Failed to save category.",
+      error: (err: Error) => err.message || "Failed to save category.",
     });
   };
 
@@ -81,7 +81,7 @@ export function CategoriesClient({ initialCategories }: CategoriesClientProps) {
         router.refresh();
         return isCurrentlyArchived ? "Category restored!" : "Category archived!";
       },
-      error: (err: any) => err.message || "Action failed.",
+      error: (err: Error) => err.message || "Action failed.",
     });
   };
 

@@ -1,18 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { Sun, Moon } from "lucide-react";
 import { motion } from "framer-motion";
 
-export function ThemeToggle() {
-  const [theme, setTheme] = useState<"light" | "dark">("dark");
-  const [mounted, setMounted] = useState(false);
+const subscribeNoop = () => () => {};
 
-  useEffect(() => {
-    setMounted(true);
-    const activeTheme = (document.documentElement.getAttribute("data-theme") as "light" | "dark") || "dark";
-    setTheme(activeTheme);
-  }, []);
+export function ThemeToggle() {
+  const mounted = useSyncExternalStore(subscribeNoop, () => true, () => false);
+  const [chosen, setTheme] = useState<"light" | "dark" | null>(null);
+  // Until the user toggles, mirror what the inline <head> script applied
+  const theme =
+    chosen ?? (mounted ? (document.documentElement.getAttribute("data-theme") as "light" | "dark") || "dark" : "dark");
 
   const toggleTheme = () => {
     const nextTheme = theme === "dark" ? "light" : "dark";

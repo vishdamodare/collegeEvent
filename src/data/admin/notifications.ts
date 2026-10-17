@@ -1,6 +1,6 @@
 import { AdminNotification } from "@/types/admin";
 
-export let MOCK_NOTIFICATIONS: AdminNotification[] = [
+export const MOCK_NOTIFICATIONS: AdminNotification[] = [
   {
     id: "notif-1",
     title: "New Registration Received",

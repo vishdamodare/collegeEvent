@@ -132,11 +132,8 @@ export async function getEventBySlug(slug: string) {
     },
   });
 
-  if (event?.organizer) {
-    (event.organizer as any).totalEvents = event.organizer._count.events;
-  }
-
-  return event;
+  if (!event) return event;
+  return { ...event, organizer: { ...event.organizer, totalEvents: event.organizer._count.events } };
 }
 
 /**
@@ -380,7 +377,11 @@ export async function getDynamicColleges() {
     }
   });
 
-  const collegeMap: Record<string, any> = {};
+  type CollegeAgg = {
+    name: string; city: string; state: string; verified: boolean; activeEvents: number;
+    totalRegistrations: number; categories: Set<string>; slug: string; img: string;
+  };
+  const collegeMap: Record<string, CollegeAgg> = {};
 
   for (const org of organizers) {
     const name = org.college;
@@ -439,7 +440,7 @@ export async function getDynamicColleges() {
     events.forEach(ev => collegeMap[name].categories.add(ev.category.name));
   }
 
-  const collegesList = Object.values(collegeMap).map((col: any) => {
+  const collegesList = Object.values(collegeMap).map((col) => {
     const hash = col.name.split("").reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
     const followersCount = (col.totalRegistrations * 3 + (hash % 100) * 12 + 150);
     const ratingVal = (4.5 + (hash % 5) * 0.1).toFixed(1);
@@ -461,7 +462,7 @@ export async function getDynamicColleges() {
     };
   });
 
-  collegesList.sort((a: any, b: any) => parseInt(b.students) - parseInt(a.students));
+  collegesList.sort((a, b) => parseInt(b.students) - parseInt(a.students));
   return collegesList;
 }
 

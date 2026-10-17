@@ -15,13 +15,9 @@ function ResetPasswordContent() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!token) {
-      setError("No reset token found in URL. Please request a new reset link.");
-    }
-  }, [token]);
+  const [error, setError] = useState<string | null>(
+    token ? null : "No reset token found in URL. Please request a new reset link."
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

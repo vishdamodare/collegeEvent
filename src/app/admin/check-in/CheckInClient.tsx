@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect, useRef } from "react";
+import { useState, useTransition, useEffect, useRef, useSyncExternalStore } from "react";
 import { 
   QrCode, Search, Upload, Camera, CheckCircle, 
   XCircle, Loader2, Smartphone, ShieldCheck, UserCheck 
@@ -22,14 +22,101 @@ interface CheckInClientProps {
   }>;
 }
 
+const subscribeNoop = () => () => {};
+
+function extractTicketPayload(rawString: string): { identifier: string; token: string } | null {
+  if (!rawString || typeof rawString !== "string") return null;
+  const dataStr = rawString.trim();
+
+  // 1. JSON Payload format (from generateQRCodeDataUrl)
+  try {
+    const parsed = JSON.parse(dataStr);
+    const identifier = parsed.ticketNumber || parsed.ticketId || parsed.id || parsed.registrationId || "";
+    const token = parsed.verificationToken || parsed.token || "";
+    if (identifier) {
+      return { identifier, token };
+    }
+  } catch {}
+
+  // 2. Colon-delimited format "TICKET_NUMBER:TOKEN"
+  if (dataStr.includes(":") && !dataStr.startsWith("http")) {
+    const parts = dataStr.split(":");
+    if (parts.length >= 2) {
+      return { identifier: parts[0].trim(), token: parts[1].trim() };
+    }
+  }
+
+  // 3. URL format "http.../dashboard/tickets/[id]"
+  if (dataStr.startsWith("http")) {
+    try {
+      const url = new URL(dataStr);
+      const segments = url.pathname.split("/").filter(Boolean);
+      const lastSegment = segments[segments.length - 1];
+      if (lastSegment) {
+        return {
+          identifier: lastSegment,
+          token: url.searchParams.get("token") || "",
+        };
+      }
+    } catch {}
+  }
+
+  // 4. Raw identifier fallback (e.g. CE-TKT-2026-0001 or UUID)
+  if (dataStr.length >= 3) {
+    return { identifier: dataStr, token: "" };
+  }
+
+  return null;
+}
+
+function decodeQRFromImage(img: HTMLImageElement): { identifier: string; token: string } | null {
+  const maxDim = Math.max(img.width, img.height);
+  const targetScales = [
+    1,
+    1200 / maxDim,
+    800 / maxDim,
+    500 / maxDim,
+    350 / maxDim,
+  ].filter(s => s > 0 && s <= 1.5);
+
+  // Remove near duplicates
+  const uniqueScales = Array.from(new Set(targetScales.map(s => Math.round(s * 100) / 100)));
+
+  for (const scale of uniqueScales) {
+    const targetW = Math.max(50, Math.round(img.width * scale));
+    const targetH = Math.max(50, Math.round(img.height * scale));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = targetW;
+    canvas.height = targetH;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) continue;
+
+    ctx.drawImage(img, 0, 0, targetW, targetH);
+    const imageData = ctx.getImageData(0, 0, targetW, targetH);
+
+    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+      inversionAttempts: "attemptBoth",
+    });
+
+    if (code && code.data) {
+      const payload = extractTicketPayload(code.data);
+      if (payload) {
+        return payload;
+      }
+    }
+  }
+  return null;
+}
+
 export function CheckInClient({ demoTickets }: CheckInClientProps) {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(subscribeNoop, () => true, () => false);
   const [activeTab, setActiveTab] = useState<"camera" | "upload" | "manual">("camera");
   const [ticketSearch, setTicketSearch] = useState("");
   const [tokenSearch, setTokenSearch] = useState("");
   
   // Scanned verification details state
-  const [scannedDetails, setScannedDetails] = useState<any>(null);
+  const [scannedDetails, setScannedDetails] = useState<Extract<Awaited<ReturnType<typeof verifyCheckInTicket>>, { success: boolean }> | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [isDecodingImage, setIsDecodingImage] = useState(false);
@@ -45,204 +132,11 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
   const [cameraActive, setCameraActive] = useState(false);
   const lastScannedCode = useRef<string>("");
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
-  // Camera Scan Loop
-  useEffect(() => {
-    if (!mounted) return;
-
-    let stream: MediaStream | null = null;
-    let animationFrameId: number;
-    let isCancelled = false;
-
-    const startCamera = async () => {
-      try {
-        let mediaStream: MediaStream;
-        try {
-          mediaStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: { ideal: "environment" } }
-          });
-        } catch {
-          mediaStream = await navigator.mediaDevices.getUserMedia({
-            video: true
-          });
-        }
-
-        if (isCancelled) {
-          mediaStream.getTracks().forEach(t => t.stop());
-          return;
-        }
-
-        stream = mediaStream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = mediaStream;
-          videoRef.current.setAttribute("playsinline", "true");
-          
-          try {
-            const playPromise = videoRef.current.play();
-            if (playPromise !== undefined) {
-              await playPromise.catch((err) => {
-                if (err.name !== "AbortError") {
-                  console.warn("Video play error:", err);
-                }
-              });
-            }
-          } catch (e) {
-            // Ignore interruption errors
-          }
-
-          if (!isCancelled) {
-            setCameraActive(true);
-            scanFrame();
-          }
-        }
-      } catch (err: any) {
-        if (err?.name !== "AbortError" && !isCancelled) {
-          console.warn("Camera access failed or unavailable:", err);
-        }
-        setCameraActive(false);
-      }
-    };
-
-    const scanFrame = () => {
-      if (isCancelled) return;
-
-      if (videoRef.current && canvasRef.current && activeTab === "camera") {
-        const video = videoRef.current;
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext("2d", { willReadFrequently: true });
-
-        if (video.readyState === video.HAVE_ENOUGH_DATA && ctx) {
-          canvas.height = video.videoHeight;
-          canvas.width = video.videoWidth;
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const code = jsQR(imageData.data, imageData.width, imageData.height, {
-            inversionAttempts: "attemptBoth",
-          });
-
-          if (code && code.data && code.data !== lastScannedCode.current) {
-            lastScannedCode.current = code.data;
-            const parsed = extractTicketPayload(code.data);
-            if (parsed) {
-              if (navigator.vibrate) {
-                try { navigator.vibrate(200); } catch {}
-              }
-              setTicketSearch(parsed.identifier);
-              setTokenSearch(parsed.token);
-              handleVerify(parsed.identifier, parsed.token);
-            }
-          }
-        }
-      }
-      animationFrameId = requestAnimationFrame(scanFrame);
-    };
-
-    if (activeTab === "camera") {
-      startCamera();
-    } else {
-      setCameraActive(false);
-    }
-
-    return () => {
-      isCancelled = true;
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, [activeTab, mounted]);
-
-  if (!mounted) return null;
 
   // Robust QR data extractor supporting JSON, URLs, Colons, and raw ticket codes
-  function extractTicketPayload(rawString: string): { identifier: string; token: string } | null {
-    if (!rawString || typeof rawString !== "string") return null;
-    const dataStr = rawString.trim();
-
-    // 1. JSON Payload format (from generateQRCodeDataUrl)
-    try {
-      const parsed = JSON.parse(dataStr);
-      const identifier = parsed.ticketNumber || parsed.ticketId || parsed.id || parsed.registrationId || "";
-      const token = parsed.verificationToken || parsed.token || "";
-      if (identifier) {
-        return { identifier, token };
-      }
-    } catch {}
-
-    // 2. Colon-delimited format "TICKET_NUMBER:TOKEN"
-    if (dataStr.includes(":") && !dataStr.startsWith("http")) {
-      const parts = dataStr.split(":");
-      if (parts.length >= 2) {
-        return { identifier: parts[0].trim(), token: parts[1].trim() };
-      }
-    }
-
-    // 3. URL format "http.../dashboard/tickets/[id]"
-    if (dataStr.startsWith("http")) {
-      try {
-        const url = new URL(dataStr);
-        const segments = url.pathname.split("/").filter(Boolean);
-        const lastSegment = segments[segments.length - 1];
-        if (lastSegment) {
-          return {
-            identifier: lastSegment,
-            token: url.searchParams.get("token") || "",
-          };
-        }
-      } catch {}
-    }
-
-    // 4. Raw identifier fallback (e.g. CE-TKT-2026-0001 or UUID)
-    if (dataStr.length >= 3) {
-      return { identifier: dataStr, token: "" };
-    }
-
-    return null;
-  }
 
   // Multi-scale image decoder for high-resolution phone screenshots and dark themes
-  function decodeQRFromImage(img: HTMLImageElement): { identifier: string; token: string } | null {
-    const maxDim = Math.max(img.width, img.height);
-    const targetScales = [
-      1,
-      1200 / maxDim,
-      800 / maxDim,
-      500 / maxDim,
-      350 / maxDim,
-    ].filter(s => s > 0 && s <= 1.5);
-
-    // Remove near duplicates
-    const uniqueScales = Array.from(new Set(targetScales.map(s => Math.round(s * 100) / 100)));
-
-    for (const scale of uniqueScales) {
-      const targetW = Math.max(50, Math.round(img.width * scale));
-      const targetH = Math.max(50, Math.round(img.height * scale));
-
-      const canvas = document.createElement("canvas");
-      canvas.width = targetW;
-      canvas.height = targetH;
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      if (!ctx) continue;
-
-      ctx.drawImage(img, 0, 0, targetW, targetH);
-      const imageData = ctx.getImageData(0, 0, targetW, targetH);
-
-      const code = jsQR(imageData.data, imageData.width, imageData.height, {
-        inversionAttempts: "attemptBoth",
-      });
-
-      if (code && code.data) {
-        const payload = extractTicketPayload(code.data);
-        if (payload) {
-          return payload;
-        }
-      }
-    }
-    return null;
-  }
 
   const handleVerify = async (ticketNum: string, token?: string) => {
     if (!ticketNum.trim()) {
@@ -258,17 +152,18 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
       const res = await verifyCheckInTicket(ticketNum, token);
       setIsVerifying(false);
 
-      if (res.error) {
-        setErrorMsg(res.error);
-        toast.error(res.error);
+      if (!res.success) {
+        const msg = res.error ?? "Failed to verify ticket.";
+        setErrorMsg(msg);
+        toast.error(msg);
       } else {
         setScannedDetails(res);
         toast.success("Ticket scanned and signature verified!");
       }
-    } catch (err: any) {
+    } catch (err) {
       setIsVerifying(false);
-      setErrorMsg(err?.message || "Failed to verify ticket.");
-      toast.error(err?.message || "Failed to verify ticket.");
+      setErrorMsg((err as Error)?.message || "Failed to verify ticket.");
+      toast.error((err as Error)?.message || "Failed to verify ticket.");
     }
   };
 
@@ -296,8 +191,8 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
             lastScannedCode.current = "";
           }, 2500);
         }
-      } catch (err: any) {
-        toast.error(err?.message || "Failed to confirm check-in.");
+      } catch (err) {
+        toast.error((err as Error)?.message || "Failed to confirm check-in.");
       }
     });
   };
@@ -358,6 +253,114 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
     setTokenSearch(token);
     handleVerify(ticketNum, token);
   };
+
+  // Camera Scan Loop
+  useEffect(() => {
+    if (!mounted) return;
+
+    let stream: MediaStream | null = null;
+    let animationFrameId: number;
+    let isCancelled = false;
+
+    const startCamera = async () => {
+      try {
+        let mediaStream: MediaStream;
+        try {
+          mediaStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: "environment" } }
+          });
+        } catch {
+          mediaStream = await navigator.mediaDevices.getUserMedia({
+            video: true
+          });
+        }
+
+        if (isCancelled) {
+          mediaStream.getTracks().forEach(t => t.stop());
+          return;
+        }
+
+        stream = mediaStream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+          videoRef.current.setAttribute("playsinline", "true");
+          
+          try {
+            const playPromise = videoRef.current.play();
+            if (playPromise !== undefined) {
+              await playPromise.catch((err) => {
+                if (err.name !== "AbortError") {
+                  console.warn("Video play error:", err);
+                }
+              });
+            }
+          } catch (e) {
+            // Ignore interruption errors
+          }
+
+          if (!isCancelled) {
+            setCameraActive(true);
+            scanFrame();
+          }
+        }
+      } catch (err) {
+        if ((err as Error)?.name !== "AbortError" && !isCancelled) {
+          console.warn("Camera access failed or unavailable:", err);
+        }
+        setCameraActive(false);
+      }
+    };
+
+    const scanFrame = () => {
+      if (isCancelled) return;
+
+      if (videoRef.current && canvasRef.current && activeTab === "camera") {
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+        if (video.readyState === video.HAVE_ENOUGH_DATA && ctx) {
+          canvas.height = video.videoHeight;
+          canvas.width = video.videoWidth;
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const code = jsQR(imageData.data, imageData.width, imageData.height, {
+            inversionAttempts: "attemptBoth",
+          });
+
+          if (code && code.data && code.data !== lastScannedCode.current) {
+            lastScannedCode.current = code.data;
+            const parsed = extractTicketPayload(code.data);
+            if (parsed) {
+              if (navigator.vibrate) {
+                try { navigator.vibrate(200); } catch {}
+              }
+              setTicketSearch(parsed.identifier);
+              setTokenSearch(parsed.token);
+              handleVerify(parsed.identifier, parsed.token);
+            }
+          }
+        }
+      }
+      animationFrameId = requestAnimationFrame(scanFrame);
+    };
+
+    if (activeTab === "camera") {
+      startCamera();
+    }
+
+    return () => {
+      isCancelled = true;
+      // Camera stops whenever the tab changes or the page unmounts
+      setCameraActive(false);
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, [activeTab, mounted]);
+
+  if (!mounted) return null;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[0.8fr_1.2fr] gap-8 items-start relative">
@@ -590,7 +593,7 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
             <div className="border-t border-border pt-4 flex flex-col sm:flex-row gap-3">
               {scannedDetails.registration.checkInStatus === "CHECKED_IN" ? (
                 <div className="w-full p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-semibold text-center">
-                  ⚠️ This pass was already checked in on {format(new Date(scannedDetails.registration.checkedInAt), "MMM d 'at' h:mm a")} by {scannedDetails.registration.checkedInByName || "Organizer"}.
+                  ⚠️ This pass was already checked in on {scannedDetails.registration.checkedInAt ? format(new Date(scannedDetails.registration.checkedInAt), "MMM d 'at' h:mm a") : "an earlier scan"} by {scannedDetails.registration.checkedInByName || "Organizer"}.
                 </div>
               ) : (
                 <button

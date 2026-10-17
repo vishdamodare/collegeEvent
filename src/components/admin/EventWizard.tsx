@@ -95,7 +95,9 @@ export function EventWizard({ initialData, categories }: EventWizardProps) {
 
   // Form States - Step 1: Basic Info
   const [title, setTitle] = useState(initialData?.basic.title || "");
-  const [slug, setSlug] = useState(initialData?.basic.slug || "");
+  // New events: slug follows the title; editing (or a template) pins it
+  const [slugOverride, setSlug] = useState<string | null>(initialData?.basic.slug || null);
+  const slug = slugOverride ?? title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
   const [category, setCategory] = useState(resolveCategory(initialData?.basic.category || "technical"));
   const [subcategory, setSubcategory] = useState(initialData?.basic.subcategory || "");
   const [eventType, setEventType] = useState(initialData?.basic.eventType || "GENERAL");
@@ -138,7 +140,7 @@ export function EventWizard({ initialData, categories }: EventWizardProps) {
   const [collectAdditionalInfo, setCollectAdditionalInfo] = useState<boolean>(initialData?.registration.collectAdditionalInfo || false);
   const [registrationDeadline, setRegistrationDeadline] = useState(initialData?.registration.registrationDeadline ? new Date(initialData.registration.registrationDeadline).toISOString().slice(0, 16) : "");
   const [lateRegistrationAllowed, setLateRegistrationAllowed] = useState<boolean>(initialData?.registration.lateRegistrationAllowed || false);
-  const [registrationFormFields, setRegistrationFormFields] = useState<any[]>(initialData?.registration.registrationFormFields || getDefaultFormFields());
+  const [registrationFormFields, setRegistrationFormFields] = useState<NonNullable<AdminEvent["registration"]["registrationFormFields"]>>(initialData?.registration.registrationFormFields || getDefaultFormFields());
 
   // Form States - Step 5: Team
   const [isTeam, setIsTeam] = useState<boolean>(initialData?.registration.isTeam || false);
@@ -149,11 +151,11 @@ export function EventWizard({ initialData, categories }: EventWizardProps) {
 
   // Form States - Step 6: Ticketing
   const [ticketingEnabled, setTicketingEnabled] = useState<boolean>(initialData?.pricing.ticketingEnabled || false);
-  const [tickets, setTickets] = useState<any[]>(initialData?.pricing.tickets || []);
+  const [tickets, setTickets] = useState<NonNullable<AdminEvent["pricing"]["tickets"]>>(initialData?.pricing.tickets || []);
 
   // Form States - Step 7: Coupons
   const [couponsEnabled, setCouponsEnabled] = useState<boolean>(initialData?.pricing.couponsEnabled || false);
-  const [coupons, setCoupons] = useState<any[]>(initialData?.pricing.coupons || []);
+  const [coupons, setCoupons] = useState<NonNullable<AdminEvent["pricing"]["coupons"]>>(initialData?.pricing.coupons || []);
 
   // Form States - Step 8: Payment / Pricing
   const [isFree, setIsFree] = useState<boolean>(initialData?.pricing.isFree ?? true);
@@ -180,7 +182,7 @@ export function EventWizard({ initialData, categories }: EventWizardProps) {
   const [rulebookPdfUrl, setRulebookPdfUrl] = useState(initialData?.media.rulebookPdfUrl || "");
 
   // Form States - Step 11: Sponsors
-  const [sponsors, setSponsors] = useState<any[]>(initialData?.sponsors || []);
+  const [sponsors, setSponsors] = useState<NonNullable<AdminEvent["sponsors"]>>(initialData?.sponsors || []);
 
   // Form States - Step 12: Rules & Prizes
   const [eligibility, setEligibility] = useState(initialData?.rules.eligibility || "");
@@ -190,11 +192,11 @@ export function EventWizard({ initialData, categories }: EventWizardProps) {
   const [codeOfConduct, setCodeOfConduct] = useState(initialData?.rules.codeOfConduct || "");
   const [termsAndConditions, setTermsAndConditions] = useState(initialData?.rules.termsAndConditions || "");
   const [judgingCriteria, setJudgingCriteria] = useState(initialData?.rules.judgingCriteria || "");
-  const [prizes, setPrizes] = useState<any[]>(initialData?.rules.prizes || [
+  const [prizes, setPrizes] = useState<NonNullable<AdminEvent["rules"]["prizes"]>>(initialData?.rules.prizes || [
     { title: "First Place Winner", cashPrize: 10000, goodies: "Trophy & T-Shirts", description: "Top scoring contestant/team" },
     { title: "Runner-Up", cashPrize: 5000, goodies: "Medal", description: "Second place score" }
   ]);
-  const [faqs, setFaqs] = useState<any[]>(initialData?.rules.faqs || [
+  const [faqs, setFaqs] = useState<NonNullable<AdminEvent["rules"]["faqs"]>>(initialData?.rules.faqs || [
     { question: "Who is eligible to participate?", answer: "Any student with a valid college ID card." }
   ]);
   const [privacyPolicy, setPrivacyPolicy] = useState(initialData?.rules.privacyPolicy || "");
@@ -211,13 +213,6 @@ export function EventWizard({ initialData, categories }: EventWizardProps) {
   const [participationTemplate, setParticipationTemplate] = useState(initialData?.certificates.participationTemplate || "participation-std.pdf");
   const [autoGenerate, setAutoGenerate] = useState<boolean>(initialData?.certificates.autoGenerate ?? true);
   const [emailAfterEvent, setEmailAfterEvent] = useState<boolean>(initialData?.certificates.emailAfterEvent ?? true);
-
-  // Auto slug generation from title
-  useEffect(() => {
-    if (!initialData) {
-      setSlug(title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""));
-    }
-  }, [title]);
 
   // Autosave simulation every 30 seconds
   useEffect(() => {
@@ -470,7 +465,7 @@ export function EventWizard({ initialData, categories }: EventWizardProps) {
     
     // Map the wizard AdminEvent shape to the flat EventFormData the server action needs
     // Resolve categoryId: look up by name or use the value directly if it looks like an ID
-    let categoryIdResolved = assembled.basic.category || "";
+    const categoryIdResolved = assembled.basic.category || "";
 
     // Map wizard EventStatus values to valid Prisma EventStatus values
     const toPrismaStatus = (s: string): PrismaEventStatus => {
@@ -496,10 +491,10 @@ export function EventWizard({ initialData, categories }: EventWizardProps) {
       teamMaxSize: assembled.registration.isTeam ? assembled.registration.maxTeamSize || 1 : 1,
       // Name/email/phone/college/branch/year come from the student profile step already
       additionalQuestions: (assembled.registration.registrationFormFields || []).filter(
-        (f: any) => !DEFAULT_FIELD_IDS.has(f.id)
+        (f) => !DEFAULT_FIELD_IDS.has(f.id)
       ),
       galleryUrls: assembled.media.gallery.filter((u: string) => /^https?:\/\//.test(u)),
-      details: assembled as unknown as Record<string, any>,
+      details: assembled as unknown as Record<string, unknown>,
     };
 
     try {
@@ -896,7 +891,7 @@ export function EventWizard({ initialData, categories }: EventWizardProps) {
                         type="radio" 
                         name="venueType" 
                         checked={venueType === type} 
-                        onChange={() => setVenueType(type as any)}
+                        onChange={() => setVenueType(type as typeof venueType)}
                         className="text-[var(--color-lime)]" 
                       />
                       <div>

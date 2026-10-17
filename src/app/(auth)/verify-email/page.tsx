@@ -10,15 +10,13 @@ function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
 
-  const [status, setStatus] = useState<"verifying" | "success" | "error">("verifying");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [status, setStatus] = useState<"verifying" | "success" | "error">(token ? "verifying" : "error");
+  const [errorMessage, setErrorMessage] = useState<string | null>(
+    token ? null : "No verification token found in URL. Please check your email link."
+  );
 
   useEffect(() => {
-    if (!token) {
-      setStatus("error");
-      setErrorMessage("No verification token found in URL. Please check your email link.");
-      return;
-    }
+    if (!token) return;
 
     const verify = async () => {
       const result = await verifyEmailAction(token);

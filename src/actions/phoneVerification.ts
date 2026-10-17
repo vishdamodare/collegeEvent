@@ -128,7 +128,7 @@ export async function sendOtpAction(phone: string) {
     }
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error sending OTP:", error);
     return { error: "Failed to send verification code. Please try again." };
   }
@@ -201,7 +201,7 @@ export async function verifyOtpAction(phone: string, code: string) {
     }
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error verifying OTP:", error);
     return { error: "Failed to verify verification code. Please try again." };
   }

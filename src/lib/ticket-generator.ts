@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import QRCode from "qrcode";
 
 /**
  * Generates a unique, sequential, and human-readable ticket number.
  * Example: CE-2026-000001
  */
-export async function generateTicketNumber(tx?: any): Promise<string> {
+export async function generateTicketNumber(tx?: Prisma.TransactionClient): Promise<string> {
   const currentYear = new Date().getFullYear();
   const startOfYear = new Date(`${currentYear}-01-01T00:00:00.000Z`);
   const endOfYear = new Date(`${currentYear}-12-31T23:59:59.999Z`);

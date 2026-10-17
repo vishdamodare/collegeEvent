@@ -10,20 +10,22 @@ interface HeroBackgroundProps {
   activeIndex: number;
 }
 
-const Particles = memo(function Particles() {
-  const [particles, setParticles] = useState<{ id: number; size: number; left: number; top: number; dur: number; delay: number }[]>([]);
+// Seeded pseudo-random so server and client render identical particles (no hydration mismatch)
+const rand = (n: number) => {
+  const x = Math.sin(n * 12.9898) * 43758.5453;
+  return x - Math.floor(x);
+};
+const PARTICLES = Array.from({ length: 26 }, (_, i) => ({
+  id: i,
+  size: rand(i * 5 + 1) * 3 + 1,
+  left: rand(i * 5 + 2) * 100,
+  top: 90 + rand(i * 5 + 3) * 10,
+  dur: 10 + rand(i * 5 + 4) * 14,
+  delay: rand(i * 5 + 5) * 10,
+}));
 
-  useEffect(() => {
-    const generated = Array.from({ length: 26 }).map((_, i) => ({
-      id: i,
-      size: Math.random() * 3 + 1,
-      left: Math.random() * 100,
-      top: 90 + Math.random() * 10,
-      dur: 10 + Math.random() * 14,
-      delay: Math.random() * 10,
-    }));
-    setParticles(generated);
-  }, []);
+const Particles = memo(function Particles() {
+  const particles = PARTICLES;
 
   return (
     <div className="hero-particles absolute inset-0 z-[1] overflow-hidden pointer-events-none">

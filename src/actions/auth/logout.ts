@@ -9,7 +9,7 @@ export async function logoutAction() {
       headers: await headers(),
     });
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Logout action failed:", error);
     return { success: false, error: "Logout failed" };
   }

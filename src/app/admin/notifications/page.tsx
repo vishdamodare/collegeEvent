@@ -22,7 +22,7 @@ import {
 import { toast } from "sonner";
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<Awaited<ReturnType<typeof getAdminNotifications>>>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [showUnread, setShowUnread] = useState(false);
   const [isPending, startTransition] = useTransition();

@@ -54,7 +54,7 @@ export async function checkOAuthUserStatusAction() {
       role: effectiveRole,
       organizerStatus: organizer?.verificationStatus || null,
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to check OAuth user status:", error);
     return { success: false, error: "Internal server error" };
   }
@@ -123,11 +123,11 @@ export async function completeOAuthStudentOnboardingAction(input: {
     ]);
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to complete OAuth onboarding:", error);
     return {
       success: false,
-      error: error.message || "Failed to complete onboarding details",
+      error: (error as Error).message || "Failed to complete onboarding details",
     };
   }
 }
