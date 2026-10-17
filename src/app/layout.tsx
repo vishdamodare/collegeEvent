@@ -18,6 +18,8 @@ export const metadata: Metadata = {
     images: [{ url: "/logo-mark.png", width: 512, height: 512, alt: "CollegeEvents" }],
   },
   twitter: { card: "summary", title: "CollegeEvents — Where Campus Life Happens" },
+  // Google Search Console ownership (public token, safe to commit)
+  verification: { google: "2EbSs9SstfQ1H6aUohSeGvv8SHKz832Mt_R9ZzfXCMI" },
 };
 
 export default function RootLayout({
