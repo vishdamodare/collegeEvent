@@ -3,11 +3,13 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { checkOAuthUserStatusAction } from "@/actions/auth/oauth";
+import { safeRedirect } from "@/utils/safeRedirect";
 
 function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const targetRole = searchParams.get("targetRole") || "student";
+  const next = safeRedirect(searchParams.get("next"));
 
   const [error, setError] = useState<string | null>(null);
 
@@ -24,7 +26,7 @@ function AuthCallbackContent() {
 
       if (status.hasProfile) {
         if (status.role === "STUDENT") {
-          router.push("/");
+          router.push(next ?? "/");
         } else if (status.role === "ORGANIZER") {
           if (status.organizerStatus === "APPROVED") {
             router.push("/admin");
@@ -44,7 +46,7 @@ function AuthCallbackContent() {
     };
 
     handleCallback();
-  }, [router, targetRole]);
+  }, [router, targetRole, next]);
 
   return (
     <div className="relative min-h-screen w-full flex flex-col items-center justify-center bg-[#0A0A0A] text-white">

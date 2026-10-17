@@ -7,6 +7,7 @@ import { AuthCard } from "@/components/auth/AuthCard";
 import { SocialLogin } from "@/components/auth/SocialLogin";
 import { authClient } from "@/lib/auth-client";
 import { loginAction } from "@/actions/auth/login";
+import { safeRedirect } from "@/utils/safeRedirect";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -25,6 +26,9 @@ export default function LoginPage() {
   if (!mounted) {
     return null;
   }
+
+  // Where to return after login (e.g. the event the student was registering for)
+  const callbackUrl = safeRedirect(new URLSearchParams(window.location.search).get("callbackUrl"));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,9 +59,9 @@ export default function LoginPage() {
       } else {
         // Successful login: Redirect based on role
         if (preCheck.role === "ORGANIZER") {
-          router.push("/admin");
+          router.push(callbackUrl?.startsWith("/admin") ? callbackUrl : "/admin");
         } else {
-          router.push("/dashboard");
+          router.push(callbackUrl ?? "/dashboard");
         }
       }
     } catch (err: any) {
@@ -145,7 +149,11 @@ export default function LoginPage() {
         <div className="h-[1px] flex-1 bg-[var(--color-border)]"></div>
       </div>
 
-      <SocialLogin />
+      <SocialLogin
+        callbackURL={`/auth-callback?targetRole=student${
+          callbackUrl ? `&next=${encodeURIComponent(callbackUrl)}` : ""
+        }`}
+      />
 
       <div className="text-center mt-8 text-[14px] text-[var(--color-text-muted)]">
         Don't have an account?{" "}
