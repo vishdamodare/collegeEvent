@@ -1,0 +1,15 @@
+# Pings the homepage so the Vercel function and Neon compute (suspends after ~5 min idle) stay warm.
+# ponytail: GitHub may delay scheduled runs under load; switch to a paid Neon plan with suspend disabled if cold starts still matter.
+name: keep-warm
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - run: curl -fsS -o /dev/null -w "%{http_code} %{time_total}s\n" --max-time 30 https://collegeevent.in/
