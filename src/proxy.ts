@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { getSessionCookie } from "better-auth/cookies";
 
 export function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   
-  // Extract Better Auth session token cookie directly from request cookies
-  const sessionToken = 
-    request.cookies.get("better-auth.session_token") || 
-    request.cookies.get("__secure-better-auth.session_token");
+  // Handles the "__Secure-" prefix Better Auth adds on HTTPS (cookie names are case-sensitive)
+  const sessionToken = getSessionCookie(request);
 
   // Protected routes requiring an active session
   const isProtectedRoute = 

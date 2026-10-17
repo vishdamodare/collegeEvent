@@ -24,7 +24,7 @@ function AuthCallbackContent() {
 
       if (status.hasProfile) {
         if (status.role === "STUDENT") {
-          router.push("/dashboard");
+          router.push("/");
         } else if (status.role === "ORGANIZER") {
           if (status.organizerStatus === "APPROVED") {
             router.push("/admin");
