@@ -6,6 +6,23 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { unstable_cache } from "next/cache";
+import { appUrl } from "@/lib/app-url";
+
+const siteJsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "CollegeEvents",
+    url: appUrl,
+    logo: `${appUrl}/logo-mark.png`,
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "CollegeEvents",
+    url: appUrl,
+  },
+];
 
 export const dynamic = "force-dynamic";
 
@@ -86,5 +103,14 @@ export default async function Home() {
     trending: cat.trending,
   }));
 
-  return <HomeClient events={events} categories={categories} colleges={dbColleges} stats={stats} />;
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        // Tells Google the site name and logo (used for the brand in search results)
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }}
+      />
+      <HomeClient events={events} categories={categories} colleges={dbColleges} stats={stats} />
+    </>
+  );
 }
