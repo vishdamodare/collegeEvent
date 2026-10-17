@@ -189,6 +189,10 @@ export function EventDetailClient({
   };
 
   const handleRegister = () => {
+    if (!session) {
+      router.push(`/login?callbackUrl=${encodeURIComponent(`/events/${event.slug}?register=true`)}`);
+      return;
+    }
     setIsWizardOpen(true);
   };
 

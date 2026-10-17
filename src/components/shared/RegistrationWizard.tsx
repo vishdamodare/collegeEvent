@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { registerForFreeEvent } from "@/actions/registrations";
 import { updateStudentProfile } from "@/actions/profile";
+import { authClient } from "@/lib/auth-client";
 import { cn } from "@/utils/cn";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -35,7 +36,10 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
 
   // Step 1: Profile forms
   const [name, setName] = useState(initialProfile?.user?.name || "");
-  const [email, setEmail] = useState(initialProfile?.user?.email || "");
+  const [email] = useState(initialProfile?.user?.email || "");
+  const { data: session } = authClient.useSession();
+  // Account email is read-only; fall back to the session when the student has no profile row yet
+  const accountEmail = email || session?.user?.email || "";
   const [phone, setPhone] = useState(initialProfile?.phoneNumber || "");
   const [college, setCollege] = useState(initialProfile?.college || "");
   const [branch, setBranch] = useState(initialProfile?.branch || "");
@@ -102,7 +106,7 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
 
   // Step 1 Save -> Step 2
   const handleProfileSave = () => {
-    if (!name || !email || !phone || !college || !branch || !academicYear) {
+    if (!name || !accountEmail || !phone || !college || !branch || !academicYear) {
       toast.error("Please fill out all required profile fields.");
       return;
     }
@@ -334,8 +338,8 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
                 <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase">Email Address</label>
                 <input 
                   type="email" 
-                  value={email} 
-                  disabled 
+                  value={accountEmail} 
+                  readOnly 
                   className="w-full rounded-xl bg-card border border-border px-4 py-3 text-white/50 text-sm outline-none cursor-not-allowed" 
                 />
               </div>
@@ -574,7 +578,7 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
                 </div>
                 <div className="flex-grow">
                   <div className="text-sm font-bold text-white">{name} (You)</div>
-                  <div className="text-xs text-text-faint">{email} · Team Captain</div>
+                  <div className="text-xs text-text-faint">{accountEmail} · Team Captain</div>
                 </div>
                 <span className="text-[10px] uppercase font-bold tracking-widest text-lime bg-lime/10 border border-lime/20 px-2 py-0.5 rounded-full">
                   Leader
@@ -741,7 +745,7 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
               <div className="bg-card border border-border rounded-xl p-4 space-y-2">
                 <span className="text-[10px] uppercase font-bold text-text-faint tracking-wider block border-b border-border/50 pb-1">Participant Summary</span>
                 <div className="flex justify-between font-medium"><span className="text-text-faint">Name:</span><span className="text-white">{name}</span></div>
-                <div className="flex justify-between font-medium"><span className="text-text-faint">Email:</span><span className="text-white">{email}</span></div>
+                <div className="flex justify-between font-medium"><span className="text-text-faint">Email:</span><span className="text-white">{accountEmail}</span></div>
                 <div className="flex justify-between font-medium"><span className="text-text-faint">Phone:</span><span className="text-white">{phone}</span></div>
                 <div className="flex justify-between font-medium"><span className="text-text-faint">College:</span><span className="text-white">{college}</span></div>
               </div>
