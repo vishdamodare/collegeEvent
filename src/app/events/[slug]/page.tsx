@@ -1,3 +1,4 @@
+import { appUrl } from "@/lib/app-url";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getEventBySlug, getEventsByOrganizer } from "@/actions/events";
@@ -28,6 +29,7 @@ export async function generateMetadata({ params }: EventDetailPageProps): Promis
   return {
     title: `${event.title} — CollegeEvents`,
     description: event.description.slice(0, 160),
+    alternates: { canonical: `/events/${event.slug}` },
     openGraph: {
       title: event.title,
       description: event.description.slice(0, 160),
@@ -107,7 +109,28 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
 
   const details = toPublicDetails(row?.details, isRegistered);
 
+  // schema.org Event lets Google show this in event search results (date, venue, image)
+  const heroImage = event.images.find((i) => i.isHero)?.url || event.images[0]?.url;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    name: event.title,
+    description: event.description.slice(0, 300),
+    startDate: event.date.toISOString(),
+    eventStatus: "https://schema.org/EventScheduled",
+    eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+    location: { "@type": "Place", name: event.location, address: event.location },
+    ...(heroImage ? { image: [heroImage] } : {}),
+    url: `${appUrl}/events/${event.slug}`,
+  };
+
   return (
+    <>
+    <script
+      type="application/ld+json"
+      // Escape "<" so event text can't close the script tag
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
+    />
     <EventDetailClient
       event={event}
       details={details}
@@ -116,6 +139,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
       registrationDetails={registrationDetails}
       initialProfile={profile}
     />
+    </>
   );
 }
 

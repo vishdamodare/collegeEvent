@@ -1,10 +1,23 @@
 import type { Metadata } from "next";
 import { Toaster } from "sonner";
 import "./globals.css";
+import { appUrl } from "@/lib/app-url";
 
 export const metadata: Metadata = {
+  // Resolves relative og/canonical URLs to the real domain
+  metadataBase: new URL(appUrl),
   title: "CollegeEvents — Where Campus Life Happens",
   description: "The platform where students discover, register for, and live campus life across every university.",
+  keywords: ["college events", "campus events", "hackathons", "college fests", "student events India", "event registration"],
+  openGraph: {
+    siteName: "CollegeEvents",
+    type: "website",
+    locale: "en_IN",
+    title: "CollegeEvents — Where Campus Life Happens",
+    description: "Discover and register for hackathons, fests, sports and cultural events across colleges.",
+    images: [{ url: "/logo-mark.png", width: 512, height: 512, alt: "CollegeEvents" }],
+  },
+  twitter: { card: "summary", title: "CollegeEvents — Where Campus Life Happens" },
 };
 
 export default function RootLayout({
