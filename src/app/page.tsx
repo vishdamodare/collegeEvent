@@ -5,8 +5,14 @@ import type { Event } from "@/types";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { unstable_cache } from "next/cache";
 
 export const dynamic = "force-dynamic";
+
+// Same for every visitor, and getDynamicColleges scans all organizers/events/registrations:
+// cache for 5 min so most refreshes skip those DB round trips
+const getCachedStats = unstable_cache(getHomepageStats, ["home-stats"], { revalidate: 300 });
+const getCachedColleges = unstable_cache(getDynamicColleges, ["home-colleges"], { revalidate: 300 });
 
 // Badge color map based on category
 const badgeMap: Record<string, string> = {
@@ -42,8 +48,8 @@ export default async function Home() {
   const [dbEvents, dbCategories, stats, dbColleges] = await Promise.all([
     getRecommendedEvents(),
     getCategoryRecommendations(),
-    getHomepageStats(),
-    getDynamicColleges(),
+    getCachedStats(),
+    getCachedColleges(),
   ]);
 
   // Map database events to the format existing home components expect
