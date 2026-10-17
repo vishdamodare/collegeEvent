@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { 
@@ -74,9 +75,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         {/* Brand Logo & Toggle */}
         <div className="h-20 flex items-center justify-between px-6 border-b border-white/5">
           <Link href="/admin" className="flex items-center gap-2.5">
-            <span className="w-8 h-8 rounded-lg bg-[var(--color-lime)] text-[#0B0B08] flex items-center justify-center font-black text-lg shadow-[0_0_15px_rgba(215,255,61,0.4)]">
-              C
-            </span>
+            <Image src="/logo-mark.png" alt="CollegeEvents logo" width={32} height={32} className="w-8 h-8 shrink-0" priority />
             {!isCollapsed && (
               <span className="font-anton text-lg tracking-wider text-white">
                 COLLEGE<span className="text-[var(--color-lime)]">EVENTS</span>
