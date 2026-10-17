@@ -1,10 +1,12 @@
 # Pings the homepage so the Vercel function and Neon compute (suspends after ~5 min idle) stay warm.
-# ponytail: GitHub may delay scheduled runs under load; switch to a paid Neon plan with suspend disabled if cold starts still matter.
+# Peak hours only: Neon Free = 100 CU-hours/month (~400 h at 0.25 CU); 24/7 would exhaust it mid-month
+# and suspend the DB until the next cycle. 07:00-16:55 UTC = 12:30-22:25 IST, ~310 h/month.
+# ponytail: GitHub may delay scheduled runs under load; a paid Neon plan with suspend disabled is the real fix.
 name: keep-warm
 
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "*/5 7-16 * * *"
   workflow_dispatch:
 
 jobs:
