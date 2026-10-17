@@ -11,6 +11,7 @@ import {
   Calendar,
   Settings,
   Bell,
+  Ticket,
   Menu,
   X,
   LogOut,
@@ -23,6 +24,7 @@ const NAV_ITEMS = [
   { label: "Profile", href: "/dashboard/profile", icon: User },
   { label: "Saved Events", href: "/dashboard/saved", icon: Bookmark },
   { label: "My Events", href: "/dashboard/events", icon: Calendar },
+  { label: "My Tickets", href: "/dashboard/tickets", icon: Ticket },
   { label: "Notifications", href: "/dashboard/notifications", icon: Bell },
   { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
