@@ -122,8 +122,13 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
 
   // Step 1 Save -> Step 2
   const handleProfileSave = () => {
-    if (!name || !accountEmail || !phone || !college || !branch || !academicYear) {
-      toast.error("Please fill out all required profile fields.");
+    // Name the empty fields — a greyed placeholder easily looks like a filled value
+    const missing = Object.entries({
+      "Full Name": name, "Email": accountEmail, "Phone Number": phone,
+      "College": college, "Branch": branch, "Academic Year": academicYear,
+    }).filter(([, v]) => !v.trim()).map(([label]) => label);
+    if (missing.length) {
+      toast.error(`Please fill in: ${missing.join(", ")}`);
       return;
     }
 
@@ -342,7 +347,7 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
               <div>
-                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase">Full Name</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase">Full Name <span className="text-red-400">*</span></label>
                 <input 
                   type="text" 
                   value={name} 
@@ -351,7 +356,7 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase">Email Address</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase">Email Address <span className="text-red-400">*</span></label>
                 <input 
                   type="email" 
                   value={accountEmail} 
@@ -360,17 +365,17 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase">Phone Number</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase">Phone Number <span className="text-red-400">*</span></label>
                 <input 
                   type="text" 
                   value={phone} 
                   onChange={(e) => setPhone(e.target.value)} 
-                  placeholder="+91 98765 43210" 
+                  placeholder="e.g. +91 98765 43210" 
                   className="w-full rounded-xl bg-card border border-border px-4 py-3 text-white text-sm outline-none focus:border-lime" 
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase">University / College</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase">University / College <span className="text-red-400">*</span></label>
                 <input 
                   type="text" 
                   value={college} 
@@ -379,7 +384,7 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase">Branch / Major</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase">Branch / Major <span className="text-red-400">*</span></label>
                 <input 
                   type="text" 
                   value={branch} 
@@ -388,7 +393,7 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase">Academic Year</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase">Academic Year <span className="text-red-400">*</span></label>
                 <select 
                   value={academicYear} 
                   onChange={(e) => setAcademicYear(e.target.value)} 
