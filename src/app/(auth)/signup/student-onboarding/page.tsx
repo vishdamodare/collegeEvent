@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { completeOAuthStudentOnboardingAction } from "@/actions/auth/oauth";
+import { safeRedirect } from "@/utils/safeRedirect";
 
 // Google sign-ups already give us name + email; we only need the college.
 // Branch, year and interests can be added later from the profile page.
@@ -24,7 +25,8 @@ export default function StudentOnboardingPage() {
     setError(null);
     const result = await completeOAuthStudentOnboardingAction({ college });
     setIsSubmitting(false);
-    if (result.success) router.push("/dashboard");
+    // Return to where login started (e.g. the event being registered for)
+    if (result.success) router.push(safeRedirect(new URLSearchParams(window.location.search).get("next")) ?? "/dashboard");
     else setError(result.error || "Failed to save. Please try again.");
   };
 

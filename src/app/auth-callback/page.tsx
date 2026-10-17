@@ -40,7 +40,7 @@ function AuthCallbackContent() {
           // Organizers cannot onboard solely via OAuth, they require document verification
           router.push("/signup");
         } else {
-          router.push("/signup/student-onboarding");
+          router.push(`/signup/student-onboarding${next ? `?next=${encodeURIComponent(next)}` : ""}`);
         }
       }
     };
