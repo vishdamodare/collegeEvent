@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { ArrowUpRight, X } from "lucide-react";
 import { cn } from "@/utils/cn";
@@ -83,22 +84,7 @@ export function Navbar({ isAuthenticated: propIsAuthenticated, onLogout: propOnL
         <div className="max-w-[1360px] mx-auto px-5 sm:px-10">
           <nav className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-[10px] font-archivo font-bold text-[19px]">
-              <svg viewBox="0 0 40 40" fill="none" className="w-[34px] h-[34px]">
-                <defs>
-                  <linearGradient id="lg1" x1="0" y1="0" x2="40" y2="40">
-                    <stop offset="0%" style={{ stopColor: "var(--color-lime)" }} />
-                    <stop offset="100%" style={{ stopColor: "var(--color-coral)" }} />
-                  </linearGradient>
-                </defs>
-                <path
-                  d="M28 6C17 6 8 14.5 8 25c0 3 .6 5.7 1.8 8.2.3.6-.1 1.3-.8 1.3H6"
-                  stroke="url(#lg1)"
-                  strokeWidth="4.2"
-                  strokeLinecap="round"
-                  fill="none"
-                />
-                <circle cx="30" cy="9" r="3.4" style={{ fill: "var(--color-butter)" }} />
-              </svg>
+              <Image src="/logo-mark.png" alt="CollegeEvents logo" width={34} height={34} className="w-[34px] h-[34px] rounded-[8px] bg-white p-[2px]" priority />
               CollegeEvents
             </Link>
 

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export function Footer() {
   return (
@@ -9,22 +10,7 @@ export function Footer() {
           {/* Brand Col */}
           <div className="col-span-2 lg:col-span-1">
             <Link href="#" className="flex items-center gap-[10px] font-archivo font-bold text-[19px]">
-              <svg viewBox="0 0 40 40" fill="none" className="w-[30px] h-[30px]">
-                <defs>
-                  <linearGradient id="lgFooter" x1="0" y1="0" x2="40" y2="40">
-                    <stop offset="0%" style={{ stopColor: "var(--color-lime)" }} />
-                    <stop offset="100%" style={{ stopColor: "var(--color-coral)" }} />
-                  </linearGradient>
-                </defs>
-                <path
-                  d="M28 6C17 6 8 14.5 8 25c0 3 .6 5.7 1.8 8.2.3.6-.1 1.3-.8 1.3H6"
-                  stroke="url(#lgFooter)"
-                  strokeWidth="4.2"
-                  strokeLinecap="round"
-                  fill="none"
-                />
-                <circle cx="30" cy="9" r="3.4" style={{ fill: "var(--color-butter)" }} />
-              </svg>
+              <Image src="/logo-mark.png" alt="CollegeEvents logo" width={30} height={30} className="w-[30px] h-[30px] rounded-[8px] bg-white p-[2px]" />
               CollegeEvents
             </Link>
             <p className="text-[var(--color-text-faint)] text-[14px] my-4 max-w-[280px] leading-[1.6]">
