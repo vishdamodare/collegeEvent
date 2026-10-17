@@ -1,3 +1,5 @@
+import { appUrl } from "@/lib/app-url";
+
 interface SendEmailArgs {
   to: string;
   subject: string;
@@ -148,7 +150,6 @@ export async function sendPasswordResetEmail(to: string, url: string) {
 }
 
 export async function sendWelcomeEmail(to: string, name: string) {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const content = `
     <p>Hey ${name}, welcome to CollegeEvents! Your student account is fully active. Start browsing tech fests, hackathons, and cultural events near you.</p>
     <a href="${appUrl}/dashboard" class="btn" style="color: #0B0B08;">Go to Dashboard</a>
@@ -161,7 +162,6 @@ export async function sendWelcomeEmail(to: string, name: string) {
 }
 
 export async function sendOrganizerApprovedEmail(to: string, name: string) {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const content = `
     <p>Hello ${name}, your event organizer account has been approved by the platform administrators! You can now log in and start publishing events for your institution.</p>
     <a href="${appUrl}/login" class="btn" style="color: #0B0B08;">Login to Admin Panel</a>
@@ -198,7 +198,6 @@ export async function sendTicketConfirmationEmail({
   eventDate: string;
   ticketNumber: string;
 }) {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const content = `
     <p>Congratulations ${studentName}! Your registration for <strong>${eventTitle}</strong> on ${eventDate} is confirmed.</p>
     <div style="background-color: #1E1E1E; border: 1px solid #333; padding: 20px; border-radius: 12px; margin: 20px 0; text-align: center;">
@@ -223,7 +222,6 @@ export async function sendCertificateIssuedEmail({
   studentName: string;
   eventTitle: string;
 }) {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const content = `
     <p>Dear ${studentName}, thank you for attending <strong>${eventTitle}</strong>! Your official Certificate of Participation has been generated and issued.</p>
     <a href="${appUrl}/dashboard/events" class="btn" style="color: #0B0B08;">View & Download Certificate</a>

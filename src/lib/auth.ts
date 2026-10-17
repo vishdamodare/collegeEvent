@@ -3,14 +3,16 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "@/lib/prisma";
 import { sendVerificationEmail, sendPasswordResetEmail } from "@/lib/email";
 import { nextCookies } from "better-auth/next-js";
+import { appUrl } from "@/lib/app-url";
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
+  baseURL: appUrl,
   trustedOrigins: [
-    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-    process.env.BETTER_AUTH_URL || "http://localhost:3000",
+    appUrl,
+    ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []),
     "http://localhost:3000",
     "http://localhost:3001",
     "http://localhost:3002",
@@ -30,7 +32,6 @@ export const auth = betterAuth({
     sendResetPassword: async ({ user, url }) => {
       // Extract the token parameter from the Better Auth API URL
       const token = url.split("token=")[1] || "";
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
       const customUrl = `${appUrl}/reset-password?token=${token}`;
       await sendPasswordResetEmail(user.email, customUrl);
     },
@@ -53,7 +54,6 @@ export const auth = betterAuth({
     sendVerificationEmail: async ({ user, url }) => {
       // Extract the token parameter from the Better Auth API URL
       const token = url.split("token=")[1] || "";
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
       const customUrl = `${appUrl}/verify-email?token=${token}`;
       await sendVerificationEmail(user.email, customUrl);
     },
