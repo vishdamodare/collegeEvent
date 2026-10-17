@@ -10,7 +10,7 @@ export function Footer() {
           {/* Brand Col */}
           <div className="col-span-2 lg:col-span-1">
             <Link href="#" className="flex items-center gap-[10px] font-archivo font-bold text-[19px]">
-              <Image src="/logo-mark.png" alt="CollegeEvents logo" width={30} height={30} className="w-[30px] h-[30px] rounded-[8px] bg-white p-[2px]" />
+              <Image src="/logo-mark.png" alt="CollegeEvents logo" width={30} height={30} className="w-[30px] h-[30px]" />
               CollegeEvents
             </Link>
             <p className="text-[var(--color-text-faint)] text-[14px] my-4 max-w-[280px] leading-[1.6]">
