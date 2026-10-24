@@ -150,6 +150,3 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - `npm run db:studio` — Open Prisma Studio GUI for database inspection.
 
 ---
-
-## 📄 License
-This project is licensed under the [MIT License](LICENSE).
