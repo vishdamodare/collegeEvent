@@ -40,7 +40,10 @@ export async function getPublishedEvents(options?: {
   search?: string;
   sortBy?: "date" | "newest" | "oldest" | "alphabetical";
 }) {
-  const { take = 12, skip = 0, categorySlug, search, sortBy = "date" } = options ?? {};
+  const { categorySlug, search, sortBy = "date" } = options ?? {};
+  // Public action: never trust caller-supplied paging
+  const take = Math.min(100, Math.max(1, Math.trunc(Number(options?.take ?? 12)) || 12));
+  const skip = Math.max(0, Math.trunc(Number(options?.skip ?? 0)) || 0);
 
   const where: Record<string, unknown> = {
     status: EventStatus.PUBLISHED,

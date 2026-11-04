@@ -21,7 +21,7 @@ export async function verifyEmailAction(token: string) {
     console.error("Email verification action error:", error);
     return {
       success: false,
-      error: (error as Error).message || "Verification link is invalid or has expired.",
+      error: "Verification link is invalid or has expired.",
     };
   }
 }
@@ -36,12 +36,9 @@ export async function resendVerificationAction(email: string) {
       where: { email },
     });
 
-    if (!user) {
-      return { success: false, error: "No user found with that email address." };
-    }
-
-    if (user.emailVerified) {
-      return { success: false, error: "This email address is already verified." };
+    // Same response whether or not the account exists / is verified (no enumeration)
+    if (!user || user.emailVerified) {
+      return { success: true, message: "If that account needs verification, an email has been sent." };
     }
 
     // Call Better Auth to generate a new token and send verification email
@@ -56,7 +53,7 @@ export async function resendVerificationAction(email: string) {
     console.error("Resend verification action error:", error);
     return {
       success: false,
-      error: (error as Error).message || "Failed to resend verification email.",
+      error: "Failed to resend verification email.",
     };
   }
 }

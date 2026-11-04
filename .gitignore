@@ -32,6 +32,9 @@ yarn-error.log*
 *.log
 dev-server.log
 
+# user uploads (never commit)
+/public/uploads/
+
 # env files (can opt-in for committing if needed)
 .env
 .env*.local

@@ -150,6 +150,7 @@ export function EventDetailClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session } = authClient.useSession();
+  const [heroFailed, setHeroFailed] = useState(false);
   const [registered, setRegistered] = useState(initialIsRegistered);
   const [regDetails, setRegDetails] = useState(initialRegDetails);
   const [isPending, startTransition] = useTransition();
@@ -217,8 +218,9 @@ export function EventDetailClient({
           background washed it out in light mode, so nothing overlaps it now. */}
       <div className="max-w-6xl mx-auto px-5 pt-[92px] sm:pt-28">
         <div className="relative w-full aspect-[16/10] sm:aspect-[21/9] max-h-[460px] rounded-[22px] sm:rounded-[28px] overflow-hidden border border-border bg-card">
-          {heroImage ? (
+          {heroImage && !heroFailed ? (
             <Image
+              onError={() => setHeroFailed(true)}
               src={heroImage}
               alt={event.title}
               fill
@@ -582,10 +584,10 @@ export function EventDetailClient({
                   ) : (
                     <button
                       onClick={handleRegister}
-                      disabled={isPending}
-                      className="w-full btn btn-primary flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold cursor-pointer"
+                      disabled={isPending || priceLabel(details) !== "Free"}
+                      className="w-full btn btn-primary flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                      Register Now (Free)
+                      {priceLabel(details) === "Free" ? "Register Now (Free)" : "Online payment coming soon"}
                     </button>
                   )}
                 </div>

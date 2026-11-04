@@ -32,6 +32,7 @@ export async function checkOAuthUserStatusAction() {
     if (userRecord && (!userRecord.provider || !userRecord.providerId)) {
       const account = await prisma.account.findFirst({
         where: { userId: session.user.id },
+        orderBy: { createdAt: "asc" },
       });
       if (account) {
         await prisma.user.update({
@@ -39,7 +40,8 @@ export async function checkOAuthUserStatusAction() {
           data: {
             provider: account.providerId,
             providerId: account.accountId,
-            emailVerified: true, // OAuth providers (Google) validate email ownership
+            // Only a Google-issued identity proves email ownership; password accounts must verify by email
+            ...(account.providerId === "google" ? { emailVerified: true } : {}),
           },
         });
       }
@@ -127,7 +129,7 @@ export async function completeOAuthStudentOnboardingAction(input: {
     console.error("Failed to complete OAuth onboarding:", error);
     return {
       success: false,
-      error: (error as Error).message || "Failed to complete onboarding details",
+      error: "Failed to complete onboarding details",
     };
   }
 }

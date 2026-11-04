@@ -6,6 +6,7 @@ import { headers } from "next/headers";
 import { EventStatus, UserRole, RegistrationStatus, Prisma } from "@prisma/client";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
+import { isImageUrl } from "@/utils/imageUrl";
 import { sendCertificateIssuedEmail } from "@/lib/email";
 
 // Helper to get authenticated user & verify role
@@ -92,7 +93,7 @@ const eventFormSchema = z.object({
   location: z.string().min(3, "Location/Venue is required"),
   capacity: z.coerce.number().int().min(1, "Capacity must be at least 1"),
   status: z.nativeEnum(EventStatus).default(EventStatus.DRAFT),
-  imageUrl: z.string().url().or(z.literal("")).optional().nullable(),
+  imageUrl: z.string().refine(isImageUrl, "Banner must be a direct https link to an image (jpg, png, webp…)").or(z.literal("")).optional().nullable(),
   // Optional EventWizard extras — the simple EventForm omits them
   eventType: z.enum(["INDIVIDUAL", "TEAM"]).optional(),
   teamMinSize: z.coerce.number().int().min(1).optional(),
@@ -117,6 +118,7 @@ function wizardFields(d: EventFormData) {
 
 async function syncGallery(eventId: string, urls?: string[]) {
   if (!urls) return;
+  urls = urls.filter(isImageUrl);
   await prisma.eventImage.deleteMany({ where: { eventId, isHero: false } });
   if (urls.length) {
     await prisma.eventImage.createMany({ data: urls.map((url) => ({ eventId, url, isHero: false })) });
@@ -209,7 +211,7 @@ export async function createEvent(data: EventFormData) {
     return { success: true, event };
   } catch (err) {
     console.error("Failed to create event:", err);
-    return { error: `Failed to create event: ${(err as Error).message}` };
+    return { error: "Failed to create event. Please try again." };
   }
 }
 
@@ -295,7 +297,7 @@ export async function updateEvent(id: string, data: EventFormData) {
     return { success: true };
   } catch (err) {
     console.error("Failed to update event:", err);
-    return { error: `Failed to update event: ${(err as Error).message}` };
+    return { error: "Failed to update event. Please try again." };
   }
 }
 
@@ -405,7 +407,9 @@ export async function getAdminEvents(options?: {
 }) {
   const user = await getAuthenticatedAdmin();
 
-  const { search, category, status, sortBy = "date", page = 1, perPage = 10 } = options ?? {};
+  const { search, category, status, sortBy = "date" } = options ?? {};
+  const page = Math.max(1, Math.trunc(Number(options?.page ?? 1)) || 1);
+  const perPage = Math.min(100, Math.max(1, Math.trunc(Number(options?.perPage ?? 10)) || 10));
   const skip = (page - 1) * perPage;
 
   const where: Prisma.EventWhereInput = {
@@ -795,16 +799,6 @@ export async function getAdminNotifications() {
   }));
 }
 
-export async function createNotification(userId: string, message: string) {
-  try {
-    await prisma.notification.create({
-      data: { userId, message }
-    });
-  } catch(e) {
-    console.error("Failed to create notification:", e);
-  }
-}
-
 export async function toggleParticipantAttendance(registrationId: string) {
   const user = await getAuthenticatedAdmin();
   const reg = await prisma.registration.findFirst({
@@ -813,13 +807,28 @@ export async function toggleParticipantAttendance(registrationId: string) {
   if (!reg) {
     return { error: "Registration not found or unauthorized" };
   }
-  const updated = await prisma.registration.update({
-    where: { id: registrationId },
-    data: {
-      checkedIn: !reg.checkedIn,
-      checkedInAt: !reg.checkedIn ? new Date() : null,
-      checkInMethod: "MANUAL"
-    }
+  if (reg.status === "CANCELLED") {
+    return { error: "Cannot change attendance for a cancelled registration" };
+  }
+  // Keep every check-in flag (registration + ticket) in sync with the toggle
+  const checkingIn = !reg.checkedIn;
+  const updated = await prisma.$transaction(async (tx) => {
+    const r = await tx.registration.update({
+      where: { id: registrationId },
+      data: {
+        checkedIn: checkingIn,
+        checkedInAt: checkingIn ? new Date() : null,
+        checkedInBy: checkingIn ? user.id : null,
+        checkInMethod: "MANUAL",
+        checkInStatus: checkingIn ? "CHECKED_IN" : "NOT_CHECKED_IN",
+        status: checkingIn ? "CHECKED_IN" : "CONFIRMED",
+      },
+    });
+    await tx.ticket.updateMany({
+      where: { registrationId, status: { in: ["ACTIVE", "USED"] } },
+      data: { status: checkingIn ? "USED" : "ACTIVE" },
+    });
+    return r;
   });
   revalidatePath("/admin/participants");
   revalidatePath("/admin");
@@ -892,33 +901,36 @@ export async function issueBulkCertificatesAction(eventId: string) {
     return { error: "Event not found or unauthorized" };
   }
 
+  // Idempotent: skip cancelled and already-issued registrations
+  const pending = { eventId, checkedIn: true, status: { notIn: ["CANCELLED", "CERTIFICATE_ISSUED"] as ("CANCELLED" | "CERTIFICATE_ISSUED")[] } };
   const checkedInRegs = await prisma.registration.findMany({
-    where: { eventId, checkedIn: true },
+    where: pending,
     include: { student: { include: { user: true } } },
   });
 
   if (checkedInRegs.length === 0) {
-    return { error: "No checked-in attendees found for this event." };
+    return { error: "No new checked-in attendees to issue certificates to." };
   }
 
-  // Update status to CERTIFICATE_ISSUED
   await prisma.registration.updateMany({
-    where: { eventId, checkedIn: true },
+    where: { id: { in: checkedInRegs.map((r) => r.id) } },
     data: { status: "CERTIFICATE_ISSUED" },
   });
 
-  // Dispatch certificate email notification to each checked-in student
+  // One batched insert instead of a serial query per attendee
+  await prisma.notification.createMany({
+    data: checkedInRegs.map((reg) => ({
+      userId: reg.student.userId,
+      message: `Your Certificate of Participation for "${event.title}" has been issued!`,
+    })),
+  });
+
   for (const reg of checkedInRegs) {
     sendCertificateIssuedEmail({
       to: reg.student.user.email,
       studentName: reg.student.user.name,
       eventTitle: event.title,
     }).catch((err) => console.error("Certificate email error:", err));
-
-    await createNotification(
-      reg.student.userId,
-      `Your Certificate of Participation for "${event.title}" has been issued!`
-    );
   }
 
   revalidatePath("/admin/certificates");

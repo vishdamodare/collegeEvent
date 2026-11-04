@@ -15,9 +15,10 @@ export async function GET(req: NextRequest) {
     const token = searchParams.get("token");
     const ticketNumber = searchParams.get("ticketNumber");
 
-    if (!ticketId && !token && !ticketNumber) {
+    // Public endpoint: the unguessable token is mandatory, so tickets can't be enumerated.
+    if (!token || (!ticketId && !ticketNumber)) {
       return NextResponse.json(
-        { valid: false, error: "Missing ticketId, token, or ticketNumber parameter." },
+        { valid: false, error: "Missing ticketId/ticketNumber and token." },
         { status: 400 }
       );
     }
@@ -94,12 +95,7 @@ export async function GET(req: NextRequest) {
       },
       student: {
         name: ticket.student.user.name,
-        email: ticket.student.user.email,
         college: ticket.student.college,
-        branch: ticket.student.branch,
-        academicYear: ticket.student.academicYear,
-        rollNumber: ticket.student.studentId || null,
-        phone: ticket.student.phoneNumber || null,
       },
       event: {
         id: ticket.event.id,
@@ -113,7 +109,7 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     console.error("Ticket verification error:", error);
     return NextResponse.json(
-      { valid: false, error: (error as Error).message || "Failed to verify ticket" },
+      { valid: false, error: "Failed to verify ticket" },
       { status: 500 }
     );
   }
@@ -133,7 +129,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized. Login required." }, { status: 401 });
     }
 
-    if (session.user.role !== "ORGANIZER" && session.user.role !== "SUPER_ADMIN") {
+    // Re-read from DB: the session cookie caches the role for 5 minutes
+    const dbUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true, organizerProfile: { select: { verificationStatus: true } } },
+    });
+    const role = dbUser?.role;
+    const approved = role === "SUPER_ADMIN" || dbUser?.organizerProfile?.verificationStatus === "APPROVED";
+    if ((role !== "ORGANIZER" && role !== "SUPER_ADMIN") || !approved) {
       return NextResponse.json(
         { error: "Access denied. Organizer permissions required." },
         { status: 403 }
@@ -143,7 +146,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { ticketIdentifier, verificationToken, device = "Web Scanner", method = "QR" } = body;
 
-    if (!ticketIdentifier) {
+    if (typeof ticketIdentifier !== "string" || !ticketIdentifier.trim() || (verificationToken != null && typeof verificationToken !== "string")) {
       return NextResponse.json(
         { error: "ticketIdentifier is required." },
         { status: 400 }
@@ -178,7 +181,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify organizer permission
-    if (ticket.event.organizerId !== session.user.id && session.user.role !== "SUPER_ADMIN") {
+    if (ticket.event.organizerId !== session.user.id && role !== "SUPER_ADMIN") {
       return NextResponse.json(
         { error: "You are not authorized to check in attendees for this event." },
         { status: 403 }
@@ -201,24 +204,39 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Perform check-in
-    const updatedReg = await prisma.registration.update({
-      where: { id: ticket.registration.id },
-      data: {
-        checkedIn: true,
-        checkedInAt: new Date(),
-        checkedInBy: session.user.id,
-        checkInDevice: device,
-        checkInMethod: method,
-        checkInStatus: "CHECKED_IN",
-        status: RegistrationStatus.CHECKED_IN,
-      },
+    if (ticket.status !== "ACTIVE") {
+      return NextResponse.json({ error: "Ticket is not active." }, { status: 400 });
+    }
+
+    // Atomic: only one concurrent scan can flip NOT_CHECKED_IN -> CHECKED_IN
+    const checkedInAt = new Date();
+    const claimed = await prisma.$transaction(async (tx) => {
+      const r = await tx.registration.updateMany({
+        where: { id: ticket.registration.id, checkedIn: false, status: { not: RegistrationStatus.CANCELLED } },
+        data: {
+          checkedIn: true,
+          checkedInAt,
+          checkedInBy: session.user.id,
+          checkInDevice: device,
+          checkInMethod: method,
+          checkInStatus: "CHECKED_IN",
+          status: RegistrationStatus.CHECKED_IN,
+        },
+      });
+      if (r.count === 0) return false;
+      await tx.ticket.update({ where: { id: ticket.id }, data: { status: "USED" } });
+      return true;
     });
 
-    await prisma.ticket.update({
-      where: { id: ticket.id },
-      data: { status: "USED" },
-    });
+    if (!claimed) {
+      return NextResponse.json({
+        alreadyCheckedIn: true,
+        message: "Already checked in.",
+        studentName: ticket.student.user.name,
+        ticketNumber: ticket.ticketNumber,
+      });
+    }
+    const updatedReg = { checkedInAt };
 
     return NextResponse.json({
       success: true,
@@ -239,7 +257,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("Check-in execution error:", error);
     return NextResponse.json(
-      { error: (error as Error).message || "Failed to process check-in" },
+      { error: "Failed to process check-in" },
       { status: 500 }
     );
   }

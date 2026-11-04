@@ -22,8 +22,8 @@ interface EventsPageProps {
 
 export default async function EventsPage({ searchParams }: EventsPageProps) {
   const params = await searchParams;
-  const page = Math.max(1, parseInt(params.page ?? "1", 10));
-  const perPage = Math.min(100, Math.max(10, parseInt(params.perPage ?? "12", 10)));
+  const page = Math.max(1, Number.parseInt(params.page ?? "", 10) || 1);
+  const perPage = Math.min(100, Math.max(10, Number.parseInt(params.perPage ?? "", 10) || 10));
   const sort = params.sort ?? "date";
   const search = params.q ?? "";
   const categorySlug = params.category ?? "";

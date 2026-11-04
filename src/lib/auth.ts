@@ -13,25 +13,23 @@ export const auth = betterAuth({
   trustedOrigins: [
     appUrl,
     ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []),
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://localhost:3002",
-    "http://localhost:3003",
-    "http://localhost:3004",
-    "http://localhost:3005",
+    ...(process.env.NODE_ENV !== "production"
+      ? [3000, 3001, 3002, 3003, 3004, 3005].map((p) => `http://localhost:${p}`)
+      : []),
   ],
   logger: {
-    level: "debug",
+    level: process.env.NODE_ENV === "production" ? "error" : "debug",
   },
+  // ponytail: memory storage is per serverless instance; switch to storage:"database" (needs a rateLimit model + db push) for global limits
+  rateLimit: { enabled: true, window: 60, max: 30 },
   plugins: [
     nextCookies(),
   ],
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false,
-    sendResetPassword: async ({ user, url }) => {
-      // Extract the token parameter from the Better Auth API URL
-      const token = url.split("token=")[1] || "";
+    revokeSessionsOnPasswordReset: true,
+    sendResetPassword: async ({ user, token }) => {
       const customUrl = `${appUrl}/reset-password?token=${token}`;
       await sendPasswordResetEmail(user.email, customUrl);
     },
@@ -67,19 +65,23 @@ export const auth = betterAuth({
       role: {
         type: "string",
         defaultValue: "STUDENT",
+        input: false, // never settable from signup/update-user request bodies
       },
       passwordHash: {
         type: "string",
         required: false,
         returned: false, // never ship the hash to the browser/session cookie
+        input: false,
       },
       provider: {
         type: "string",
         required: false,
+        input: false,
       },
       providerId: {
         type: "string",
         required: false,
+        input: false,
       },
     },
   },

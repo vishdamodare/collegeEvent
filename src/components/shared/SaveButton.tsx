@@ -4,6 +4,7 @@ import { Bookmark } from "lucide-react";
 import { useState, useTransition } from "react";
 import { saveEvent, removeSavedEvent } from "@/actions/saved";
 import { cn } from "@/utils/cn";
+import { toast } from "sonner";
 
 interface SaveButtonProps {
   eventId: string;
@@ -20,12 +21,15 @@ export function SaveButton({ eventId, initialSaved = false, size = "md", classNa
 
   const handleToggle = () => {
     startTransition(async () => {
-      if (saved) {
-        await removeSavedEvent(eventId);
-        setSaved(false);
-      } else {
-        await saveEvent(eventId);
-        setSaved(true);
+      try {
+        const res = saved ? await removeSavedEvent(eventId) : await saveEvent(eventId);
+        if (res && typeof res === "object" && "error" in res && res.error) {
+          toast.error(String(res.error));
+          return;
+        }
+        setSaved(!saved);
+      } catch {
+        toast.error("Something went wrong. Please try again.");
       }
     });
   };

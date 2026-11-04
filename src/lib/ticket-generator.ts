@@ -1,57 +1,32 @@
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import QRCode from "qrcode";
+import { randomInt } from "crypto";
 
-/**
- * Generates a unique, sequential, and human-readable ticket number.
- * Example: CE-2026-000001
- */
-export async function generateTicketNumber(tx?: Prisma.TransactionClient): Promise<string> {
-  const currentYear = new Date().getFullYear();
-  const startOfYear = new Date(`${currentYear}-01-01T00:00:00.000Z`);
-  const endOfYear = new Date(`${currentYear}-12-31T23:59:59.999Z`);
+const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
-  const client = tx || prisma;
-  const count = await client.ticket.count({
-    where: {
-      createdAt: {
-        gte: startOfYear,
-        lte: endOfYear,
-      },
-    },
-  });
-
-  let attempts = 0;
-  let ticketNumber = "";
-  while (attempts < 100) {
-    const sequenceNum = String(count + 1 + attempts).padStart(6, "0");
-    ticketNumber = `CE-${currentYear}-${sequenceNum}`;
-    
-    const existing = await client.ticket.findUnique({
-      where: { ticketNumber },
-      select: { id: true }
-    });
-    
-    if (!existing) {
-      break;
-    }
-    attempts++;
-  }
-
-  return ticketNumber;
+function randomString(length: number): string {
+  return Array.from({ length }, () => ALPHABET[randomInt(ALPHABET.length)]).join("");
 }
 
 /**
- * Generates a secure random alphanumeric verification token.
- * Example: 7XK4L92AFR18
+ * Generates a unique, non-sequential ticket number (not enumerable).
+ * Example: CE-2026-K7M4Q9XB. Retries on the (rare) collision.
  */
-export function generateVerificationToken(length: number = 12): string {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let token = "";
-  for (let i = 0; i < length; i++) {
-    token += chars.charAt(Math.floor(Math.random() * chars.length));
+export async function generateTicketNumber(tx?: Prisma.TransactionClient): Promise<string> {
+  const client = tx || prisma;
+  const year = new Date().getFullYear();
+  for (let i = 0; i < 10; i++) {
+    const ticketNumber = `CE-${year}-${randomString(8)}`;
+    const existing = await client.ticket.findUnique({ where: { ticketNumber }, select: { id: true } });
+    if (!existing) return ticketNumber;
   }
-  return token;
+  throw new Error("Could not allocate a ticket number");
+}
+
+/** Cryptographically secure alphanumeric verification token. */
+export function generateVerificationToken(length: number = 12): string {
+  return randomString(length);
 }
 
 /**

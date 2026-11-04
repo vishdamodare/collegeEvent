@@ -11,13 +11,17 @@ const collegeSlug = (name: string) =>
   name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  // A cold/unreachable DB must not fail the build or the route: fall back to static URLs only
   const [events, organizers] = await Promise.all([
     prisma.event.findMany({
       where: { status: { in: [EventStatus.PUBLISHED, EventStatus.COMPLETED] } },
       select: { slug: true, updatedAt: true },
     }),
     prisma.organizerProfile.findMany({ select: { college: true, updatedAt: true } }),
-  ]);
+  ]).catch((err) => {
+    console.error("sitemap: DB unavailable, serving static URLs only:", err);
+    return [[], []] as [{ slug: string; updatedAt: Date }[], { college: string | null; updatedAt: Date }[]];
+  });
 
   const colleges = new Map<string, Date>();
   for (const o of organizers) {

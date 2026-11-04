@@ -39,7 +39,7 @@ export async function resetPasswordAction(formData: { token?: string } & Record<
     console.error("Reset password action error:", error);
     return {
       success: false,
-      error: (error as Error).message || "Failed to reset password. Link may be invalid or expired.",
+      error: "Failed to reset password. Link may be invalid or expired.",
     };
   }
 }

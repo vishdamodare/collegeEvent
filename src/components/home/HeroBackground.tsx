@@ -11,17 +11,19 @@ interface HeroBackgroundProps {
 }
 
 // Seeded pseudo-random so server and client render identical particles (no hydration mismatch)
+// Rounded to 2 decimals so the serialized style strings are byte-identical on server and client
 const rand = (n: number) => {
   const x = Math.sin(n * 12.9898) * 43758.5453;
-  return x - Math.floor(x);
+  return Math.round((x - Math.floor(x)) * 100) / 100;
 };
+const r2 = (n: number) => Math.round(n * 100) / 100;
 const PARTICLES = Array.from({ length: 26 }, (_, i) => ({
   id: i,
-  size: rand(i * 5 + 1) * 3 + 1,
-  left: rand(i * 5 + 2) * 100,
-  top: 90 + rand(i * 5 + 3) * 10,
-  dur: 10 + rand(i * 5 + 4) * 14,
-  delay: rand(i * 5 + 5) * 10,
+  size: r2(rand(i * 5 + 1) * 3 + 1),
+  left: r2(rand(i * 5 + 2) * 100),
+  top: r2(90 + rand(i * 5 + 3) * 10),
+  dur: r2(10 + rand(i * 5 + 4) * 14),
+  delay: r2(rand(i * 5 + 5) * 10),
 }));
 
 const Particles = memo(function Particles() {

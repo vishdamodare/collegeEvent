@@ -13,6 +13,15 @@ import {
 import { sendTicketConfirmationEmail } from "@/lib/email";
 import crypto from "crypto";
 
+/** Errors safe to show users; anything else (e.g. Prisma) is replaced by a generic message. */
+class UserError extends Error {}
+const KNOWN = [/closed/i, /capacity/i, /not open/i, /sold out/i, /already registered/i, /not found/i];
+function publicError(e: unknown, fallback: string) {
+  return e instanceof UserError || (e instanceof Error && !e.name.startsWith("Prisma") && KNOWN.some((r) => r.test(e.message)))
+    ? (e as Error).message
+    : fallback;
+}
+
 /**
  * Gets the current authenticated user session
  */
@@ -93,7 +102,19 @@ export async function registerForFreeEvent(
     }
 
     const { details } = (await prisma.event.findUnique({ where: { id: eventId }, select: { details: true } })) ?? {};
-    const closesAt = (details as { schedule?: { registrationCloses?: string } } | null)?.schedule?.registrationCloses;
+    const d = details as {
+      schedule?: { registrationOpens?: string; registrationCloses?: string };
+      pricing?: { isFree?: boolean; fee?: number; tickets?: { price?: number }[] };
+    } | null;
+    const closesAt = d?.schedule?.registrationCloses;
+    const opensAt = d?.schedule?.registrationOpens;
+    if (opensAt && new Date(opensAt) > new Date()) {
+      return { error: "Registration for this event has not opened yet." };
+    }
+    // Paid events must never be issued for free; online payment verification isn't wired up yet.
+    if (d?.pricing && (d.pricing.isFree === false || Number(d.pricing.fee) > 0 || d.pricing.tickets?.some((t) => Number(t.price) > 0))) {
+      return { error: "Online payment is not available yet for this event." };
+    }
     if (event.isClosed || new Date(event.date) < new Date() || (closesAt && new Date(closesAt) < new Date())) {
       return { error: "Registration for this event is closed." };
     }
@@ -196,6 +217,15 @@ export async function registerForFreeEvent(
         throw new Error("Registration for this event is closed.");
       }
 
+      // Re-check under the lock so double-clicks can't re-issue an active registration
+      const existingReg = await tx.registration.findUnique({
+        where: { eventId_studentId: { eventId, studentId: studentProfile.id } },
+        select: { status: true },
+      });
+      if (existingReg && existingReg.status !== RegistrationStatus.CANCELLED) {
+        throw new UserError("You are already registered for this event.");
+      }
+
       // Helper function to create placeholder profiles for members
       const getOrCreateStudentProfileTx = async (
         mName: string,
@@ -256,6 +286,9 @@ export async function registerForFreeEvent(
           registrationType: eventType,
           timeline: initialTimeline,
           cancelledAt: null,
+          checkedIn: false,
+          checkedInAt: null,
+          checkInStatus: "NOT_CHECKED_IN",
         },
         create: {
           eventId,
@@ -446,7 +479,7 @@ export async function registerForFreeEvent(
       }
 
       return { registration: captainReg, ticket: captainTicket };
-    });
+    }, { timeout: 20000, maxWait: 10000 });
 
     // Revalidate relevant pages
     revalidatePath(`/events/${event.slug}`);
@@ -471,7 +504,7 @@ export async function registerForFreeEvent(
     };
   } catch (error) {
     console.error("Error registering for free event:", error);
-    return { error: (error as Error).message || "An unexpected error occurred." };
+    return { error: publicError(error, "Registration failed. Please try again.") };
   }
 }
 
@@ -506,6 +539,10 @@ export async function cancelRegistration(registrationId: string) {
 
     if (registration.status === RegistrationStatus.CANCELLED) {
       return { error: "This registration has already been cancelled." };
+    }
+
+    if (registration.checkedIn || new Date(registration.event.date) < new Date()) {
+      return { error: "This registration can no longer be cancelled." };
     }
 
     // Cancel registration and ticket in a transaction
@@ -572,7 +609,7 @@ export async function cancelRegistration(registrationId: string) {
     return { success: true };
   } catch (error) {
     console.error("Error cancelling registration:", error);
-    return { error: (error as Error).message || "An unexpected error occurred." };
+    return { error: "An unexpected error occurred." };
   }
 }
 
@@ -748,7 +785,7 @@ export async function clearNotifications() {
     return { success: true };
   } catch (error) {
     console.error("Error clearing notifications:", error);
-    return { error: (error as Error).message || "Failed to clear notifications" };
+    return { error: "Failed to clear notifications" };
   }
 }
 
@@ -944,30 +981,38 @@ export async function confirmCheckInAction(
 /**
  * Creates a Razorpay Payment Order for paid event registrations
  */
-export async function createRazorpayOrderAction(eventId: string, amountInRupees: number) {
+export async function createRazorpayOrderAction(eventId: string) {
   try {
     const user = await getCurrentUser();
     if (!user) {
       return { error: "Authentication required" };
     }
 
-    const keyId = process.env.RAZORPAY_KEY_ID || "rzp_test_samplekey123";
-    const keySecret = process.env.RAZORPAY_KEY_SECRET || "sample_secret_key_12345";
+    const keyId = process.env.RAZORPAY_KEY_ID;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    if (!keyId || !keySecret) {
+      return { error: "Payments are not configured." };
+    }
+
+    // Price comes from the event, never from the client
+    const event = await prisma.event.findUnique({ where: { id: eventId }, select: { status: true, details: true } });
+    if (!event || event.status !== "PUBLISHED") {
+      return { error: "Event not found." };
+    }
+    const fee = Number((event.details as { pricing?: { fee?: number } } | null)?.pricing?.fee);
+    if (!Number.isFinite(fee) || fee <= 0) {
+      return { error: "This event does not require payment." };
+    }
 
     // Loaded lazily so the SDK only ships with this action
     const { default: Razorpay } = await import("razorpay");
-    const razorpay = new Razorpay({
-      key_id: keyId,
-      key_secret: keySecret,
-    });
+    const razorpay = new Razorpay({ key_id: keyId, key_secret: keySecret });
 
-    const options = {
-      amount: Math.max(1, amountInRupees) * 100, // amount in paise
+    const order = await razorpay.orders.create({
+      amount: Math.round(fee * 100), // paise
       currency: "INR",
       receipt: `rcpt_${eventId.slice(0, 6)}_${Date.now().toString().slice(-6)}`,
-    };
-
-    const order = await razorpay.orders.create(options);
+    });
     return {
       success: true,
       orderId: order.id,
@@ -977,7 +1022,7 @@ export async function createRazorpayOrderAction(eventId: string, amountInRupees:
     };
   } catch (err) {
     console.error("Razorpay order creation error:", err);
-    return { error: (err as Error).message || "Failed to create payment order." };
+    return { error: "Failed to create payment order." };
   }
 }
 
