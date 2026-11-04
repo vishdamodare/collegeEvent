@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { CreateModeSwitch } from "./QuickEventForm";
 import { useRouter } from "next/navigation";
 import { 
   ArrowLeft, 
@@ -522,6 +523,11 @@ export function EventWizard({ initialData, categories }: EventWizardProps) {
       {/* Wizard Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-4">
         <div>
+          {!initialData && (
+            <div className="mb-4">
+              <CreateModeSwitch active="advanced" />
+            </div>
+          )}
           <h1 className="text-[26px] font-anton uppercase tracking-wider text-white">
             {initialData ? `Modify: ${initialData.basic.title}` : "Create Event"}
           </h1>

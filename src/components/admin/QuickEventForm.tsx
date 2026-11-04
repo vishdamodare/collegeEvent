@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { CalendarClock, ImagePlus, Loader2, MapPin, Users, X } from "lucide-react";
+import { CalendarClock, ImagePlus, Loader2, MapPin, SlidersHorizontal, Users, X, Zap } from "lucide-react";
 import { createEvent } from "@/actions/admin";
 import { isImageUrl } from "@/utils/imageUrl";
 
@@ -34,6 +34,24 @@ async function uploadBanner(file: File): Promise<string> {
   const data = await res.json();
   if (!res.ok) throw new Error(data?.error?.message || "Upload failed. Please try again.");
   return data.secure_url as string;
+}
+
+/** Quick <-> Advanced switch shown on both create screens so organizers always know the other option exists. */
+export function CreateModeSwitch({ active }: { active: "quick" | "advanced" }) {
+  const tab = (on: boolean) =>
+    `inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-[13.5px] font-semibold transition ${
+      on ? "bg-[var(--color-lime)] text-white" : "text-white/60 hover:text-white hover:bg-white/5"
+    }`;
+  return (
+    <nav aria-label="Event setup mode" className="inline-grid grid-cols-2 gap-1 p-1 rounded-xl bg-[#181818] border border-white/10">
+      <Link href="/admin/events/create" aria-current={active === "quick" ? "page" : undefined} className={tab(active === "quick")}>
+        <Zap className="w-4 h-4" /> Quick setup
+      </Link>
+      <Link href="/admin/events/create?mode=advanced" aria-current={active === "advanced" ? "page" : undefined} className={tab(active === "advanced")}>
+        <SlidersHorizontal className="w-4 h-4" /> Advanced setup
+      </Link>
+    </nav>
+  );
 }
 
 function Field({ id, label, hint, error, children }: { id: string; label: string; hint?: string; error?: string; children: React.ReactNode }) {
@@ -161,6 +179,9 @@ export function QuickEventForm({ categories }: { categories: Category[] }) {
       className="max-w-3xl mx-auto space-y-6 font-archivo"
     >
       <header>
+        <div className="mb-5">
+          <CreateModeSwitch active="quick" />
+        </div>
         <h1 className="text-[34px] sm:text-[40px] font-anton uppercase tracking-wide text-white leading-none">Create an event</h1>
         <p className="text-[14px] text-white/50 mt-2">Takes about 2 minutes. You can add tickets, sponsors and more any time later.</p>
       </header>
@@ -276,11 +297,19 @@ export function QuickEventForm({ categories }: { categories: Category[] }) {
         <p className="text-[12.5px] text-white/40">Registration is free for now. Paid tickets are coming soon.</p>
       </Section>
 
-      <p className="text-center sm:text-left">
-        <Link href="/admin/events/create?mode=advanced" className="text-[12.5px] text-white/40 hover:text-white/80 underline underline-offset-4">
-          Need tickets, sponsors, certificates? Use advanced setup
-        </Link>
-      </p>
+      <Link
+        href="/admin/events/create?mode=advanced"
+        className="flex items-center gap-4 rounded-2xl border border-white/10 hover:border-[var(--color-lime)] bg-[#121212]/60 hover:bg-white/[0.03] p-4 sm:p-5 transition group"
+      >
+        <span className="w-11 h-11 shrink-0 rounded-xl bg-[var(--color-lime)]/15 text-[var(--color-lime)] flex items-center justify-center">
+          <SlidersHorizontal className="w-5 h-5" />
+        </span>
+        <span className="min-w-0">
+          <span className="block text-[14.5px] font-bold text-white">Need more control? Use Advanced setup</span>
+          <span className="block text-[12.5px] text-white/50 mt-0.5">Tickets &amp; coupons, sponsors, schedule, registration questions, certificates and more.</span>
+        </span>
+        <span aria-hidden className="ml-auto text-white/40 group-hover:text-white text-[20px]">→</span>
+      </Link>
 
       <div className="sticky bottom-0 -mx-4 sm:mx-0 px-4 sm:px-0 py-3 bg-[#0A0A0A]/95 backdrop-blur border-t border-white/10 flex gap-3 sm:justify-end">
         <button type="button" disabled={busy} onClick={() => submit("DRAFT")} className="flex-1 sm:flex-none px-6 py-3.5 rounded-xl border border-white/15 text-white font-semibold text-[14px] hover:bg-white/5 disabled:opacity-60 cursor-pointer">
