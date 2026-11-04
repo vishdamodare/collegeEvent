@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 
@@ -17,6 +17,20 @@ interface AdminShellProps {
 
 export function AdminShell({ children, profile }: AdminShellProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // The organizer console is dark-only. Force it so the public site's saved light theme
+  // doesn't leak in (it turns accent text dark-red on the dark background), then restore on exit.
+  useEffect(() => {
+    const el = document.documentElement;
+    el.setAttribute("data-theme", "dark");
+    return () => {
+      let saved = "dark";
+      try {
+        saved = localStorage.getItem("theme") || "dark";
+      } catch {}
+      el.setAttribute("data-theme", saved);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white flex">

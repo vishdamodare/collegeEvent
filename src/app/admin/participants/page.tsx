@@ -138,8 +138,8 @@ export default function ParticipantsPage() {
       ) : (
         <div className="rounded-2xl border border-white/10 bg-[#121212]/40 overflow-hidden font-archivo">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
+            <table className="w-full text-left border-collapse block md:table">
+              <thead className="hidden md:table-header-group">
                 <tr className="border-b border-white/5 text-white/40 text-[11px] font-bold uppercase tracking-wider bg-white/[0.01]">
                   <th className="px-6 py-4">Participant Details</th>
                   <th className="px-6 py-4">Event & Ticket</th>
@@ -147,12 +147,12 @@ export default function ParticipantsPage() {
                   <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5 text-[13px] text-white/80">
+              <tbody className="block md:table-row-group divide-y divide-white/5 text-[13px] text-white/80">
                 {filtered.map((p) => (
-                  <tr key={p.id} className="hover:bg-white/[0.01] transition-colors">
-                    <td className="px-6 py-4">
+                  <tr key={p.id} className="block md:table-row px-4 py-3 md:p-0 hover:bg-white/[0.01] transition-colors">
+                    <td className="block md:table-cell px-0 md:px-6 py-2 md:py-4">
                       <div className="font-bold text-white text-[14px]">{p.participantName}</div>
-                      <div className="text-[11px] text-white/40 mt-1 flex items-center gap-1.5 font-medium">
+                      <div className="text-[11px] text-white/40 mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 font-medium break-all">
                         <Mail className="w-3.5 h-3.5 text-white/20" /> {p.email}
                         {p.phone && (
                           <>
@@ -163,13 +163,13 @@ export default function ParticipantsPage() {
                       </div>
                       <div className="text-[11px] text-white/30 mt-1">{p.college}</div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="block md:table-cell px-0 md:px-6 py-2 md:py-4">
                       <div className="font-semibold text-white/90">{p.eventName}</div>
                       <div className="text-[11px] font-mono text-[var(--color-lime)] mt-1 font-bold">
                         Pass ID: {p.ticketNumber}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="block md:table-cell px-0 md:px-6 py-2 md:py-4">
                       <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold ${
                         p.checkedIn 
                           ? "bg-green-500/10 text-green-400 border border-green-500/20" 
@@ -178,8 +178,8 @@ export default function ParticipantsPage() {
                         {p.checkedIn ? "Checked In" : "Not Checked In"}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2">
+                    <td className="block md:table-cell px-0 md:px-6 py-2 md:py-4 md:text-right">
+                      <div className="flex md:justify-end gap-2">
                         <button 
                           onClick={() => handleToggleAttendance(p.id)}
                           className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white font-medium text-[11px] border border-white/5 transition-colors cursor-pointer"

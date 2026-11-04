@@ -111,8 +111,8 @@ export function TicketsClient({ initialData }: TicketsClientProps) {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
+            <table className="block md:table w-full text-left border-collapse">
+              <thead className="hidden md:table-header-group">
                 <tr className="border-b border-white/10 bg-white/5 text-[11px] font-bold uppercase tracking-wider text-white/50">
                   <th className="py-3.5 px-4">Ticket Identifier</th>
                   <th className="py-3.5 px-4">Student & College</th>
@@ -122,36 +122,36 @@ export function TicketsClient({ initialData }: TicketsClientProps) {
                   <th className="py-3.5 px-4 text-right">QR Preview</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5 text-[13px]">
+              <tbody className="block md:table-row-group divide-y divide-white/5 text-[13px]">
                 {data.tickets.map((t) => (
-                  <tr key={t.id} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="py-3.5 px-4">
+                  <tr key={t.id} className="block md:table-row px-4 py-3 md:p-0 hover:bg-white/[0.02] transition-colors">
+                    <td className="block md:table-cell py-2 md:py-3.5 px-0 md:px-4">
                       <p className="font-mono font-bold text-[var(--color-lime)]">{t.ticketNumber}</p>
                       <p className="text-[10.5px] text-white/30 mt-0.5">
                         Issued: {format(new Date(t.issuedAt), "MMM dd, yyyy")}
                       </p>
                     </td>
 
-                    <td className="py-3.5 px-4">
+                    <td className="block md:table-cell py-2 md:py-3.5 px-0 md:px-4">
                       <p className="font-bold text-white leading-tight">{t.studentName}</p>
                       <p className="text-[11px] text-white/40 mt-0.5">{t.studentEmail}</p>
                       <p className="text-[10.5px] text-white/30">{t.studentCollege}</p>
                     </td>
 
-                    <td className="py-3.5 px-4">
+                    <td className="block md:table-cell py-2 md:py-3.5 px-0 md:px-4">
                       <p className="font-medium text-white/90">{t.eventName}</p>
                       <p className="text-[11px] text-white/40 mt-0.5">
                         {format(new Date(t.eventDate), "MMM dd, yyyy")}
                       </p>
                     </td>
 
-                    <td className="py-3.5 px-4">
+                    <td className="block md:table-cell py-2 md:py-3.5 px-0 md:px-4">
                       <span className="font-mono text-[11.5px] bg-white/5 border border-white/10 px-2.5 py-1 rounded text-white/80">
                         {t.verificationToken}
                       </span>
                     </td>
 
-                    <td className="py-3.5 px-4">
+                    <td className="block md:table-cell py-2 md:py-3.5 px-0 md:px-4">
                       <span
                         className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border ${
                           t.status === "ACTIVE"
@@ -165,7 +165,7 @@ export function TicketsClient({ initialData }: TicketsClientProps) {
                       </span>
                     </td>
 
-                    <td className="py-3.5 px-4 text-right">
+                    <td className="block md:table-cell py-2 md:py-3.5 px-0 md:px-4 md:text-right">
                       {t.qrCode ? (
                         <button
                           onClick={() => setQrModalTicket(t)}

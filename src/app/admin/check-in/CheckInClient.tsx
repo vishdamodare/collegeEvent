@@ -508,8 +508,8 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
           </div>
         )}
 
-        {/* Demo Fast-Scan Shortcuts */}
-        {demoTickets.length > 0 && (
+        {/* Demo Fast-Scan Shortcuts: dev only. One tap performs a real check-in, so never show it in production. */}
+        {process.env.NODE_ENV !== "production" && demoTickets.length > 0 && (
           <div className="border-t border-border/50 pt-4">
             <p className="text-[11px] font-bold text-text-faint uppercase tracking-wider mb-2">
               Recent Issued Tickets (Click to Fast-Test):

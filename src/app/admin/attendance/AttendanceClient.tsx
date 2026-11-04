@@ -203,8 +203,8 @@ export function AttendanceClient({ initialData }: AttendanceClientProps) {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
+            <table className="block md:table w-full text-left border-collapse">
+              <thead className="hidden md:table-header-group">
                 <tr className="border-b border-white/10 bg-white/5 text-[11px] font-bold uppercase tracking-wider text-white/50">
                   <th className="py-3.5 px-4">Participant</th>
                   <th className="py-3.5 px-4">Event</th>
@@ -214,16 +214,16 @@ export function AttendanceClient({ initialData }: AttendanceClientProps) {
                   <th className="py-3.5 px-4 text-right">Toggle Check-In</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5 text-[13px]">
+              <tbody className="block md:table-row-group divide-y divide-white/5 text-[13px]">
                 {data.registrations.map((reg) => (
-                  <tr key={reg.id} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="py-3.5 px-4">
+                  <tr key={reg.id} className="block md:table-row px-4 py-3 md:p-0 hover:bg-white/[0.02] transition-colors">
+                    <td className="block md:table-cell py-2 md:py-3.5 px-0 md:px-4">
                       <p className="font-bold text-white leading-tight">{reg.participantName}</p>
                       <p className="text-[11px] text-white/40 mt-0.5">{reg.email}</p>
                       <p className="text-[10.5px] text-white/30">{reg.college} ({reg.branch})</p>
                     </td>
 
-                    <td className="py-3.5 px-4">
+                    <td className="block md:table-cell py-2 md:py-3.5 px-0 md:px-4">
                       <p className="font-medium text-white/90">{reg.eventName}</p>
                       {reg.teamName && (
                         <span className="text-[10px] bg-white/5 border border-white/10 px-2 py-0.5 rounded text-white/50">
@@ -232,11 +232,11 @@ export function AttendanceClient({ initialData }: AttendanceClientProps) {
                       )}
                     </td>
 
-                    <td className="py-3.5 px-4 font-mono text-[12px] text-[var(--color-lime)]">
+                    <td className="block md:table-cell py-2 md:py-3.5 px-0 md:px-4 font-mono text-[12px] text-[var(--color-lime)]">
                       {reg.ticketNumber}
                     </td>
 
-                    <td className="py-3.5 px-4">
+                    <td className="block md:table-cell py-2 md:py-3.5 px-0 md:px-4">
                       {reg.checkedIn ? (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-bold">
                           <CheckCircle2 className="w-3.5 h-3.5" /> Checked In
@@ -248,7 +248,7 @@ export function AttendanceClient({ initialData }: AttendanceClientProps) {
                       )}
                     </td>
 
-                    <td className="py-3.5 px-4 text-[11.5px] text-white/50">
+                    <td className="block md:table-cell py-2 md:py-3.5 px-0 md:px-4 text-[11.5px] text-white/50">
                       {reg.checkedIn ? (
                         <div>
                           <p className="text-white/80">
@@ -263,7 +263,7 @@ export function AttendanceClient({ initialData }: AttendanceClientProps) {
                       )}
                     </td>
 
-                    <td className="py-3.5 px-4 text-right">
+                    <td className="block md:table-cell py-2 md:py-3.5 px-0 md:px-4 md:text-right">
                       <button
                         onClick={() => handleToggleCheckIn(reg.id)}
                         className={`px-3 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer transition-all border ${

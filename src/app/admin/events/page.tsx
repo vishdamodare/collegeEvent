@@ -37,7 +37,7 @@ const toRow = (e: AdminEventsResult[number]) => ({
       date: e.date.toLocaleDateString(),
       venue: e.location,
       tags: [],
-      shortDescription: e.description.substring(0, 100),
+      shortDescription: e.description.slice(0, 240), // CSS line-clamp-2 does the visual truncation
     },
     media: {
       banner: e.images.find((img) => img.isHero)?.url || ""
@@ -266,7 +266,8 @@ export default function AdminEventsPage() {
                 {evt.media?.banner ? (
                   <img 
                     src={evt.media.banner} 
-                    alt={evt.basic.title} 
+                    alt=""
+                    onError={(e) => { e.currentTarget.style.display = "none"; }}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 ) : (
@@ -276,7 +277,7 @@ export default function AdminEventsPage() {
                 )}
                 {/* Status Float */}
                 <div className="absolute top-4 left-4 z-10">
-                  {getStatusBadge(evt.status)}
+                  <span className="inline-flex rounded-md bg-black/70 backdrop-blur-md">{getStatusBadge(evt.status)}</span>
                 </div>
 
                 {/* Dropdown Action Trigger */}

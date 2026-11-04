@@ -44,5 +44,11 @@ export default async function AdminLayout({
     position: user.organizerProfile?.position || (user.role === "SUPER_ADMIN" ? "Super Admin" : "Coordinator"),
   };
 
-  return <AdminShell profile={profile}>{children}</AdminShell>;
+  return (
+    <>
+      {/* Runs before first paint so there's no light-theme flash; AdminShell keeps it in sync on client navigation */}
+      <script dangerouslySetInnerHTML={{ __html: `document.documentElement.setAttribute('data-theme','dark')` }} />
+      <AdminShell profile={profile}>{children}</AdminShell>
+    </>
+  );
 }

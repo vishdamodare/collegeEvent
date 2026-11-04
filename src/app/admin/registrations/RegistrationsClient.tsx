@@ -340,8 +340,8 @@ export function RegistrationsClient({ initialData }: RegistrationsClientProps) {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
+            <table className="block md:table w-full text-left border-collapse">
+              <thead className="hidden md:table-header-group">
                 <tr className="border-b border-white/5 bg-white/[0.02] text-white/40 text-[11px] font-bold uppercase tracking-wider">
                   <th className="px-6 py-4">Participant Details</th>
                   <th className="px-6 py-4">Academic Record</th>
@@ -351,11 +351,11 @@ export function RegistrationsClient({ initialData }: RegistrationsClientProps) {
                   <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5 text-[13px] text-white/80">
+              <tbody className="block md:table-row-group divide-y divide-white/5 text-[13px] text-white/80">
                 {data.registrations.map((r) => (
-                  <tr key={r.id} className="hover:bg-white/[0.015] transition-colors group">
+                  <tr key={r.id} className="block md:table-row px-4 py-3 md:p-0 hover:bg-white/[0.015] transition-colors group">
                     {/* Participant Details */}
-                    <td className="px-6 py-4">
+                    <td className="block md:table-cell px-0 md:px-6 py-2 md:py-4">
                       <div className="font-bold text-white text-[14px] leading-snug">
                         {r.participantName}
                       </div>
@@ -376,7 +376,7 @@ export function RegistrationsClient({ initialData }: RegistrationsClientProps) {
                     </td>
 
                     {/* Academic Record */}
-                    <td className="px-6 py-4">
+                    <td className="block md:table-cell px-0 md:px-6 py-2 md:py-4">
                       <div className="font-semibold text-white/90 text-[12.5px]">{r.college}</div>
                       <div className="text-[11px] text-white/40 mt-0.5">
                         {r.branch} • {r.academicYear}
@@ -389,7 +389,7 @@ export function RegistrationsClient({ initialData }: RegistrationsClientProps) {
                     </td>
 
                     {/* Event & Pass ID */}
-                    <td className="px-6 py-4">
+                    <td className="block md:table-cell px-0 md:px-6 py-2 md:py-4">
                       <div className="font-semibold text-white/90 leading-snug">{r.eventName}</div>
                       <div className="text-[11px] font-mono font-bold text-[var(--color-lime)] mt-1 flex items-center gap-1.5">
                         <Ticket className="w-3 h-3" />
@@ -398,7 +398,7 @@ export function RegistrationsClient({ initialData }: RegistrationsClientProps) {
                     </td>
 
                     {/* Type / Team */}
-                    <td className="px-6 py-4">
+                    <td className="block md:table-cell px-0 md:px-6 py-2 md:py-4">
                       <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/5 border border-white/10 text-white/70">
                         {r.registrationType}
                       </span>
@@ -410,7 +410,7 @@ export function RegistrationsClient({ initialData }: RegistrationsClientProps) {
                     </td>
 
                     {/* Status */}
-                    <td className="px-6 py-4">
+                    <td className="block md:table-cell px-0 md:px-6 py-2 md:py-4">
                       <div className="space-y-1">
                         <span
                           className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold ${
@@ -439,7 +439,7 @@ export function RegistrationsClient({ initialData }: RegistrationsClientProps) {
                     </td>
 
                     {/* Actions */}
-                    <td className="px-6 py-4 text-right">
+                    <td className="block md:table-cell px-0 md:px-6 py-2 md:py-4 md:text-right">
                       <div className="flex items-center justify-end gap-2">
                         {r.status !== "CANCELLED" && (
                           <button

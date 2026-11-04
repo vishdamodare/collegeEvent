@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { 
   ArrowLeft, 
@@ -85,7 +86,7 @@ export function EventWizard({ initialData, categories }: EventWizardProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [autoSaveStatus, setAutoSaveStatus] = useState<string>("Draft Saved");
+  const [autoSaveStatus] = useState<string>("Not saved yet");
 
   // Advanced toggles
   const [showAdvancedSeo, setShowAdvancedSeo] = useState(false);
@@ -214,16 +215,6 @@ export function EventWizard({ initialData, categories }: EventWizardProps) {
   const [autoGenerate, setAutoGenerate] = useState<boolean>(initialData?.certificates.autoGenerate ?? true);
   const [emailAfterEvent, setEmailAfterEvent] = useState<boolean>(initialData?.certificates.emailAfterEvent ?? true);
 
-  // Autosave simulation every 30 seconds
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setAutoSaveStatus("Saving draft...");
-      setTimeout(() => {
-        setAutoSaveStatus("Draft Saved");
-      }, 1000);
-    }, 30000);
-    return () => clearInterval(timer);
-  }, []);
 
   // Quick Template Prefill Handler
   const applyTemplate = (templateId: string) => {
@@ -505,7 +496,7 @@ export function EventWizard({ initialData, categories }: EventWizardProps) {
           setIsSaving(false);
           return;
         }
-        alert(`Event updated successfully as ${eventPayload.status}!`);
+        toast.success(`Event updated (${eventPayload.status.toLowerCase()})`);
       } else {
         const res = await createEventAction(eventPayload);
         if (res?.error) {
@@ -513,7 +504,7 @@ export function EventWizard({ initialData, categories }: EventWizardProps) {
           setIsSaving(false);
           return;
         }
-        alert(`New event created successfully as ${eventPayload.status}!`);
+        toast.success(`Event created (${eventPayload.status.toLowerCase()})`);
       }
       router.push("/admin/events");
     } catch (err) {
@@ -532,14 +523,14 @@ export function EventWizard({ initialData, categories }: EventWizardProps) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-4">
         <div>
           <h1 className="text-[26px] font-anton uppercase tracking-wider text-white">
-            {initialData ? `Modify: ${initialData.basic.title}` : "Production Event Wizard"}
+            {initialData ? `Modify: ${initialData.basic.title}` : "Create Event"}
           </h1>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-[11px] text-white/40 font-archivo">
               Step {currentStep + 1} of {STEPS.length}: {STEPS[currentStep]}
             </span>
-            <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-            <span className="text-[10px] font-bold text-green-400 font-archivo uppercase flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+            <span className="text-[10px] font-bold text-amber-300 font-archivo uppercase flex items-center gap-1">
               <Clock className="w-3 h-3" /> {autoSaveStatus}
             </span>
           </div>

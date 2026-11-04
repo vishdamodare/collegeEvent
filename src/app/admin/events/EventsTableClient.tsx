@@ -191,8 +191,8 @@ export function EventsTableClient({
       {/* Events Table / List view */}
       <div className={cn("overflow-hidden rounded-xl border border-border bg-card transition-opacity", isPending && "opacity-60")}>
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
+          <table className="block md:table w-full text-left border-collapse">
+            <thead className="hidden md:table-header-group">
               <tr className="border-b border-border bg-bg-elevated/40 text-xs font-bold text-text-faint uppercase tracking-wider">
                 <th className="py-4 px-4 font-archivo">Event Title</th>
                 <th className="py-4 px-4 font-archivo">Category</th>
@@ -203,17 +203,17 @@ export function EventsTableClient({
                 <th className="py-4 px-4 font-archivo text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/60 text-sm">
+            <tbody className="block md:table-row-group divide-y divide-border/60 text-sm">
               {initialEvents.length > 0 ? (
                 initialEvents.map((ev) => (
-                  <tr key={ev.id} className="hover:bg-card-hover/40 transition-colors group">
-                    <td className="py-4 px-4">
+                  <tr key={ev.id} className="block md:table-row px-4 py-3 md:p-0 hover:bg-card-hover/40 transition-colors group">
+                    <td className="block md:table-cell py-2 md:py-4 px-0 md:px-4">
                       <div className="font-semibold text-text-main group-hover:text-lime transition-colors">
                         {ev.title}
                       </div>
                       <div className="text-[10px] text-text-faint font-mono mt-0.5">/{ev.slug}</div>
                     </td>
-                    <td className="py-4 px-4">
+                    <td className="block md:table-cell py-2 md:py-4 px-0 md:px-4">
                       <span
                         className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border"
                         style={{
@@ -225,17 +225,17 @@ export function EventsTableClient({
                         {ev.category.name}
                       </span>
                     </td>
-                    <td className="py-4 px-4 text-text-muted">
+                    <td className="block md:table-cell py-2 md:py-4 px-0 md:px-4 text-text-muted">
                       {format(new Date(ev.date), "MMM d, yyyy · h:mm a")}
                     </td>
-                    <td className="py-4 px-4 text-text-muted truncate max-w-[150px]">{ev.location}</td>
-                    <td className="py-4 px-4 text-text-muted">
+                    <td className="block md:table-cell py-2 md:py-4 px-0 md:px-4 text-text-muted truncate max-w-[150px]">{ev.location}</td>
+                    <td className="block md:table-cell py-2 md:py-4 px-0 md:px-4 text-text-muted">
                       {ev._count.registrations} / {ev.capacity}
                     </td>
-                    <td className="py-4 px-4 text-center">
+                    <td className="block md:table-cell py-2 md:py-4 px-0 md:px-4 md:text-center">
                       <StatusBadge status={ev.status} />
                     </td>
-                    <td className="py-4 px-4 text-right">
+                    <td className="block md:table-cell py-2 md:py-4 px-0 md:px-4 md:text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         <Link
                           href={`/admin/events/${ev.id}`}
