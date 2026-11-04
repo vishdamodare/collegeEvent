@@ -102,7 +102,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                 onClick={() => setIsOpen(false)}
                 className={`flex items-center gap-4 py-3 px-3.5 rounded-xl font-archivo text-[14px] font-medium transition-all group relative cursor-pointer
                   ${isActive 
-                    ? "bg-[var(--color-lime)]/10 text-[var(--color-lime)] border border-[var(--color-lime)]/20 shadow-[inset_0_0_12px_rgba(215,255,61,0.05)]" 
+                    ? "bg-[var(--color-lime)]/10 text-[var(--color-lime)] border border-[var(--color-lime)]/20 shadow-[inset_0_0_12px_rgba(var(--lime-rgb),0.08)]" 
                     : "text-white/60 hover:text-white border border-transparent hover:bg-white/5"
                   }
                 `}

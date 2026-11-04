@@ -73,7 +73,7 @@ const emailWrapper = (title: string, content: string) => `
     .logo {
       font-size: 24px;
       font-weight: bold;
-      color: #D7FF3D;
+      color: #FF4B50;
       text-decoration: none;
       margin-bottom: 30px;
       display: inline-block;
@@ -91,8 +91,8 @@ const emailWrapper = (title: string, content: string) => `
       margin-bottom: 30px;
     }
     .btn {
-      background-color: #D7FF3D;
-      color: #0B0B08;
+      background-color: #DC2229;
+      color: #FFFFFF;
       font-weight: bold;
       text-decoration: none;
       padding: 16px 32px;
@@ -126,7 +126,7 @@ const emailWrapper = (title: string, content: string) => `
 export async function sendVerificationEmail(to: string, url: string) {
   const content = `
     <p>Welcome to CollegeEvents! Verify your email address to activate your account and start discovering amazing events.</p>
-    <a href="${url}" class="btn" style="color: #0B0B08;">Verify Email Address</a>
+    <a href="${url}" class="btn" style="color: #FFFFFF;">Verify Email Address</a>
     <p style="margin-top: 30px; font-size: 14px; color: #555555;">This link will expire in 24 hours.</p>
   `;
   return sendEmail({
@@ -139,7 +139,7 @@ export async function sendVerificationEmail(to: string, url: string) {
 export async function sendPasswordResetEmail(to: string, url: string) {
   const content = `
     <p>You requested a password reset for your CollegeEvents account. Click the button below to set a new password.</p>
-    <a href="${url}" class="btn" style="color: #0B0B08;">Reset Password</a>
+    <a href="${url}" class="btn" style="color: #FFFFFF;">Reset Password</a>
     <p style="margin-top: 30px; font-size: 14px; color: #555555;">If you did not request this, you can safely ignore this email.</p>
   `;
   return sendEmail({
@@ -152,7 +152,7 @@ export async function sendPasswordResetEmail(to: string, url: string) {
 export async function sendWelcomeEmail(to: string, name: string) {
   const content = `
     <p>Hey ${name}, welcome to CollegeEvents! Your student account is fully active. Start browsing tech fests, hackathons, and cultural events near you.</p>
-    <a href="${appUrl}/dashboard" class="btn" style="color: #0B0B08;">Go to Dashboard</a>
+    <a href="${appUrl}/dashboard" class="btn" style="color: #FFFFFF;">Go to Dashboard</a>
   `;
   return sendEmail({
     to,
@@ -164,7 +164,7 @@ export async function sendWelcomeEmail(to: string, name: string) {
 export async function sendOrganizerApprovedEmail(to: string, name: string) {
   const content = `
     <p>Hello ${name}, your event organizer account has been approved by the platform administrators! You can now log in and start publishing events for your institution.</p>
-    <a href="${appUrl}/login" class="btn" style="color: #0B0B08;">Login to Admin Panel</a>
+    <a href="${appUrl}/login" class="btn" style="color: #FFFFFF;">Login to Admin Panel</a>
   `;
   return sendEmail({
     to,
@@ -202,9 +202,9 @@ export async function sendTicketConfirmationEmail({
     <p>Congratulations ${studentName}! Your registration for <strong>${eventTitle}</strong> on ${eventDate} is confirmed.</p>
     <div style="background-color: #1E1E1E; border: 1px solid #333; padding: 20px; border-radius: 12px; margin: 20px 0; text-align: center;">
       <span style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px;">Official Ticket Number</span>
-      <h2 style="color: #D7FF3D; margin: 5px 0 0 0; font-size: 22px; font-family: monospace;">${ticketNumber}</h2>
+      <h2 style="color: #FF4B50; margin: 5px 0 0 0; font-size: 22px; font-family: monospace;">${ticketNumber}</h2>
     </div>
-    <a href="${appUrl}/dashboard/tickets" class="btn" style="color: #0B0B08;">View Digital Ticket Pass</a>
+    <a href="${appUrl}/dashboard/tickets" class="btn" style="color: #FFFFFF;">View Digital Ticket Pass</a>
   `;
   return sendEmail({
     to,
@@ -224,7 +224,7 @@ export async function sendCertificateIssuedEmail({
 }) {
   const content = `
     <p>Dear ${studentName}, thank you for attending <strong>${eventTitle}</strong>! Your official Certificate of Participation has been generated and issued.</p>
-    <a href="${appUrl}/dashboard/events" class="btn" style="color: #0B0B08;">View & Download Certificate</a>
+    <a href="${appUrl}/dashboard/events" class="btn" style="color: #FFFFFF;">View & Download Certificate</a>
   `;
   return sendEmail({
     to,

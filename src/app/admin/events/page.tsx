@@ -178,7 +178,7 @@ export default function AdminEventsPage() {
         </div>
         <Link 
           href="/admin/events/create" 
-          className="flex items-center justify-center gap-2 py-3 px-5 rounded-xl bg-[var(--color-lime)] hover:bg-[var(--color-lime)]/90 text-[#0b0b0b] font-bold text-[14px] font-archivo shadow-[0_4px_15px_rgba(215,255,61,0.15)] transition-all cursor-pointer whitespace-nowrap"
+          className="flex items-center justify-center gap-2 py-3 px-5 rounded-xl bg-[var(--color-lime)] hover:bg-[var(--color-lime)]/90 text-white font-bold text-[14px] font-archivo shadow-[0_4px_15px_rgba(215,255,61,0.15)] transition-all cursor-pointer whitespace-nowrap"
         >
           <PlusCircle className="w-4 h-4" />
           Create Event
@@ -249,7 +249,7 @@ export default function AdminEventsPage() {
           </p>
           <Link
             href="/admin/events/create"
-            className="inline-flex items-center gap-2 py-3 px-6 rounded-xl bg-[var(--color-lime)] hover:bg-[var(--color-lime)]/90 text-[#0b0b0b] font-bold text-[14px]"
+            className="inline-flex items-center gap-2 py-3 px-6 rounded-xl bg-[var(--color-lime)] hover:bg-[var(--color-lime)]/90 text-white font-bold text-[14px]"
           >
             <PlusCircle className="w-4 h-4" /> Create First Event
           </Link>

@@ -32,10 +32,10 @@ export const EVENTS: Event[] = [
 export const CATEGORIES: Category[] = [
   {name:"Hackathons", count:"1,240 events", icon:"💻", glow:"rgba(36,81,255,.4)"},
   {name:"Sports", count:"980 events", icon:"🏆", glow:"rgba(139,197,63,.4)"},
-  {name:"Technical", count:"1,510 events", icon:"⚙️", glow:"rgba(215,255,61,.4)"},
+  {name:"Technical", count:"1,510 events", icon:"⚙️", glow:"rgba(var(--lime-rgb),.4)"},
   {name:"Music", count:"860 events", icon:"🎧", glow:"rgba(255,75,51,.4)"},
   {name:"Dance", count:"640 events", icon:"💃", glow:"rgba(255,216,77,.4)"},
-  {name:"Gaming", count:"1,110 events", icon:"🎮", glow:"rgba(215,255,61,.4)"},
+  {name:"Gaming", count:"1,110 events", icon:"🎮", glow:"rgba(var(--lime-rgb),.4)"},
   {name:"Startup", count:"470 events", icon:"🚀", glow:"rgba(249,115,22,.4)"},
   {name:"Robotics", count:"390 events", icon:"🤖", glow:"rgba(36,81,255,.4)"},
 ];

@@ -53,7 +53,7 @@ export default async function AdminDashboard() {
 
           <Link
             href="/admin/events/create"
-            className="flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl bg-[var(--color-lime)] hover:bg-[var(--color-lime)]/90 text-[#0b0b0b] font-bold text-[15px] shadow-[0_4px_20px_rgba(215,255,61,0.2)] hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
+            className="flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl bg-[var(--color-lime)] hover:bg-[var(--color-lime)]/90 text-white font-bold text-[15px] shadow-[0_4px_20px_rgba(215,255,61,0.2)] hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
           >
             <PlusCircle className="w-5 h-5" />
             Create Event

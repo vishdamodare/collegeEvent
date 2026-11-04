@@ -412,7 +412,7 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
               {/* Viewfinder Target Graphic */}
               <div className="absolute inset-0 pointer-events-none flex items-center justify-center p-8">
                 <div className="w-48 h-48 border-2 border-dashed border-lime/60 rounded-2xl relative animate-pulse flex items-center justify-center">
-                  <div className="w-full h-0.5 bg-lime shadow-[0_0_12px_#D7FF3D] animate-bounce" />
+                  <div className="w-full h-0.5 bg-lime shadow-[0_0_12px_var(--color-lime)] animate-bounce" />
                 </div>
               </div>
 

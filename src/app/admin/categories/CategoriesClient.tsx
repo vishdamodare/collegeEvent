@@ -30,7 +30,7 @@ export function CategoriesClient({ initialCategories }: CategoriesClientProps) {
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("📌");
   const [description, setDescription] = useState("");
-  const [color, setColor] = useState("#D7FF3D");
+  const [color, setColor] = useState("#DC2229");
 
   const filteredCategories = initialCategories.filter((c) =>
     c.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -49,7 +49,7 @@ export function CategoriesClient({ initialCategories }: CategoriesClientProps) {
         setName("");
         setIcon("📌");
         setDescription("");
-        setColor("#D7FF3D");
+        setColor("#DC2229");
         router.refresh();
         return "Category created successfully!";
       },
@@ -229,7 +229,7 @@ export function CategoriesClient({ initialCategories }: CategoriesClientProps) {
                             setName(cat.name);
                             setIcon(cat.icon || "📌");
                             setDescription(cat.description || "");
-                            setColor(cat.color || "#D7FF3D");
+                            setColor(cat.color || "#DC2229");
                           }}
                           className="p-1.5 rounded-lg border border-border bg-card hover:bg-card-hover text-text-faint hover:text-text-main cursor-pointer"
                           title="Edit"

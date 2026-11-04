@@ -46,7 +46,7 @@ const badgeMap: Record<string, string> = {
 
 // Category color to glow map
 function colorToGlow(color: string | null): string {
-  if (!color) return "rgba(215,255,61,.4)";
+  if (!color) return "rgba(var(--lime-rgb),.4)";
   const r = parseInt(color.slice(1, 3), 16);
   const g = parseInt(color.slice(3, 5), 16);
   const b = parseInt(color.slice(5, 7), 16);

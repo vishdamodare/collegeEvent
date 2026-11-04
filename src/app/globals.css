@@ -80,11 +80,12 @@
    Remove that attribute to return to the original lime/coral theme.
    "lime" = primary accent (suit red), "coral" = offset shadow / second accent (suit blue). */
 [data-palette="spidey"] {
-  --color-lime: #EE2A2F;
+  /* Suit red darkened from #EE2A2F: white-on-red was 4.19:1, this is 4.88:1 (WCAG AA) */
+  --color-lime: #DC2229;
   --color-coral: #1D4ED8;
-  --color-butter: #FF5459;
+  --color-butter: #E5353B;
   --color-cobalt: #2563EB;
-  --lime-rgb: 238,42,47;
+  --lime-rgb: 220,34,41;
   --coral-rgb: 29,78,216;
   --accent-text-light: #C8102E;
 
@@ -112,7 +113,8 @@
   --color-border-bright: rgba(10, 16, 36, 0.2) !important;
   --color-text-main: #0A1024 !important;
   --color-text-muted: #444B63 !important;
-  --color-text-faint: #7F86A0 !important;
+  /* was #7F86A0 (3.4–3.6:1); now ≥4.5:1 on white, page and elevated surfaces */
+  --color-text-faint: #646C8A !important;
 }
 /* Spider-web in the hero's top-right corner; mask lets one SVG work in both themes */
 [data-palette="spidey"] #home::after {
@@ -129,8 +131,19 @@
 /* On suit-red, white text reads better than the near-black used on lime.
    text-[#0B0B08] is only ever used on accent backgrounds. */
 [data-palette="spidey"] .text-\[\#0B0B08\],
+[data-palette="spidey"] .text-\[\#0b0b0b\],
 [data-palette="spidey"] .group:hover .group-hover\:text-\[\#0B0B08\],
 [data-palette="spidey"] .btn-primary { color: #FFFFFF; }
+
+/* Dark mode: red/blue used as *text or icons* need a lighter tint to reach 4.5:1 on the navy background
+   (fills keep the saturated suit colours). Light mode already maps via --accent-text-light. */
+[data-palette="spidey"] .text-\[var\(--color-lime\)\],
+[data-palette="spidey"] .text-lime { color: #FF4B50; }
+[data-palette="spidey"] .text-coral { color: #6C95FF; }
+[data-palette="spidey"][data-theme="light"] .text-\[var\(--color-lime\)\],
+[data-palette="spidey"][data-theme="light"] .text-lime { color: var(--accent-text-light); }
+[data-palette="spidey"][data-theme="light"] .text-coral { color: #1D4ED8; }
+/* Buttons: text-[var(--color-lime)] on a tinted red fill keeps the light tint, not the white override */
 
 /* Anchor jumps land below the fixed navbar */
 section[id] { scroll-margin-top: 80px; }
@@ -295,7 +308,7 @@ h4, h5, .logo, .fc-title {
 .b-blue { background: rgba(36,81,255,.20); color: #9db1ff; }
 .b-purple { background: rgba(255,216,77,.20); color: #ffe38a; }
 .b-pink { background: rgba(255,75,51,.20); color: #ff9c8a; }
-.b-cyan { background: rgba(215,255,61,.20); color: #e4ffab; }
+.b-cyan { background: rgba(var(--lime-rgb),.20); color: #ff9a9d; }
 .b-green { background: rgba(139,197,63,.20); color: #c3e894; }
 .b-orange { background: rgba(249,115,22,.20); color: #ffbb80; }
 
@@ -303,9 +316,9 @@ h4, h5, .logo, .fc-title {
 [data-theme="light"] .b-blue { background: rgba(36,81,255,.12); color: #1f3fc4; }
 [data-theme="light"] .b-purple { background: rgba(214,163,0,.16); color: #8a6400; }
 [data-theme="light"] .b-pink { background: rgba(255,75,51,.13); color: #c22a14; }
-[data-theme="light"] .b-cyan { background: rgba(110,150,0,.15); color: #4d6b00; }
+[data-theme="light"] .b-cyan { background: rgba(var(--lime-rgb),.12); color: #b01018; }
 [data-theme="light"] .b-green { background: rgba(80,140,20,.15); color: #3f6d10; }
-[data-theme="light"] .b-orange { background: rgba(249,115,22,.14); color: #b4520a; }
+[data-theme="light"] .b-orange { background: rgba(249,115,22,.14); color: #9a4308; }
 [data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(11,11,8,.2); }
 /* Lime text is unreadable on white; use deep green instead */
 [data-theme="light"] .text-\[var\(--color-lime\)\],

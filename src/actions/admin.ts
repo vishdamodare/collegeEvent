@@ -172,7 +172,7 @@ export async function createEvent(data: EventFormData) {
       const cat = await prisma.category.upsert({
         where: { slug },
         update: {},
-        create: { name, slug, icon: "🏷️", description: `${name} events`, color: "#D7FF3D" },
+        create: { name, slug, icon: "🏷️", description: `${name} events`, color: "#DC2229" },
       });
       categoryId = cat.id;
     }
@@ -247,7 +247,7 @@ export async function updateEvent(id: string, data: EventFormData) {
       const cat = await prisma.category.upsert({
         where: { slug },
         update: {},
-        create: { name, slug, icon: "🏷️", description: `${name} events`, color: "#D7FF3D" },
+        create: { name, slug, icon: "🏷️", description: `${name} events`, color: "#DC2229" },
       });
       categoryId = cat.id;
     }
