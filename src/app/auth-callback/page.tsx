@@ -24,6 +24,12 @@ function AuthCallbackContent() {
         return;
       }
 
+      // Super admins may have no organizer/student profile (or a leftover student one); never send them to onboarding
+      if (status.role === "SUPER_ADMIN") {
+        router.push("/superadmin");
+        return;
+      }
+
       if (status.hasProfile) {
         if (status.role === "STUDENT") {
           router.push(next ?? "/");

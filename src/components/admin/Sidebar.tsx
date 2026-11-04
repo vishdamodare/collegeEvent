@@ -19,7 +19,8 @@ import {
   Menu,
   ChevronLeft,
   ChevronRight,
-  QrCode
+  QrCode,
+  ShieldCheck
 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { SIDEBAR_ITEMS } from "@/data/admin";
@@ -33,6 +34,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { data: session } = authClient.useSession();
 
   const getIcon = (name: string) => {
     switch (name) {
@@ -125,7 +127,16 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         </nav>
 
         {/* Footer / Logout Button */}
-        <div className="p-4 border-t border-white/5">
+        <div className="p-4 border-t border-white/5 space-y-1.5">
+          {(session?.user as { role?: string } | undefined)?.role === "SUPER_ADMIN" && (
+            <Link
+              href="/superadmin"
+              className="w-full flex items-center gap-4 py-3 px-3.5 rounded-xl font-archivo text-[14px] font-semibold text-white/80 hover:bg-white/5 transition-colors"
+            >
+              <ShieldCheck className="w-5 h-5 text-[var(--color-lime)]" />
+              {!isCollapsed && <span>Super Admin</span>}
+            </Link>
+          )}
           <button
             onClick={handleLogout}
             className={`w-full flex items-center gap-4 py-3 px-3.5 rounded-xl font-archivo text-[14px] font-semibold text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all cursor-pointer group`}

@@ -57,7 +57,9 @@ export default function LoginPage() {
         setError(signInError.message || "Invalid email or password.");
       } else {
         // Successful login: Redirect based on role
-        if (preCheck.role === "ORGANIZER") {
+        if (preCheck.role === "SUPER_ADMIN") {
+          router.push(callbackUrl?.startsWith("/superadmin") ? callbackUrl : "/superadmin");
+        } else if (preCheck.role === "ORGANIZER") {
           router.push(callbackUrl?.startsWith("/admin") ? callbackUrl : "/admin");
         } else {
           router.push(callbackUrl ?? "/dashboard");

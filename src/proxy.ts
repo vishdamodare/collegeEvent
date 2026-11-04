@@ -11,7 +11,8 @@ export function proxy(request: NextRequest) {
   // Protected routes requiring an active session
   const isProtectedRoute = 
     path.startsWith("/dashboard") || 
-    path.startsWith("/admin") || 
+    path.startsWith("/admin") ||
+    path.startsWith("/superadmin") ||
     path.startsWith("/pending-approval") || 
     path === "/signup/student-onboarding";
 
@@ -29,6 +30,7 @@ export const config = {
   matcher: [
     "/dashboard/:path*",
     "/admin/:path*",
+    "/superadmin/:path*",
     "/pending-approval",
     "/signup/student-onboarding",
   ],

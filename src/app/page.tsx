@@ -58,7 +58,10 @@ export default async function Home() {
     headers: await headers(),
   });
 
-  if (session?.user?.role === "ORGANIZER" || session?.user?.role === "SUPER_ADMIN") {
+  if (session?.user?.role === "SUPER_ADMIN") {
+    redirect("/superadmin");
+  }
+  if (session?.user?.role === "ORGANIZER") {
     redirect("/admin");
   }
 

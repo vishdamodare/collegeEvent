@@ -39,7 +39,7 @@ export default async function DashboardLayout({
   }
 
   if (user.role === "SUPER_ADMIN") {
-    redirect("/admin");
+    redirect("/superadmin");
   }
 
   // If student does not have a profile completed yet (e.g. fresh Google OAuth sign-in),

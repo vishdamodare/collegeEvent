@@ -114,8 +114,8 @@ export function Navbar({ isAuthenticated: propIsAuthenticated, onLogout: propOnL
               {isAuthenticated ? (
                 <div className="hidden md:flex items-center gap-4">
                   {isOrganizer ? (
-                    <Link href="/admin" className="text-[13.5px] font-bold text-[var(--color-lime)] hover:text-[var(--color-text-main)] transition-colors duration-350 mr-1">
-                      Admin Panel
+                    <Link href={role === "SUPER_ADMIN" ? "/superadmin" : "/admin"} className="text-[13.5px] font-bold text-[var(--color-lime)] hover:text-[var(--color-text-main)] transition-colors duration-350 mr-1">
+                      {role === "SUPER_ADMIN" ? "Super Admin" : "Admin Panel"}
                     </Link>
                   ) : (
                     <Link href="/dashboard" className="text-[13.5px] font-bold text-[var(--color-lime)] hover:text-[var(--color-text-main)] transition-colors duration-350 mr-1">
@@ -240,8 +240,8 @@ export function Navbar({ isAuthenticated: propIsAuthenticated, onLogout: propOnL
         {isAuthenticated ? (
           <>
             {isOrganizer ? (
-              <Link href="/admin" onClick={closeMenu} className="text-[17px] font-bold text-[var(--color-lime)] hover:text-[var(--color-text-main)]">
-                Admin Panel
+              <Link href={role === "SUPER_ADMIN" ? "/superadmin" : "/admin"} onClick={closeMenu} className="text-[17px] font-bold text-[var(--color-lime)] hover:text-[var(--color-text-main)]">
+                {role === "SUPER_ADMIN" ? "Super Admin" : "Admin Panel"}
               </Link>
             ) : (
               <Link href="/dashboard" onClick={closeMenu} className="text-[17px] font-bold text-[var(--color-lime)] hover:text-[var(--color-text-main)]">
