@@ -1,15 +1,12 @@
 "use client";
 
 import { authClient } from "@/lib/auth-client";
-import { useRouter } from "next/navigation";
 
 export function LogoutButton() {
-  const router = useRouter();
 
   const handleLogout = async () => {
     await authClient.signOut();
-    router.refresh(); // Triggers app routing refresh
-    router.push("/login");
+    window.location.replace("/login"); // hard nav drops cached protected pages
   };
 
   return (

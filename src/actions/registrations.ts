@@ -306,15 +306,7 @@ export async function registerForFreeEvent(
       const captainTicketId = crypto.randomUUID();
       const captainTicketNumber = await generateTicketNumber(tx);
       const captainVerificationToken = generateVerificationToken();
-      const captainQr = await generateQRCodeDataUrl(
-        captainTicketId,
-        captainReg.id,
-        eventId,
-        event.organizerId,
-        captainVerificationToken,
-        studentProfile.user.name,
-        eventType === "TEAM" ? params?.teamName || "" : ""
-      );
+      const captainQr = await generateQRCodeDataUrl(captainTicketId, captainVerificationToken);
 
       const captainTicket = await tx.ticket.upsert({
         where: { registrationId: captainReg.id },
@@ -422,15 +414,7 @@ export async function registerForFreeEvent(
           const memberTicketId = crypto.randomUUID();
           const memberTicketNumber = await generateTicketNumber(tx);
           const memberVerificationToken = generateVerificationToken();
-          const memberQr = await generateQRCodeDataUrl(
-            memberTicketId,
-            memberReg.id,
-            eventId,
-            event.organizerId,
-            memberVerificationToken,
-            member.name,
-            params?.teamName || ""
-          );
+          const memberQr = await generateQRCodeDataUrl(memberTicketId, memberVerificationToken);
 
           await tx.ticket.upsert({
             where: { registrationId: memberReg.id },
@@ -1026,3 +1010,19 @@ export async function createRazorpayOrderAction(eventId: string) {
   }
 }
 
+
+/**
+ * Lightweight check-in status for the ticket owner's live "you're in" feedback (polled by CheckInWatcher).
+ */
+export async function getCheckInStatus(ticketId: string) {
+  const user = await getCurrentUser();
+  if (!user) return { checkedIn: false, checkedInAt: null };
+  const ticket = await prisma.ticket.findFirst({
+    where: { id: ticketId, student: { userId: user.id } }, // owner only
+    select: { registration: { select: { checkedIn: true, checkedInAt: true } } },
+  });
+  return {
+    checkedIn: !!ticket?.registration.checkedIn,
+    checkedInAt: ticket?.registration.checkedInAt?.toISOString() ?? null,
+  };
+}

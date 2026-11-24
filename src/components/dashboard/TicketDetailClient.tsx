@@ -24,6 +24,7 @@ import { RegistrationStatusBadge } from "@/components/shared/RegistrationStatusB
 import { toast } from "sonner";
 import { incrementTicketDownloadCount, recordTicketShared } from "@/actions/registrations";
 import { EventGridCard } from "@/components/events/EventGridCard";
+import { CheckInWatcher } from "@/components/dashboard/CheckInWatcher";
 import type { getEventsByOrganizer } from "@/actions/events";
 
 interface TicketDetailClientProps {
@@ -137,6 +138,14 @@ export function TicketDetailClient({ ticket, moreEvents = [] }: TicketDetailClie
         </span>
       </div>
 
+      {/* Live check-in feedback: celebrates the moment the organizer scans this QR */}
+      <CheckInWatcher
+        ticketId={ticket.id}
+        eventTitle={ticket.event.title}
+        initialCheckedIn={ticket.registration.checkedIn}
+        initialCheckedInAt={ticket.registration.checkedInAt}
+      />
+
       {/* Printable Ticket Card wrapper */}
       <div
         ref={ticketRef}
@@ -208,10 +217,10 @@ export function TicketDetailClient({ ticket, moreEvents = [] }: TicketDetailClie
                 <img
                   src={ticket.qrCode}
                   alt="Entry QR Code"
-                  className="w-36 h-36 bg-white p-2 rounded-xl"
+                  className="w-52 h-52 bg-white p-2 rounded-xl"
                 />
               ) : (
-                <div className="w-36 h-36 bg-card-hover flex items-center justify-center rounded-xl">
+                <div className="w-52 h-52 bg-card-hover flex items-center justify-center rounded-xl">
                   <span className="text-[10px] text-text-faint">No QR Available</span>
                 </div>
               )}

@@ -1,7 +1,5 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
-import { prisma } from "@/lib/prisma";
+import { getAdminUser } from "@/lib/admin-auth";
 import { AdminShell } from "@/components/admin/AdminShell";
 
 export const metadata = {
@@ -13,19 +11,12 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  // Cached per request: the page's admin actions reuse this lookup instead of repeating it
+  const { session, user } = await getAdminUser();
 
   if (!session?.user) {
     redirect("/login?callbackUrl=/admin");
   }
-
-  // Look up user role and status in database
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    include: { organizerProfile: true },
-  });
 
   if (!user || (user.role !== "ORGANIZER" && user.role !== "SUPER_ADMIN")) {
     redirect("/unauthorized");

@@ -57,6 +57,8 @@ export function Navbar({ isAuthenticated: propIsAuthenticated, onLogout: propOnL
   const closeMenu = () => setMenuOpen(false);
 
   const pathname = usePathname();
+  // Return to the current page (e.g. an event) after log in / sign up instead of the dashboard
+  const back = pathname && pathname !== "/" ? `?callbackUrl=${encodeURIComponent(pathname)}` : "";
   // "/" only matches exactly; section anchors (/#about) are never "current"
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : !href.includes("#") && pathname.startsWith(href);
@@ -142,13 +144,13 @@ export function Navbar({ isAuthenticated: propIsAuthenticated, onLogout: propOnL
               ) : (
                 <div className="hidden md:flex items-center gap-[24px]">
                   <Link
-                    href="/login"
+                    href={`/login${back}`}
                     className="text-[16px] font-medium text-[var(--color-text-main)] hover:text-[var(--color-lime)] transition-colors duration-300 font-archivo"
                   >
                     Log in
                   </Link>
                   <Link 
-                    href="/signup"
+                    href={`/signup${back}`}
                     className="flex items-center justify-center px-[28px] py-[14px] rounded-full font-bold text-[16px] font-archivo bg-[var(--color-lime)] text-[#0B0B08] shadow-[4px_4px_0_var(--color-coral)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_var(--color-coral)] hover:bg-[var(--color-butter)] transition-all duration-350 ease-[var(--ease-custom)] whitespace-nowrap"
                   >
                     Sign up
@@ -268,14 +270,14 @@ export function Navbar({ isAuthenticated: propIsAuthenticated, onLogout: propOnL
         ) : (
           <>
             <Link
-              href="/signup"
+              href={`/signup${back}`}
               onClick={closeMenu}
               className="w-full flex items-center justify-center gap-2 px-[28px] py-[15px] rounded-full font-bold text-[15px] font-archivo bg-[var(--color-lime)] text-[#0B0B08] shadow-[4px_4px_0_var(--color-coral)] transition-all duration-350 ease-[var(--ease-custom)] whitespace-nowrap text-center"
             >
               Sign up free
             </Link>
             <Link
-              href="/login"
+              href={`/login${back}`}
               onClick={closeMenu}
               className="w-full flex items-center justify-center px-[28px] py-[14px] rounded-full font-semibold text-[15px] bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-text-main)]"
             >

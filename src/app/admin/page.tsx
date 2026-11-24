@@ -14,20 +14,12 @@ import { getOrganizerProfile, getAdminDashboardStats, getAdminAnalytics } from "
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboard() {
-  let profile = {
-    name: "Organizer",
-    college: "your College"
-  };
-
-  try {
-    profile = await getOrganizerProfile();
-  } catch (e) {
-    // Fallback if not logged in or during static builds
-  }
-
-  // Fetch metrics dynamically from the database
-  const dashboardStats = await getAdminDashboardStats();
-  const analyticsData = await getAdminAnalytics();
+  // All three in parallel (they share one cached auth lookup) instead of back-to-back round trips
+  const [profile, dashboardStats, analyticsData] = await Promise.all([
+    getOrganizerProfile().catch(() => ({ name: "Organizer", college: "your College" })),
+    getAdminDashboardStats(),
+    getAdminAnalytics(),
+  ]);
 
   const { quickStats, recentRegistrations, recentPayments } = dashboardStats;
 

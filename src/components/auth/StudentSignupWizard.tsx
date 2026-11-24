@@ -10,6 +10,8 @@ import { registerStudentAction } from "@/actions/auth/registerStudent";
 
 interface StudentSignupWizardProps {
   onBack?: () => void;
+  // Where to return after sign-up (e.g. the event the student was registering for)
+  callbackUrl?: string | null;
 }
 
 const inputClass =
@@ -17,7 +19,8 @@ const inputClass =
 
 // One-screen sign-up: name, email, college, password. Branch/year/interests
 // are optional and can be added later from the profile page.
-export function StudentSignupWizard({ onBack }: StudentSignupWizardProps) {
+export function StudentSignupWizard({ onBack, callbackUrl }: StudentSignupWizardProps) {
+  const loginHref = callbackUrl ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/login";
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [college, setCollege] = useState("");
@@ -63,7 +66,7 @@ export function StudentSignupWizard({ onBack }: StudentSignupWizardProps) {
             Your account is ready. Log in to start discovering events — you can add your branch, year and interests from your profile anytime.
           </p>
           <button
-            onClick={() => (window.location.href = "/login")}
+            onClick={() => (window.location.href = loginHref)}
             className="btn btn-primary w-full mt-2 py-[16px] font-bold cursor-pointer"
           >
             Log in
@@ -173,11 +176,13 @@ export function StudentSignupWizard({ onBack }: StudentSignupWizardProps) {
         <div className="h-[1px] flex-1 bg-border"></div>
       </div>
 
-      <SocialLogin callbackURL="/auth-callback?targetRole=student" />
+      <SocialLogin
+        callbackURL={`/auth-callback?targetRole=student${callbackUrl ? `&next=${encodeURIComponent(callbackUrl)}` : ""}`}
+      />
 
       <p className="text-center mt-6 text-[14px] text-text-muted">
         Already have an account?{" "}
-        <Link href="/login" className="text-[var(--color-lime)] font-bold hover:underline">
+        <Link href={loginHref} className="text-[var(--color-lime)] font-bold hover:underline">
           Log in
         </Link>
       </p>

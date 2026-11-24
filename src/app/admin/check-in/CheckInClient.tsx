@@ -267,7 +267,8 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
         let mediaStream: MediaStream;
         try {
           mediaStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: { ideal: "environment" } }
+            // 720p is plenty for a QR and much cheaper to process than the 1080p+ default on phones
+            video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } }
           });
         } catch {
           mediaStream = await navigator.mediaDevices.getUserMedia({
@@ -311,38 +312,60 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
       }
     };
 
-    const scanFrame = () => {
-      if (isCancelled) return;
+    // Native detector (Chrome/Android, hardware accelerated) when available, else jsQR fallback
+    type Detector = { detect: (src: CanvasImageSource) => Promise<{ rawValue: string }[]> };
+    const NativeDetector = (globalThis as unknown as { BarcodeDetector?: new (o: { formats: string[] }) => Detector }).BarcodeDetector;
+    const detector = NativeDetector ? new NativeDetector({ formats: ["qr_code"] }) : null;
+    const SCAN_SIZE = 480; // jsQR works on a downscaled centre square: ~10x fewer pixels than a full frame
 
-      if (videoRef.current && canvasRef.current && activeTab === "camera") {
-        const video = videoRef.current;
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext("2d", { willReadFrequently: true });
-
-        if (video.readyState === video.HAVE_ENOUGH_DATA && ctx) {
-          canvas.height = video.videoHeight;
-          canvas.width = video.videoWidth;
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const code = jsQR(imageData.data, imageData.width, imageData.height, {
-            inversionAttempts: "attemptBoth",
-          });
-
-          if (code && code.data && code.data !== lastScannedCode.current) {
-            lastScannedCode.current = code.data;
-            const parsed = extractTicketPayload(code.data);
-            if (parsed) {
-              if (navigator.vibrate) {
-                try { navigator.vibrate(200); } catch {}
-              }
-              setTicketSearch(parsed.identifier);
-              setTokenSearch(parsed.token);
-              handleVerify(parsed.identifier, parsed.token);
-            }
-          }
+    const onCode = (data: string) => {
+      if (!data || data === lastScannedCode.current) return;
+      lastScannedCode.current = data;
+      const parsed = extractTicketPayload(data);
+      if (parsed) {
+        if (navigator.vibrate) {
+          try { navigator.vibrate(200); } catch {}
         }
+        setTicketSearch(parsed.identifier);
+        setTokenSearch(parsed.token);
+        handleVerify(parsed.identifier, parsed.token);
       }
-      animationFrameId = requestAnimationFrame(scanFrame);
+    };
+
+    const decodeFrame = async (video: HTMLVideoElement, canvas: HTMLCanvasElement) => {
+      if (detector) {
+        try {
+          const [hit] = await detector.detect(video);
+          if (hit) return onCode(hit.rawValue);
+        } catch {
+          // detector unsupported for this source: fall through to jsQR
+        }
+        // No native hit: still try jsQR below, some devices' native detectors miss codes jsQR reads fine
+      }
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      if (!ctx) return;
+      const side = Math.min(video.videoWidth, video.videoHeight);
+      const sx = (video.videoWidth - side) / 2;
+      const sy = (video.videoHeight - side) / 2;
+      const size = Math.min(SCAN_SIZE, side);
+      canvas.width = size;
+      canvas.height = size;
+      ctx.drawImage(video, sx, sy, side, side, 0, 0, size, size);
+      const { data, width, height } = ctx.getImageData(0, 0, size, size);
+      // Tickets are black-on-white; skipping the inverted pass halves the work per frame
+      const code = jsQR(data, width, height, { inversionAttempts: "dontInvert" });
+      if (code?.data) onCode(code.data);
+    };
+
+    const scanFrame = async () => {
+      if (isCancelled) return;
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      if (video && canvas && activeTab === "camera" && video.readyState === video.HAVE_ENOUGH_DATA) {
+        await decodeFrame(video, canvas);
+      }
+      // ~10 scans/sec keeps the UI smooth on low-end phones; a QR is in view for far longer than 100ms
+      if (!isCancelled) animationFrameId = window.setTimeout(scanFrame, 100);
     };
 
     if (activeTab === "camera") {
@@ -356,7 +379,7 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
-      cancelAnimationFrame(animationFrameId);
+      clearTimeout(animationFrameId);
     };
   }, [activeTab, mounted]);
 

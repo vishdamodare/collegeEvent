@@ -71,6 +71,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { cancelRegistration } from "@/actions/registrations";
 import { RegistrationWizard, type WizardProfile } from "@/components/shared/RegistrationWizard";
 import { toast } from "sonner";
+import { CheckInWatcher } from "@/components/dashboard/CheckInWatcher";
 import { cn } from "@/utils/cn";
 
 interface EventDetailClientProps {
@@ -499,7 +500,7 @@ export function EventDetailClient({
                 <div className="pt-2">
                   {!session ? (
                     <Link
-                      href={`/login?callbackUrl=/events/${event.slug}`}
+                      href={`/login?callbackUrl=${encodeURIComponent(`/events/${event.slug}?register=true`)}`}
                       className="w-full btn btn-primary text-center block py-2.5 rounded-xl font-semibold text-sm"
                     >
                       Login to Register
@@ -533,11 +534,17 @@ export function EventDetailClient({
                               <img
                                 src={regDetails.ticket.qrCode}
                                 alt="Ticket QR Code"
-                                className="w-28 h-28 bg-white p-1.5 rounded-lg"
+                                className="w-44 h-44 bg-white p-1.5 rounded-lg"
                               />
                               <p className="text-[10px] text-text-faint mt-1.5">Scan at venue for check-in</p>
                             </div>
                           )}
+
+                          <CheckInWatcher
+                            ticketId={regDetails.ticket.id}
+                            eventTitle={event.title}
+                            initialCheckedIn={regDetails.checkedIn}
+                          />
                           
                           <div className="flex justify-between">
                             <span className="text-text-faint">Status:</span>

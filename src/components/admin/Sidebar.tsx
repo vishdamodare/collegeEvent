@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { 
   LayoutDashboard, 
@@ -32,7 +32,6 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { data: session } = authClient.useSession();
 
@@ -55,7 +54,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
 
   const handleLogout = async () => {
     await authClient.signOut();
-    router.push("/login");
+    window.location.replace("/login"); // hard nav: router.push keeps cached protected pages after logout
   };
 
   return (

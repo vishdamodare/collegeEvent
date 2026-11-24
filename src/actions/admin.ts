@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { getAdminUser } from "@/lib/admin-auth";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { EventStatus, UserRole, RegistrationStatus, Prisma } from "@prisma/client";
@@ -11,24 +12,18 @@ import { sendCertificateIssuedEmail } from "@/lib/email";
 
 // Helper to get authenticated user & verify role
 async function getAuthenticatedAdmin() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  // Cached per request (shared with admin/layout.tsx); role read from the DB, not the session cookie cache
+  const { session, user: db } = await getAdminUser();
   const user = session?.user;
-  if (!user || (user.role !== UserRole.ORGANIZER && user.role !== UserRole.SUPER_ADMIN)) {
+  if (!user) throw new Error("Unauthorized access");
+  if (!db || (db.role !== UserRole.ORGANIZER && db.role !== UserRole.SUPER_ADMIN)) {
     throw new Error("Unauthorized access");
   }
   // Mirror admin/layout.tsx: blocked/rejected organizers can't call actions directly either
-  if (user.role === UserRole.ORGANIZER) {
-    const profile = await prisma.organizerProfile.findUnique({
-      where: { userId: user.id },
-      select: { verificationStatus: true },
-    });
-    if (profile?.verificationStatus !== "APPROVED") {
-      throw new Error("Unauthorized access");
-    }
+  if (db.role === UserRole.ORGANIZER && db.organizerProfile?.verificationStatus !== "APPROVED") {
+    throw new Error("Unauthorized access");
   }
-  return user;
+  return { ...user, role: db.role };
 }
 
 // ─── Dashboard Stats ──────────────────────────────────────────────────────────
@@ -582,9 +577,7 @@ export async function updateOrganizerProfile(data: OrganizerProfileData) {
 
 export async function getOrganizerProfile() {
   const user = await getAuthenticatedAdmin();
-  const profile = await prisma.organizerProfile.findUnique({
-    where: { userId: user.id },
-  });
+  const profile = (await getAdminUser()).user?.organizerProfile; // already loaded by the cached auth lookup
   return {
     name: user.name || "",
     college: profile?.college || "",
@@ -724,57 +717,52 @@ export async function getAdminPayments() {
 export async function getAdminAnalytics() {
   const user = await getAuthenticatedAdmin();
 
-  // Past 7 days registration trends
-  const dailyRegistrations = [];
-  for (let i = 6; i >= 0; i--) {
-    const start = new Date();
-    start.setDate(start.getDate() - i);
-    start.setHours(0, 0, 0, 0);
+  const weekStart = new Date();
+  weekStart.setDate(weekStart.getDate() - 6);
+  weekStart.setHours(0, 0, 0, 0);
 
+  // 2 parallel queries instead of 9 sequential round trips (7 per-day counts + top events + categories)
+  const [recent, events] = await Promise.all([
+    prisma.registration.findMany({
+      where: { event: { organizerId: user.id }, registeredAt: { gte: weekStart } },
+      select: { registeredAt: true },
+    }),
+    prisma.event.findMany({
+      where: { organizerId: user.id },
+      select: {
+        title: true,
+        category: { select: { name: true } },
+        _count: { select: { registrations: { where: { status: { not: "CANCELLED" } } } } },
+      },
+    }),
+  ]);
+
+  // Past 7 days registration trends (bucketed by local day, same as before)
+  const dailyRegistrations = Array.from({ length: 7 }, (_, i) => {
+    const start = new Date(weekStart);
+    start.setDate(start.getDate() + i);
     const end = new Date(start);
     end.setDate(end.getDate() + 1);
-
-    const count = await prisma.registration.count({
-      where: {
-        event: { organizerId: user.id },
-        registeredAt: { gte: start, lt: end }
-      }
-    });
-
-    const dayName = start.toLocaleDateString("en-US", { weekday: "short" });
-    dailyRegistrations.push({ label: dayName, value: count });
-  }
+    return {
+      label: start.toLocaleDateString("en-US", { weekday: "short" }),
+      value: recent.filter((r) => r.registeredAt >= start && r.registeredAt < end).length,
+    };
+  });
 
   // Top events by signups count
-  const topEventsRaw = await prisma.event.findMany({
-    where: { organizerId: user.id },
-    include: { _count: { select: { registrations: { where: { status: { not: "CANCELLED" } } } } } },
-    orderBy: { registrations: { _count: "desc" } },
-    take: 5
-  });
-
-  const topEvents = topEventsRaw.map(e => ({
-    name: e.title,
-    value: e._count.registrations
-  }));
+  const topEvents = [...events]
+    .sort((a, b) => b._count.registrations - a._count.registrations)
+    .slice(0, 5)
+    .map((e) => ({ name: e.title, value: e._count.registrations }));
 
   // Category distribution
-  const categoriesRaw = await prisma.category.findMany({
-    include: {
-      events: {
-        where: { organizerId: user.id },
-        include: { _count: { select: { registrations: { where: { status: { not: "CANCELLED" } } } } } }
-      }
-    }
-  });
-
-  const categoryDistribution = categoriesRaw.map(cat => {
-    const count = cat.events.reduce((sum, e) => sum + e._count.registrations, 0);
-    return {
-      category: cat.name,
-      value: count
-    };
-  }).filter(c => c.value > 0);
+  const byCategory = new Map<string, number>();
+  for (const e of events) {
+    byCategory.set(e.category.name, (byCategory.get(e.category.name) ?? 0) + e._count.registrations);
+  }
+  const categoryDistribution = [...byCategory]
+    .map(([category, value]) => ({ category, value }))
+    .filter((c) => c.value > 0);
 
   return {
     dailyRegistrations,

@@ -2,14 +2,12 @@
 
 import { AuthCard } from "@/components/auth/AuthCard";
 import { authClient } from "@/lib/auth-client";
-import { useRouter } from "next/navigation";
 
 export default function PendingApprovalPage() {
-  const router = useRouter();
 
   const handleLogout = async () => {
     await authClient.signOut();
-    router.push("/login");
+    window.location.replace("/login"); // hard nav: router.push keeps cached protected pages after logout
   };
 
   return (

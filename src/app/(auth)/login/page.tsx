@@ -158,7 +158,10 @@ export default function LoginPage() {
 
       <div className="text-center mt-8 text-[14px] text-[var(--color-text-muted)]">
         Don&apos;t have an account?{" "}
-        <Link href="/signup" className="text-[var(--color-lime)] font-bold hover:underline transition-all">
+        <Link
+          href={callbackUrl ? `/signup?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/signup"}
+          className="text-[var(--color-lime)] font-bold hover:underline transition-all"
+        >
           Create one
         </Link>
       </div>

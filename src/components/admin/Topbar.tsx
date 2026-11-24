@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { 
   Search, 
   Bell, 
@@ -40,13 +39,12 @@ interface TopbarProps {
 }
 
 export function Topbar({ onToggleSidebar, profile }: TopbarProps) {
-  const router = useRouter();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
 
   const handleLogout = async () => {
     await authClient.signOut();
-    router.push("/login");
+    window.location.replace("/login"); // hard nav: router.push keeps cached protected pages after logout
   };
 
   return (

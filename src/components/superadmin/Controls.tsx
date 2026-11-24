@@ -18,7 +18,6 @@ const TABS = [
 
 export function SuperNav({ pending }: { pending: number }) {
   const pathname = usePathname();
-  const router = useRouter();
   return (
     <header className="border-b border-white/10 bg-[#0A0A0A]/95 backdrop-blur sticky top-0 z-30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-wrap items-center gap-x-6 gap-y-2 py-3">
@@ -52,7 +51,7 @@ export function SuperNav({ pending }: { pending: number }) {
           <button
             onClick={async () => {
               await authClient.signOut();
-              router.push("/login");
+              window.location.replace("/login"); // hard nav: router.push keeps cached protected pages after logout
             }}
             className="px-3 py-2 rounded-lg text-red-400 hover:bg-red-500/10 cursor-pointer"
           >

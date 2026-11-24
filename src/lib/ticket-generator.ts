@@ -30,34 +30,16 @@ export function generateVerificationToken(length: number = 12): string {
 }
 
 /**
- * Generates a QR Code as a base64 Data URL.
- * Contains critical ticket validation parameters.
+ * Generates the entry QR as a base64 Data URL.
+ * Payload is just "ticketId:verificationToken" (~50 chars) at medium error correction, so the code is
+ * small and low-density and scans instantly. The old JSON payload at level H was ~80x80 modules and slow to read.
  */
-export async function generateQRCodeDataUrl(
-  ticketId: string,
-  registrationId: string,
-  eventId: string,
-  organizerId: string,
-  verificationToken: string,
-  attendeeName: string,
-  teamName: string
-): Promise<string> {
-  const data = JSON.stringify({
-    ticketId,
-    registrationId,
-    eventId,
-    organizerId,
-    verificationToken,
-    attendeeName,
-    teamName,
-    generatedAt: new Date().toISOString(),
-  });
-
+export async function generateQRCodeDataUrl(ticketId: string, verificationToken: string): Promise<string> {
   try {
-    return await QRCode.toDataURL(data, {
-      errorCorrectionLevel: "H",
-      margin: 1,
-      width: 300,
+    return await QRCode.toDataURL(`${ticketId}:${verificationToken}`, {
+      errorCorrectionLevel: "M",
+      margin: 2,
+      width: 400,
       color: {
         dark: "#000000",
         light: "#ffffff",
