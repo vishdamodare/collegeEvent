@@ -23,8 +23,11 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image" },
   formatDetection: { telephone: false },
   verification: {
-    // Google Search Console ownership (public token, safe to commit)
-    google: "2EbSs9SstfQ1H6aUohSeGvv8SHKz832Mt_R9ZzfXCMI",
+    // Google Search Console ownership (public tokens, safe to commit)
+    google: [
+      "2EbSs9SstfQ1H6aUohSeGvv8SHKz832Mt_R9ZzfXCMI",
+      "8p0DwJSuKmCbTwd8oB44UwCq8-8HzhkF5t_OrEUodKQ",
+    ],
     // Bing Webmaster Tools: set BING_SITE_VERIFICATION to the msvalidate.01 token from Bing to verify by meta tag
     ...(process.env.BING_SITE_VERIFICATION ? { other: { "msvalidate.01": process.env.BING_SITE_VERIFICATION } } : {}),
   },
