@@ -32,8 +32,8 @@ export function ContactSection() {
   const contactInfo = [
     {
       label: "Support Email",
-      value: "support@collegeevents.in",
-      href: "mailto:support@collegeevents.in",
+      value: "supportcollegeevents@gmail.com",
+      href: "mailto:supportcollegeevents@gmail.com",
       icon: (
         <svg className="w-5 h-5 text-[var(--color-lime)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -52,8 +52,8 @@ export function ContactSection() {
     },
     {
       label: "Instagram",
-      value: "@collegeevents",
-      href: "https://instagram.com/collegeevents",
+      value: "@College.events.in",
+      href: "https://www.instagram.com/College.events.in",
       icon: (
         <svg className="w-5 h-5 text-[var(--color-lime)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4h10a3 3 0 013 3v10a3 3 0 01-3 3H7a3 3 0 01-3-3V7a3 3 0 013-3zm8 7.5a3.5 3.5 0 11-7 0 3.5 3.5 0 017 0z" />
@@ -63,7 +63,7 @@ export function ContactSection() {
     {
       label: "LinkedIn",
       value: "CollegeEvents",
-      href: "https://linkedin.com/company/collegeevents",
+      href: "https://www.linkedin.com/in/collage-events-67b194452",
       icon: (
         <svg className="w-5 h-5 text-[var(--color-lime)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />

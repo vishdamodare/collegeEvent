@@ -24,7 +24,7 @@ export default function SupportPage() {
     // No ticketing backend exists: hand off to the user's mail client rather than pretend a ticket was filed.
     const subject = encodeURIComponent(`[${ticketPriority}] ${ticketSubject}`);
     const body = encodeURIComponent(ticketDescription);
-    window.location.href = `mailto:support@collegeevents.in?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:supportcollegeevents@gmail.com?subject=${subject}&body=${body}`;
     toast.info("Opening your email app to send this to support…");
     setTicketSubject("");
     setTicketDescription("");
