@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useTransition } from "react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
@@ -96,7 +96,6 @@ export function StatusBadge({ value }: { value: string }) {
 /* ───────── Action buttons ───────── */
 
 function useAct() {
-  const router = useRouter();
   const [pending, start] = useTransition();
   const run = (fn: () => Promise<{ error?: string; success?: boolean }>, okMsg: string) =>
     start(async () => {
@@ -104,8 +103,7 @@ function useAct() {
         const res = await fn();
         if (res?.error) toast.error(res.error);
         else {
-          toast.success(okMsg);
-          router.refresh();
+          toast.success(okMsg); // server action's revalidatePath already refreshes the page
         }
       } catch {
         toast.error("Something went wrong. Please try again.");
