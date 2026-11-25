@@ -386,29 +386,14 @@ export function EventDetailClient({
                 </p>
               )}
 
-              {/* Dynamic Host Metrics Grid */}
+              {/* Only the real number: no invented ratings or response times */}
               {(() => {
-                const oId = event.organizer.id;
-                const charCodeSum = oId.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                const hostRating = (4.5 + (charCodeSum % 5) * 0.1).toFixed(1);
-                const hostRespTime = charCodeSum % 2 === 0 ? "Within 2 hours" : "Within 24 hours";
                 const totalPublished = event.organizer.totalEvents || 1;
-
                 return (
-                  <div className="grid grid-cols-3 gap-2 text-center text-xs border-y border-border/50 py-4 font-archivo">
-                    <div>
-                      <p className="font-bold text-text-main text-sm">{totalPublished}</p>
-                      <p className="text-[10px] text-text-faint uppercase mt-0.5">Events Hosted</p>
-                    </div>
-                    <div>
-                      <p className="font-bold text-text-main text-sm">{hostRating} ★</p>
-                      <p className="text-[10px] text-text-faint uppercase mt-0.5">Avg Rating</p>
-                    </div>
-                    <div>
-                      <p className="font-bold text-text-main text-sm">{hostRespTime}</p>
-                      <p className="text-[10px] text-text-faint uppercase mt-0.5">Response Time</p>
-                    </div>
-                  </div>
+                  <p className="text-sm text-text-muted border-y border-border/50 py-4">
+                    <span className="font-bold text-text-main">{totalPublished}</span>{" "}
+                    {totalPublished === 1 ? "event" : "events"} hosted on CollegeEvents
+                  </p>
                 );
               })()}
 

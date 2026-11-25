@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-// Sign-up asks only what's needed to create the account. Branch, year and
-// interests are optional here and can be filled in later from the profile page.
+// Sign-up asks only what's needed to create the account: name, email, password. College, branch, year and
+// interests are filled in later (at registration or from the profile page).
 export const studentSignupSchema = z.object({
   name: z.string().trim().min(1, { message: "Full name is required" }),
   email: z
@@ -12,7 +12,8 @@ export const studentSignupSchema = z.object({
   password: z
     .string()
     .min(8, { message: "Password must be at least 8 characters" }),
-  college: z.string().trim().min(1, { message: "College / University name is required" }),
+  // Asked later, when the student registers for an event
+  college: z.string().trim().optional().default(""),
 
   branch: z.string().optional().default(""),
   academicYear: z.string().optional().default(""),

@@ -6,11 +6,10 @@ import { useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { HeroSection } from "@/components/home/HeroSection";
-import { FeaturedEvents } from "@/components/home/FeaturedEvents";
-import { EventTimeline } from "@/components/home/EventTimeline";
+import { Schedule } from "@/components/home/Schedule";
 import { CategoryGrid } from "@/components/home/CategoryGrid";
 import { TrendingColleges } from "@/components/home/TrendingColleges";
-import { StatsSection } from "@/components/home/StatsSection";
+import { JoinCta } from "@/components/home/JoinCta";
 import { EventDetailModal } from "@/components/shared/EventDetailModal";
 import { AboutSection } from "@/components/home/AboutSection";
 import { ContactSection } from "@/components/home/ContactSection";
@@ -23,16 +22,10 @@ interface HomeClientProps {
   events: Event[];
   categories: ComponentProps<typeof CategoryGrid>["categories"];
   colleges: ComponentProps<typeof TrendingColleges>["colleges"];
-  stats: {
-    totalEvents: number;
-    totalCategories: number;
-    totalOrganizers: number;
-    totalStudents: number;
-    totalColleges: number;
-  };
+  qr: string;
 }
 
-export function HomeClient({ events, categories, colleges, stats }: HomeClientProps) {
+export function HomeClient({ events, categories, colleges, qr }: HomeClientProps) {
   const router = useRouter();
   const [detailEventId, setDetailEventId] = useState<string | null>(null);
 
@@ -71,16 +64,13 @@ export function HomeClient({ events, categories, colleges, stats }: HomeClientPr
 
       <HeroSection
         events={events}
+        campuses={colleges.map((c) => c.short ?? c.name)}
+        qr={qr}
         onOpenDetails={openDetails}
         onOpenRegister={handleRegisterClick}
       />
 
-      <FeaturedEvents
-        events={events}
-        onOpenDetails={openDetails}
-      />
-
-      <EventTimeline
+      <Schedule
         events={events}
         onOpenDetails={openDetails}
       />
@@ -89,9 +79,9 @@ export function HomeClient({ events, categories, colleges, stats }: HomeClientPr
 
       <TrendingColleges colleges={colleges} />
 
-      <StatsSection stats={stats} />
+      {!isAuthenticated && <JoinCta />}
 
-      <AboutSection stats={stats} />
+      <AboutSection />
 
       <ContactSection />
 

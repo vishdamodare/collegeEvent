@@ -1,74 +1,45 @@
-"use client";
-
-import { motion } from "framer-motion";
+import Link from "next/link";
 import Image from "next/image";
+import { Check } from "lucide-react";
 
-const badges = [
-  { text: "Hackathon", top: "15%", left: "10%", delay: 0 },
-  { text: "Music Fest", top: "45%", left: "5%", delay: 0.2 },
-  { text: "Robotics", top: "25%", left: "75%", delay: 0.4 },
-  { text: "Sports", top: "65%", left: "80%", delay: 0.1 },
-  { text: "AI Workshop", top: "75%", left: "15%", delay: 0.5 },
+const BENEFITS = [
+  "Register for any fest in about a minute",
+  "Your QR ticket is saved in My Tickets",
+  "Free for students",
 ];
 
+// The brand panel next to every auth form. Always dark (like the homepage hero), so it carries white text in both themes.
 export function AuthHero() {
   return (
-    <div className="relative w-full h-full overflow-hidden flex flex-col justify-end p-5 pb-6 sm:p-12 lg:p-20 rounded-b-[28px] lg:rounded-none text-white">
-      {/* Background Image */}
-      <div className="absolute inset-0 z-0">
-        <Image
-          src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=2000&auto=format&fit=crop"
-          alt="Students at a massive tech event"
-          fill
-          className="object-cover"
-          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 100vw, 60vw"
-          priority
-        />
-        {/* Deep gradient overlay to ensure text readability. Stays dark in both
-            themes: it sits on a photo and carries white text. */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[rgb(var(--hero-ink))] via-[rgb(var(--hero-ink))]/75 to-[rgb(var(--hero-ink))]/10"></div>
-        <div className="absolute inset-0 bg-gradient-to-r from-[rgb(var(--hero-ink))]/60 to-transparent"></div>
-      </div>
+    <aside className="relative isolate overflow-hidden lg:w-[46%] lg:min-h-screen bg-[rgb(var(--hero-ink))] text-white px-5 py-4 sm:px-10 lg:p-14 flex flex-col">
+      <div
+        aria-hidden
+        className="absolute inset-0 -z-10 opacity-40 [background-image:linear-gradient(rgba(255,255,255,.14)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.14)_1px,transparent_1px)] [background-size:56px_56px] [mask-image:radial-gradient(ellipse_80%_70%_at_30%_70%,#000_0%,transparent_75%)]"
+      />
+      <div
+        aria-hidden
+        className="absolute -z-10 -bottom-40 -left-32 w-[560px] h-[560px] rounded-full blur-[110px] opacity-50 hidden lg:block"
+        style={{ background: "radial-gradient(circle at 40% 40%, rgba(29,78,216,.65), rgba(220,34,41,.3) 60%, transparent 72%)" }}
+      />
 
-      {/* Floating Badges */}
-      <div className="absolute inset-0 z-10 pointer-events-none hidden md:block">
-        {badges.map((badge, i) => (
-          <motion.div
-            key={i}
-            className="absolute px-4 py-2 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-white/90 text-[13px] font-bold tracking-wider uppercase"
-            style={{ top: badge.top, left: badge.left }}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ 
-              opacity: 1, 
-              y: [0, -15, 0],
-            }}
-            transition={{ 
-              opacity: { duration: 0.8, delay: badge.delay },
-              y: { duration: 6, repeat: Infinity, ease: "easeInOut", delay: badge.delay }
-            }}
-          >
-            {badge.text}
-          </motion.div>
-        ))}
-      </div>
+      <Link href="/" className="inline-flex items-center gap-2.5 w-fit font-archivo font-bold text-[19px]">
+        <Image src="/logo-mark.png" alt="" width={34} height={34} className="logo-mark-on-dark w-[34px] h-[34px]" priority />
+        CollegeEvents
+      </Link>
 
-      {/* Content */}
-      <div className="relative z-20 max-w-2xl">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-        >
-          <h1 className="text-[clamp(26px,5vw,56px)] font-anton leading-[1] uppercase tracking-tight mb-3 lg:mb-6">
-            Join the most exciting college events across the country.
-          </h1>
-          <div className="flex gap-3 lg:gap-4 text-[15px] md:text-[22px] font-archivo font-bold text-[var(--color-lime)]">
-            <span>Connect.</span>
-            <span>Compete.</span>
-            <span>Celebrate.</span>
-          </div>
-        </motion.div>
+      <div className="hidden lg:flex flex-1 flex-col justify-center max-w-[440px] py-16">
+        <h1 className="text-[clamp(36px,3.4vw,52px)] leading-[1.05] tracking-[-0.025em]">Your ticket to every campus fest.</h1>
+        <ul className="mt-10 space-y-4">
+          {BENEFITS.map((b) => (
+            <li key={b} className="flex items-start gap-3 text-[17px] text-white/85">
+              <span className="mt-0.5 grid place-items-center w-6 h-6 rounded-full bg-white/10 shrink-0">
+                <Check className="w-3.5 h-3.5 text-[var(--color-marigold)]" aria-hidden />
+              </span>
+              {b}
+            </li>
+          ))}
+        </ul>
       </div>
-    </div>
+    </aside>
   );
 }

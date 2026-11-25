@@ -91,17 +91,11 @@ export function ContactSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="mb-16"
+          className="mb-10"
         >
-          <div className="eyebrow mb-4">
-            <span className="dot"></span>
-            Reach Out
-          </div>
-          <h2 className="font-anton text-[44px] sm:text-[64px] text-[var(--color-text-main)] tracking-wider leading-none mb-4">
-            GET IN TOUCH
-          </h2>
-          <p className="text-lg sm:text-xl text-[var(--color-text-muted)] font-medium max-w-2xl">
-            Questions, partnerships or support? We&apos;re here to help.
+          <h2 className="text-[clamp(28px,3.6vw,40px)]">Contact us</h2>
+          <p className="mt-3 text-[17px] text-[var(--color-text-muted)] max-w-2xl">
+            Questions about a ticket, or want to list your college&apos;s events? Write to us.
           </p>
         </motion.div>
 
@@ -116,7 +110,7 @@ export function ContactSection() {
                     {info.icon}
                   </div>
                   <div>
-                    <p className="text-[12px] uppercase tracking-wider text-[var(--color-text-muted)] font-bold mb-0.5">
+                    <p className="text-[13px] text-[var(--color-text-muted)] font-medium mb-0.5">
                       {info.label}
                     </p>
                     <p className="text-[16px] sm:text-[17px] text-[var(--color-text-main)] font-medium">
@@ -136,7 +130,7 @@ export function ContactSection() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.4, delay: i * 0.08 }}
-                  className="group p-6 rounded-[24px] bg-[var(--color-card)] border border-[var(--color-border)] hover:border-[var(--color-lime)] hover:shadow-[0_0_20px_rgba(var(--lime-rgb),0.03)] hover:scale-[1.01] transition-all duration-300 block cursor-pointer"
+                  className="group p-6 rounded-2xl bg-[var(--color-card)] border border-[var(--color-border)] hover:border-[var(--color-lime)] transition-all duration-300 block cursor-pointer"
                 >
                   {content}
                 </motion.a>
@@ -147,7 +141,7 @@ export function ContactSection() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.4, delay: i * 0.08 }}
-                  className="group p-6 rounded-[24px] bg-[var(--color-card)] border border-[var(--color-border)] transition-all duration-300"
+                  className="group p-6 rounded-2xl bg-[var(--color-card)] border border-[var(--color-border)] transition-all duration-300"
                 >
                   {content}
                 </motion.div>
@@ -161,12 +155,12 @@ export function ContactSection() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="p-8 sm:p-10 rounded-[24px] bg-[var(--color-card)] border border-[var(--color-border)] backdrop-blur-[10px] w-full"
+            className="p-8 sm:p-10 rounded-2xl bg-[var(--color-card)] border border-[var(--color-border)] backdrop-blur-[10px] w-full"
           >
             <form onSubmit={handleSubmit} className="flex flex-col gap-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="name" className="text-[13px] font-bold text-[var(--color-text-main)] uppercase tracking-wide">
+                  <label htmlFor="name" className="text-[14px] font-semibold text-[var(--color-text-main)]">
                     Full Name
                   </label>
                   <input
@@ -174,15 +168,16 @@ export function ContactSection() {
                     type="text"
                     id="name"
                     name="name"
+                    autoComplete="name"
                     required
                     value={formData.name}
                     onChange={handleChange}
-                    placeholder="Mahek Dembla"
-                    className="w-full rounded-[16px] px-5 py-4 bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-text-main)] placeholder-white/20 focus:border-[var(--color-lime)] focus:outline-none transition-colors"
+                    placeholder="Your name"
+                    className="w-full rounded-xl px-5 py-4 bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-text-main)] placeholder-white/20 focus:border-[var(--color-lime)] focus:outline-none transition-colors"
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="email" className="text-[13px] font-bold text-[var(--color-text-main)] uppercase tracking-wide">
+                  <label htmlFor="email" className="text-[14px] font-semibold text-[var(--color-text-main)]">
                     Email Address
                   </label>
                   <input
@@ -190,17 +185,18 @@ export function ContactSection() {
                     type="email"
                     id="email"
                     name="email"
+                    autoComplete="email"
                     required
                     value={formData.email}
                     onChange={handleChange}
                     placeholder="name@gmail.com"
-                    className="w-full rounded-[16px] px-5 py-4 bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-text-main)] placeholder-white/20 focus:border-[var(--color-lime)] focus:outline-none transition-colors"
+                    className="w-full rounded-xl px-5 py-4 bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-text-main)] placeholder-white/20 focus:border-[var(--color-lime)] focus:outline-none transition-colors"
                   />
                 </div>
               </div>
 
               <div className="flex flex-col gap-2">
-                <label htmlFor="subject" className="text-[13px] font-bold text-[var(--color-text-main)] uppercase tracking-wide">
+                <label htmlFor="subject" className="text-[14px] font-semibold text-[var(--color-text-main)]">
                   Subject
                 </label>
                 <input
@@ -212,12 +208,12 @@ export function ContactSection() {
                   value={formData.subject}
                   onChange={handleChange}
                   placeholder="Inquiry about Event Listing / Partnership"
-                  className="w-full rounded-[16px] px-5 py-4 bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-text-main)] placeholder-white/20 focus:border-[var(--color-lime)] focus:outline-none transition-colors"
+                  className="w-full rounded-xl px-5 py-4 bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-text-main)] placeholder-white/20 focus:border-[var(--color-lime)] focus:outline-none transition-colors"
                 />
               </div>
 
               <div className="flex flex-col gap-2">
-                <label htmlFor="message" className="text-[13px] font-bold text-[var(--color-text-main)] uppercase tracking-wide">
+                <label htmlFor="message" className="text-[14px] font-semibold text-[var(--color-text-main)]">
                   Message
                 </label>
                 <textarea
@@ -229,7 +225,7 @@ export function ContactSection() {
                   value={formData.message}
                   onChange={handleChange}
                   placeholder="Tell us how we can help you..."
-                  className="w-full rounded-[16px] px-5 py-4 bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-text-main)] placeholder-white/20 focus:border-[var(--color-lime)] focus:outline-none transition-colors resize-none"
+                  className="w-full rounded-xl px-5 py-4 bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-text-main)] placeholder-white/20 focus:border-[var(--color-lime)] focus:outline-none transition-colors resize-none"
                 />
               </div>
 
@@ -237,7 +233,7 @@ export function ContactSection() {
                 suppressHydrationWarning
                 type="submit"
                 disabled={status === "loading"}
-                className="btn bg-[var(--color-lime)] text-[#0B0B08] font-bold py-4 rounded-[16px] w-full hover:shadow-[0_0_20px_rgba(var(--lime-rgb),0.4)] disabled:opacity-50 transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer"
+                className="btn bg-[var(--color-lime)] text-[#0B0B08] font-bold py-4 rounded-xl w-full disabled:opacity-50 transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer"
               >
                 {status === "loading" ? (
                   <>

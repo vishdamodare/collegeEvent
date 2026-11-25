@@ -17,6 +17,8 @@ export interface Event {
   sub: string;
   badge: string;
   slug?: string;
+  /** ISO date, for sorting and grouping (date above is the display string) */
+  dateISO?: string;
   timeline?: TimelineNode[];
 }
 

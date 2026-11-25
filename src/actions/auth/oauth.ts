@@ -62,6 +62,41 @@ export async function checkOAuthUserStatusAction() {
   }
 }
 
+/**
+ * Google sign-ups get a student profile straight away, so there is no extra screen between signing in and
+ * registering. College and the rest are asked later (when they register for an event, or from their profile).
+ * Never converts an organizer or admin account into a student.
+ */
+export async function ensureStudentProfileAction() {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user) return { success: false };
+
+    const account = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true, organizerProfile: { select: { id: true } } },
+    });
+    if (!account || account.role !== "STUDENT" || account.organizerProfile) return { success: false };
+
+    await prisma.studentProfile.upsert({
+      where: { userId: session.user.id },
+      create: {
+        userId: session.user.id,
+        college: "",
+        branch: "",
+        academicYear: "",
+        interests: [],
+        profileImage: session.user.image || null,
+      },
+      update: {},
+    });
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to create student profile:", error);
+    return { success: false };
+  }
+}
+
 export async function completeOAuthStudentOnboardingAction(input: {
   college: string;
   branch?: string;

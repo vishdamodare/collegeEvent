@@ -406,6 +406,7 @@ export async function getDynamicColleges() {
     const a = agg.get(c.slug)!;
     return {
       name: c.name,
+      short: c.short,
       loc: c.area,
       slug: c.slug,
       img: c.img,

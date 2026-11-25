@@ -1,4 +1,4 @@
-import { getRecommendedEvents, getCategoryRecommendations, getHomepageStats, getDynamicColleges } from "@/actions/events";
+import { getRecommendedEvents, getCategoryRecommendations, getDynamicColleges } from "@/actions/events";
 import { HomeClient } from "./HomeClient";
 import { format } from "date-fns";
 import type { Event } from "@/types";
@@ -7,6 +7,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { unstable_cache } from "next/cache";
 import { appUrl } from "@/lib/app-url";
+import QRCode from "qrcode";
 
 const siteJsonLd = [
   {
@@ -26,12 +27,14 @@ const siteJsonLd = [
 
 export const dynamic = "force-dynamic";
 
+// The QR in the hero's phone mock links to the site itself. Computed once per server instance.
+const siteQr = QRCode.toDataURL(appUrl, { margin: 1, width: 400, errorCorrectionLevel: "M" });
+
 // Same for every visitor, and getDynamicColleges scans all organizers/events/registrations:
 // cache for 5 min so most refreshes skip those DB round trips
 // Keyed by commit: Vercel's data cache survives deployments, so without this a deploy keeps serving the previous
 // deploy's cached (possibly differently shaped) data until the 5 minutes lapse.
 const cacheKey = process.env.VERCEL_GIT_COMMIT_SHA ?? "dev";
-const getCachedStats = unstable_cache(getHomepageStats, ["home-stats", cacheKey], { revalidate: 300 });
 const getCachedColleges = unstable_cache(getDynamicColleges, ["home-colleges", cacheKey], { revalidate: 300 });
 
 // Badge color map based on category
@@ -68,11 +71,11 @@ export default async function Home() {
     redirect("/admin");
   }
 
-  const [dbEvents, dbCategories, stats, dbColleges] = await Promise.all([
+  const [dbEvents, dbCategories, dbColleges, qr] = await Promise.all([
     getRecommendedEvents(),
     getCategoryRecommendations(),
-    getCachedStats(),
     getCachedColleges(),
+    siteQr,
   ]);
 
   // Map database events to the format existing home components expect
@@ -95,6 +98,7 @@ export default async function Home() {
       sub: ev.description,
       badge: badgeMap[ev.category.slug] || "b-blue",
       slug: ev.slug,
+      dateISO: new Date(ev.date).toISOString(),
     };
   });
 
@@ -116,7 +120,7 @@ export default async function Home() {
         // Tells Google the site name and logo (used for the brand in search results)
         dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }}
       />
-      <HomeClient events={events} categories={categories} colleges={dbColleges} stats={stats} />
+      <HomeClient events={events} categories={categories} colleges={dbColleges} qr={qr} />
     </>
   );
 }

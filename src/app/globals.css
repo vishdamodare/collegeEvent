@@ -21,9 +21,10 @@
   --color-text-muted: #C9C7BA;
   --color-text-faint: #8C8C82;
 
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-anton: "Anton", Impact, ui-sans-serif, sans-serif;
-  --font-archivo: "Archivo", ui-sans-serif, system-ui, sans-serif;
+  /* Text: Instrument Sans. Display: Bricolage Grotesque. --font-anton / --font-archivo keep their names so existing classes work. */
+  --font-sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-anton: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-archivo: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
 
   --ease-custom: cubic-bezier(.16,1,.3,1);
 }
@@ -37,13 +38,19 @@
   --coral-rgb: 255,75,51;
   /* Accent used as text on light backgrounds (bright accents fail contrast there) */
   --accent-text-light: #4D7C0F;
+  /* Ticket stubs: light "paper" on the dark page (white card on the light page) */
+  --color-ticket: #F3F5FB;
+  --color-ticket-ink: #0A1024;
+  --color-ticket-muted: #5A6382;
+  /* Festival marigold: date blocks and the event ticker. Red stays for actions. */
+  --color-marigold: #FFC933;
 }
 
 :root {
   background: var(--color-background);
   color: var(--color-foreground);
   font-family: var(--font-sans);
-  font-weight: 300;
+  font-weight: 400;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
   scroll-behavior: smooth;
@@ -64,11 +71,11 @@
   --color-text-main: #0E0E0C !important;
   --color-text-muted: #4B4B47 !important;
   --color-text-faint: #85857E !important;
+  --color-ticket: #FFFFFF;
 }
 
 /* Light theme: clean surfaces. Grain, floating specks and the faded hero
    photo read as rich texture on black but as dirt/haze on white. */
-[data-theme="light"] body::before,
 [data-theme="light"] .hero-particles { display: none; }
 [data-theme="light"] .hero-photo { opacity: 0 !important; }
 [data-theme="light"] [class*="bg-[var(--color-card)]"] {
@@ -143,31 +150,27 @@ a:focus-visible, button:focus-visible {
   outline-offset: 3px;
 }
 
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 9999;
-  opacity: .045;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
 /* Base Headings */
 h1, h2, h3, .display {
   font-family: var(--font-anton);
-  font-weight: 400;
-  letter-spacing: -0.005em;
-  text-transform: uppercase;
-  line-height: 0.98;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+  text-wrap: balance;
 }
 
 h4, h5, .logo, .fc-title {
   font-family: var(--font-archivo);
-  font-weight: 800;
+  font-weight: 650;
   letter-spacing: -0.01em;
-  line-height: 1.1;
+  line-height: 1.2;
+}
+
+/* Components still carry the old condensed all-caps look via font-anton + uppercase: sentence case everywhere */
+.font-anton {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-transform: none !important;
 }
 
 ::selection {
@@ -252,18 +255,15 @@ h4, h5, .logo, .fc-title {
 }
 .eyebrow {
   display: inline-flex; align-items: center; gap: 8px;
-  font-size: 12.5px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
+  font-size: 14px; font-weight: 600;
   color: var(--color-text-muted);
-  padding: 6px 14px; border: 1px solid var(--color-border); border-radius: 100px;
-  background: var(--color-card); backdrop-filter: blur(10px);
 }
 .eyebrow .dot {
-  width: 6px; height: 6px; border-radius: 50%; background: var(--color-lime);
-  box-shadow: 0 0 10px var(--color-lime);
+  width: 7px; height: 7px; border-radius: 50%; background: var(--color-lime);
 }
 .meta-chip {
-  display: flex; align-items: center; gap: 7px; padding: 9px 15px; border-radius: 100px;
-  background: var(--color-card); border: 1px solid var(--color-border); backdrop-filter: blur(10px);
+  display: flex; align-items: center; gap: 7px; padding: 8px 12px; border-radius: 10px;
+  background: var(--color-card); border: 1px solid var(--color-border);
   font-size: 13px; font-weight: 500; color: var(--color-text-muted);
 }
 .meta-chip b {
@@ -271,28 +271,26 @@ h4, h5, .logo, .fc-title {
 }
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 15px 28px; border-radius: 100px; font-weight: 600; font-size: 15px;
-  transition: transform .35s var(--ease-custom), box-shadow .35s var(--ease-custom), background .35s, border-color .35s;
+  padding: 13px 22px; border-radius: 12px; font-weight: 600; font-size: 15px;
+  transition: background .2s, border-color .2s, transform .12s;
   white-space: nowrap; cursor: pointer;
 }
+.btn:active { transform: scale(.97); }
 .btn-primary {
-  background: var(--color-lime); color: #0B0B08; font-weight: 800;
-  box-shadow: 4px 4px 0 var(--color-coral);
+  background: var(--color-lime); color: #0B0B08; font-weight: 700;
 }
-.btn-primary:hover {
-  transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--color-coral); background: var(--color-butter);
-}
+.btn-primary:hover { background: var(--color-butter); }
 .btn-glass {
-  background: var(--color-card); border: 1px solid var(--color-border); color: var(--color-text-main); backdrop-filter: blur(14px);
+  background: transparent; border: 1px solid var(--color-border-bright); color: var(--color-text-main);
 }
 .btn-glass:hover {
-  background: var(--color-card-hover); border-color: var(--color-border-bright); transform: translateY(-3px);
+  background: var(--color-card-hover); border-color: var(--color-text-faint);
 }
 .btn-sm {
   padding: 10px 18px; font-size: 13px;
 }
 .cat-badge {
-  font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; padding: 5px 11px; border-radius: 100px;
+  font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 8px;
 }
 .b-blue { background: rgba(36,81,255,.20); color: #9db1ff; }
 .b-purple { background: rgba(255,216,77,.20); color: #ffe38a; }
@@ -372,4 +370,71 @@ select.form-input option {
     drop-shadow(-1px 0 0 rgba(255, 255, 255, .92))
     drop-shadow(0 1px 0 rgba(255, 255, 255, .92))
     drop-shadow(0 -1px 0 rgba(255, 255, 255, .92));
+}
+
+/* The one orchestrated entrance on the homepage: the featured ticket settles in */
+@keyframes stub-in {
+  from { opacity: 0; transform: translateY(16px) rotate(1.2deg); }
+  to { opacity: 1; transform: none; }
+}
+.stub-in { animation: stub-in .7s var(--ease-custom) .1s both; }
+@media (prefers-reduced-motion: reduce) {
+  .stub-in { animation: none; }
+}
+
+/* Retire the offset-shadow button treatment wherever it is still hard-coded (auth pages, scanner) */
+[class*="0_var(--color-coral)]"] { box-shadow: none !important; }
+[class*="0_var(--color-coral)]"]:hover { transform: none !important; }
+
+/* Floating cards around the hero phone pop in after the phone settles */
+@keyframes chip-in {
+  from { opacity: 0; transform: translateY(10px) scale(.96); }
+  to { opacity: 1; transform: none; }
+}
+.chip-in { animation: chip-in .5s var(--ease-custom) both; }
+@media (prefers-reduced-motion: reduce) {
+  .chip-in { animation: none; }
+}
+
+/* Hero choreography: headline lines reveal, copy rises, the phone floats, a scan line sweeps the QR and the
+   "Checked in" card answers it. One load sequence plus a slow idle loop; all of it off for reduced motion. */
+@keyframes line-in { from { transform: translateY(108%); } to { transform: none; } }
+.line-mask { display: block; overflow: hidden; padding-bottom: .12em; margin-bottom: -.12em; }
+.line-mask > span { display: block; animation: line-in .9s var(--ease-custom) both; animation-delay: var(--d, 0s); }
+
+@keyframes rise-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.rise-in { animation: rise-in .7s var(--ease-custom) both; animation-delay: var(--d, 0s); }
+
+@keyframes float-y { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+.float-slow { animation: float-y 7s ease-in-out infinite; animation-delay: var(--fd, 0s); }
+
+/* 6s loop: the scan line travels for the first ~2.3s, then the check icon acknowledges it */
+@keyframes qr-scan {
+  0% { top: 4%; opacity: 0; }
+  6% { opacity: 1; }
+  36% { top: 94%; opacity: 1; }
+  42%, 100% { top: 94%; opacity: 0; }
+}
+.qr-scan { animation: qr-scan 6s ease-in-out 1.6s infinite; }
+@keyframes check-pop {
+  0%, 38%, 56%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+  44% { transform: scale(1.18); box-shadow: 0 0 0 8px rgba(16,185,129,.18); }
+}
+.check-pop { animation: check-pop 6s ease-in-out 1.6s infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .line-mask > span, .rise-in, .float-slow, .qr-scan, .check-pop { animation: none; }
+  .qr-scan { display: none; }
+}
+
+/* Touch devices have no cursor to tilt the phone toward, so it sways slowly on its own instead */
+@keyframes sway {
+  0%, 100% { transform: perspective(1000px) rotateY(-8deg) rotateX(2deg); }
+  50% { transform: perspective(1000px) rotateY(8deg) rotateX(-2deg); }
+}
+@media (hover: none) {
+  .sway-touch { animation: sway 9s ease-in-out infinite; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sway-touch { animation: none; }
 }

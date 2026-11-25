@@ -8,17 +8,14 @@ interface AuthCardProps {
   className?: string;
 }
 
+// The form sits directly on the page next to the brand panel: no card chrome, just a short fade in
 export function AuthCard({ children, className }: AuthCardProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
-      className={cn(
-        // Phones: no outer frame (content uses the full width); card chrome from sm up
-        "w-full sm:p-10 sm:rounded-[32px] sm:bg-card sm:backdrop-blur-xl sm:border sm:border-[var(--color-border)] sm:shadow-2xl",
-        className
-      )}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      className={cn("w-full", className)}
     >
       {children}
     </motion.div>

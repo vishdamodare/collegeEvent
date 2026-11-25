@@ -104,14 +104,12 @@ export function EventsClient({
     <main className="min-h-screen bg-background text-text-main">
       <Navbar isAuthenticated={!!session} onLogout={handleLogout} />
 
-      <div className="max-w-7xl mx-auto px-5 pt-28 pb-20">
+      <div className="max-w-[1360px] mx-auto px-5 sm:px-10 pt-28 pb-20">
         {/* Header */}
         <div className="mb-10">
-          <h1 className="text-4xl md:text-5xl font-bold mb-3">
-            Discover Events
-          </h1>
-          <p className="text-text-faint text-lg max-w-xl">
-            Find hackathons, festivals, workshops, and more happening across campuses.
+          <h1 className="text-4xl md:text-5xl mb-3">Events</h1>
+          <p className="text-text-muted text-lg max-w-xl">
+            Hackathons, cultural nights, sports meets and more at colleges across Mumbai.
           </p>
         </div>
 

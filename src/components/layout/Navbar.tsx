@@ -151,7 +151,7 @@ export function Navbar({ isAuthenticated: propIsAuthenticated, onLogout: propOnL
                   </Link>
                   <Link 
                     href={`/signup${back}`}
-                    className="flex items-center justify-center px-[28px] py-[14px] rounded-full font-bold text-[16px] font-archivo bg-[var(--color-lime)] text-[#0B0B08] shadow-[4px_4px_0_var(--color-coral)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_var(--color-coral)] hover:bg-[var(--color-butter)] transition-all duration-350 ease-[var(--ease-custom)] whitespace-nowrap"
+                    className="btn btn-primary !py-[10px] !px-[20px] !text-[15px]"
                   >
                     Sign up
                   </Link>
@@ -161,6 +161,8 @@ export function Navbar({ isAuthenticated: propIsAuthenticated, onLogout: propOnL
               {/* Burger Menu for Mobile */}
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
+                aria-label={menuOpen ? "Close menu" : "Open menu"}
+                aria-expanded={menuOpen}
                 className="lg:hidden relative w-10 h-10 rounded-xl bg-[var(--color-card)] border border-[var(--color-border)] flex items-center justify-center"
               >
                 <span
@@ -272,7 +274,7 @@ export function Navbar({ isAuthenticated: propIsAuthenticated, onLogout: propOnL
             <Link
               href={`/signup${back}`}
               onClick={closeMenu}
-              className="w-full flex items-center justify-center gap-2 px-[28px] py-[15px] rounded-full font-bold text-[15px] font-archivo bg-[var(--color-lime)] text-[#0B0B08] shadow-[4px_4px_0_var(--color-coral)] transition-all duration-350 ease-[var(--ease-custom)] whitespace-nowrap text-center"
+              className="btn btn-primary w-full"
             >
               Sign up free
             </Link>

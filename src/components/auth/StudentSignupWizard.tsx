@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { AuthCard } from "./AuthCard";
 import { SocialLogin } from "./SocialLogin";
@@ -15,15 +15,24 @@ interface StudentSignupWizardProps {
 }
 
 const inputClass =
-  "w-full px-4 py-3.5 rounded-[12px] bg-card border border-border text-text-main text-[15px] outline-none transition-colors placeholder:text-text-faint focus:border-[var(--color-lime)]";
+  "w-full px-4 py-3.5 rounded-xl bg-card border border-border text-text-main text-[15px] outline-none transition-colors placeholder:text-text-faint focus:border-[var(--color-lime)]";
 
-// One-screen sign-up: name, email, college, password. Branch/year/interests
-// are optional and can be added later from the profile page.
+function Field({ id, label, children }: { id: string; label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label htmlFor={id} className="block text-[14px] font-semibold mb-1.5">
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+// One-screen sign-up: name, email, password. College, branch, year and interests come later.
 export function StudentSignupWizard({ onBack, callbackUrl }: StudentSignupWizardProps) {
   const loginHref = callbackUrl ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/login";
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [college, setCollege] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,7 +41,7 @@ export function StudentSignupWizard({ onBack, callbackUrl }: StudentSignupWizard
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim() || !college.trim() || !password) {
+    if (!name.trim() || !email.trim() || !password) {
       setError("Please fill in all fields");
       return;
     }
@@ -44,7 +53,7 @@ export function StudentSignupWizard({ onBack, callbackUrl }: StudentSignupWizard
     setIsSubmitting(true);
     setError(null);
     try {
-      const res = await registerStudentAction({ name, email, college, password });
+      const res = await registerStudentAction({ name, email, password });
       if (res.success) setDone(true);
       else setError(res.error || "Sign up failed");
     } catch (err) {
@@ -56,18 +65,16 @@ export function StudentSignupWizard({ onBack, callbackUrl }: StudentSignupWizard
 
   if (done) {
     return (
-      <AuthCard className="max-w-[540px]">
-        <div className="flex flex-col items-center gap-4 text-center py-6">
-          <div className="w-[76px] h-[76px] rounded-full bg-[var(--color-lime)]/15 border border-[var(--color-lime)]/30 flex items-center justify-center text-[36px] text-[var(--color-lime)]">
-            ✓
-          </div>
-          <h3 className="text-[28px] font-anton uppercase">You&apos;re in!</h3>
-          <p className="text-[15px] text-text-muted max-w-sm leading-relaxed">
-            Your account is ready. Log in to start discovering events — you can add your branch, year and interests from your profile anytime.
+      <AuthCard>
+        <div className="flex flex-col gap-4">
+          <CheckCircle2 className="w-12 h-12 text-emerald-500" aria-hidden />
+          <h2 className="text-[30px] leading-tight">You&apos;re in.</h2>
+          <p className="text-[15px] text-text-muted leading-relaxed max-w-sm">
+            Your account is ready. Log in to browse events. You can add your branch, year and interests from your profile any time.
           </p>
           <button
             onClick={() => (window.location.href = loginHref)}
-            className="btn btn-primary w-full mt-2 py-[16px] font-bold cursor-pointer"
+            className="btn btn-primary w-full mt-2 cursor-pointer"
           >
             Log in
           </button>
@@ -77,22 +84,30 @@ export function StudentSignupWizard({ onBack, callbackUrl }: StudentSignupWizard
   }
 
   return (
-    <AuthCard className="max-w-[540px]">
+    <AuthCard>
       {onBack && (
         <button
           type="button"
           onClick={onBack}
-          className="mb-5 sm:mb-0 sm:absolute sm:top-6 sm:left-6 text-[13px] font-bold text-text-faint hover:text-text-main flex items-center gap-1 transition-colors cursor-pointer"
+          className="mb-5 text-[14px] font-semibold text-text-faint hover:text-text-main flex items-center gap-1 transition-colors cursor-pointer"
         >
           ← Back
         </button>
       )}
 
-      <div className={`mb-6 text-center ${onBack ? "sm:mt-6" : ""}`}>
-        <h2 className="text-[26px] sm:text-[28px] font-anton uppercase tracking-tight leading-[1.05] mb-2">
-          Create your account
-        </h2>
-        <p className="text-[14px] text-text-muted">Takes 30 seconds. That&apos;s it.</p>
+      <div className="mb-7">
+        <h2 className="text-[30px] sm:text-[34px] leading-tight">Create your account</h2>
+        <p className="mt-2 text-[15px] text-text-muted">Register for events and keep your tickets in one place.</p>
+      </div>
+
+      <SocialLogin
+        callbackURL={`/auth-callback?targetRole=student${callbackUrl ? `&next=${encodeURIComponent(callbackUrl)}` : ""}`}
+      />
+
+      <div className="flex items-center gap-4 my-6">
+        <div className="h-px flex-1 bg-border"></div>
+        <span className="text-[13px] text-text-faint">or use your email</span>
+        <div className="h-px flex-1 bg-border"></div>
       </div>
 
       {error && (
@@ -100,65 +115,60 @@ export function StudentSignupWizard({ onBack, callbackUrl }: StudentSignupWizard
           initial={{ opacity: 0, y: -4 }}
           animate={{ opacity: 1, y: 0 }}
           role="alert"
-          className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-[13px] mb-5 font-semibold text-center"
+          className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-[14px] mb-5 font-medium"
         >
           {error}
         </motion.div>
       )}
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3.5" noValidate>
-        <input
-          type="text"
-          placeholder="Full name"
-          autoComplete="name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className={inputClass}
-          aria-label="Full name"
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          autoComplete="email"
-          inputMode="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className={inputClass}
-          aria-label="Email"
-        />
-        <input
-          type="text"
-          placeholder="College / University"
-          autoComplete="organization"
-          value={college}
-          onChange={(e) => setCollege(e.target.value)}
-          className={inputClass}
-          aria-label="College or university"
-        />
-        <div className="relative">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+        <Field id="signup-name" label="Full name">
           <input
-            type={showPassword ? "text" : "password"}
-            placeholder="Password (8+ characters)"
-            autoComplete="new-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className={`${inputClass} pr-12`}
-            aria-label="Password"
+            id="signup-name"
+            type="text"
+            autoComplete="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className={inputClass}
           />
-          <button
-            type="button"
-            onClick={() => setShowPassword((s) => !s)}
-            aria-label={showPassword ? "Hide password" : "Show password"}
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-text-faint hover:text-text-main cursor-pointer"
-          >
-            {showPassword ? <EyeOff className="w-[18px] h-[18px]" /> : <Eye className="w-[18px] h-[18px]" />}
-          </button>
-        </div>
+        </Field>
+        <Field id="signup-email" label="Email">
+          <input
+            id="signup-email"
+            type="email"
+            autoComplete="email"
+            inputMode="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={inputClass}
+          />
+        </Field>
+        <Field id="signup-password" label="Password">
+          <div className="relative">
+            <input
+              id="signup-password"
+              type={showPassword ? "text" : "password"}
+              placeholder="At least 8 characters"
+              autoComplete="new-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={`${inputClass} pr-12`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((s) => !s)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-text-faint hover:text-text-main cursor-pointer"
+            >
+              {showPassword ? <EyeOff className="w-[18px] h-[18px]" /> : <Eye className="w-[18px] h-[18px]" />}
+            </button>
+          </div>
+        </Field>
 
         <button
           type="submit"
           disabled={isSubmitting}
-          className="btn btn-primary w-full mt-3 py-[16px] text-[16px] font-bold flex justify-center items-center gap-2 cursor-pointer disabled:opacity-70"
+          className="btn btn-primary w-full mt-2 !py-[15px] text-[16px] flex justify-center items-center gap-2 cursor-pointer disabled:opacity-70"
         >
           {isSubmitting ? (
             <>
@@ -170,19 +180,9 @@ export function StudentSignupWizard({ onBack, callbackUrl }: StudentSignupWizard
         </button>
       </form>
 
-      <div className="flex items-center gap-4 my-6">
-        <div className="h-[1px] flex-1 bg-border"></div>
-        <span className="text-[11px] font-bold text-text-faint uppercase tracking-wider">or sign up with</span>
-        <div className="h-[1px] flex-1 bg-border"></div>
-      </div>
-
-      <SocialLogin
-        callbackURL={`/auth-callback?targetRole=student${callbackUrl ? `&next=${encodeURIComponent(callbackUrl)}` : ""}`}
-      />
-
-      <p className="text-center mt-6 text-[14px] text-text-muted">
+      <p className="mt-7 text-[14px] text-text-muted">
         Already have an account?{" "}
-        <Link href={loginHref} className="text-[var(--color-lime)] font-bold hover:underline">
+        <Link href={loginHref} className="text-[var(--color-lime)] font-semibold hover:underline">
           Log in
         </Link>
       </p>

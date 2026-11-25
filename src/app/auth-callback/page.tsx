@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { checkOAuthUserStatusAction } from "@/actions/auth/oauth";
+import { checkOAuthUserStatusAction, ensureStudentProfileAction } from "@/actions/auth/oauth";
 import { safeRedirect } from "@/utils/safeRedirect";
 
 function AuthCallbackContent() {
@@ -46,7 +46,11 @@ function AuthCallbackContent() {
           // Organizers cannot onboard solely via OAuth, they require document verification
           router.push("/signup");
         } else {
-          router.push(`/signup/student-onboarding${next ? `?next=${encodeURIComponent(next)}` : ""}`);
+          // Students: create the profile quietly and carry on; college is asked later, when they register for an event
+          const ensured = await ensureStudentProfileAction();
+          router.push(
+            ensured.success ? (next ?? "/") : `/signup/student-onboarding${next ? `?next=${encodeURIComponent(next)}` : ""}`
+          );
         }
       }
     };

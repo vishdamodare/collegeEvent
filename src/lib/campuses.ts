@@ -8,6 +8,7 @@
 export interface Campus {
   slug: string;
   name: string;
+  short: string; // compact name for tight spots (hero)
   area: string; // neighbourhood + city, shown on cards
   city: string;
   state: string;
@@ -24,6 +25,7 @@ export const CAMPUSES: Campus[] = [
   {
     slug: "iit-bombay",
     name: "IIT Bombay",
+    short: "IIT Bombay",
     area: "Powai, Mumbai",
     city: "Mumbai",
     state: "Maharashtra",
@@ -37,6 +39,7 @@ export const CAMPUSES: Campus[] = [
   {
     slug: "atharva-college-of-engineering",
     name: "Atharva College of Engineering",
+    short: "Atharva",
     area: "Malad West, Mumbai",
     city: "Mumbai",
     state: "Maharashtra",
@@ -48,6 +51,7 @@ export const CAMPUSES: Campus[] = [
   {
     slug: "vesit",
     name: "Vivekanand Education Society's Institute of Technology",
+    short: "VESIT",
     area: "Chembur, Mumbai",
     city: "Mumbai",
     state: "Maharashtra",

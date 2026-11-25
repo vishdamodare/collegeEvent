@@ -314,90 +314,98 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
   };
 
   return (
-    <div className="fixed inset-0 z-[2000] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-[2000] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
       <style dangerouslySetInnerHTML={{__html: `
         select option {
-          background-color: #0C0C0C !important;
+          background-color: #0A0D1C !important;
           color: #FFFFFF !important;
         }
       `}} />
       
-      <div className="w-full max-w-2xl bg-[#0C0C0C] border border-[#222] rounded-3xl p-6 md:p-8 relative shadow-2xl my-8">
+      <div className="w-full max-w-2xl bg-[#0A0D1C] border border-white/10 rounded-2xl p-6 md:p-8 relative shadow-2xl my-8">
         
         {/* Close Button */}
         {step < 7 && (
           <button 
             onClick={onClose}
-            className="absolute top-6 right-6 w-10 h-10 rounded-full bg-white/5 border border-white/10 text-white/55 hover:text-white flex items-center justify-center transition-all hover:scale-105"
+            aria-label="Close"
+            className="absolute top-6 right-6 w-10 h-10 rounded-full bg-white/5 border border-white/10 text-white/55 hover:text-white flex items-center justify-center transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
+        )}
+
+        {/* Progress through the six steps */}
+        {step < 7 && (
+          <div className="mb-7 mr-14 flex gap-1.5" role="progressbar" aria-valuemin={1} aria-valuemax={6} aria-valuenow={step} aria-label={`Step ${step} of 6`}>
+            {[1, 2, 3, 4, 5, 6].map((n) => (
+              <span key={n} className={cn("h-1 flex-1 rounded-full transition-colors", n <= step ? "bg-lime" : "bg-white/15")} />
+            ))}
+          </div>
         )}
 
         {/* STEP 1: PROFILE VERIFICATION */}
         {step === 1 && (
           <div>
             <div className="mb-6">
-              <span className="px-3 py-1 rounded-full bg-lime/10 border border-lime/20 text-lime text-[11px] font-bold tracking-widest uppercase">
-                Step 1 of 6: Profile Verification
-              </span>
-              <h2 className="text-3xl font-anton uppercase tracking-wider text-white mt-4">Confirm Profile Details</h2>
-              <p className="text-sm text-text-faint mt-1">Audit and save your student details before proceeding.</p>
+              <p className="text-[14px] font-semibold text-[#FF6B70]">Step 1 of 6</p>
+              <h2 className="text-[28px] sm:text-[32px] leading-tight text-white mt-1.5">Your details</h2>
+              <p className="text-[15px] text-white/65 mt-2">We save these to your profile, so you won&apos;t retype them for the next fest.</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
               <div>
-                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase">Full Name <span className="text-red-400">*</span></label>
+                <label className="block text-[14px] font-medium text-white/85 mb-1.5">Full Name <span className="text-red-400">*</span></label>
                 <input 
                   type="text" 
                   value={name} 
                   onChange={(e) => setName(e.target.value)} 
-                  className="w-full rounded-xl bg-card border border-border px-4 py-3 text-white text-sm outline-none focus:border-lime" 
+                  className="w-full rounded-xl bg-white/[0.05] border border-white/15 px-4 py-3 text-white text-[16px] outline-none focus:border-lime" 
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase">Email Address <span className="text-red-400">*</span></label>
+                <label className="block text-[14px] font-medium text-white/85 mb-1.5">Email Address <span className="text-red-400">*</span></label>
                 <input 
                   type="email" 
                   value={accountEmail} 
                   readOnly 
-                  className="w-full rounded-xl bg-card border border-border px-4 py-3 text-white/50 text-sm outline-none cursor-not-allowed" 
+                  className="w-full rounded-xl bg-white/[0.05] border border-white/15 px-4 py-3 text-white/50 text-[16px] outline-none cursor-not-allowed" 
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase">Phone Number <span className="text-red-400">*</span></label>
+                <label className="block text-[14px] font-medium text-white/85 mb-1.5">Phone Number <span className="text-red-400">*</span></label>
                 <input 
                   type="text" 
                   value={phone} 
                   onChange={(e) => setPhone(e.target.value)} 
                   placeholder="e.g. +91 98765 43210" 
-                  className="w-full rounded-xl bg-card border border-border px-4 py-3 text-white text-sm outline-none focus:border-lime" 
+                  className="w-full rounded-xl bg-white/[0.05] border border-white/15 px-4 py-3 text-white text-[16px] outline-none focus:border-lime" 
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase">University / College <span className="text-red-400">*</span></label>
+                <label className="block text-[14px] font-medium text-white/85 mb-1.5">University / College <span className="text-red-400">*</span></label>
                 <input 
                   type="text" 
                   value={college} 
                   onChange={(e) => setCollege(e.target.value)} 
-                  className="w-full rounded-xl bg-card border border-border px-4 py-3 text-white text-sm outline-none focus:border-lime" 
+                  className="w-full rounded-xl bg-white/[0.05] border border-white/15 px-4 py-3 text-white text-[16px] outline-none focus:border-lime" 
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase">Branch / Major <span className="text-red-400">*</span></label>
+                <label className="block text-[14px] font-medium text-white/85 mb-1.5">Branch / Major <span className="text-red-400">*</span></label>
                 <input 
                   type="text" 
                   value={branch} 
                   onChange={(e) => setBranch(e.target.value)} 
-                  className="w-full rounded-xl bg-card border border-border px-4 py-3 text-white text-sm outline-none focus:border-lime" 
+                  className="w-full rounded-xl bg-white/[0.05] border border-white/15 px-4 py-3 text-white text-[16px] outline-none focus:border-lime" 
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase">Academic Year <span className="text-red-400">*</span></label>
+                <label className="block text-[14px] font-medium text-white/85 mb-1.5">Academic Year <span className="text-red-400">*</span></label>
                 <select 
                   value={academicYear} 
                   onChange={(e) => setAcademicYear(e.target.value)} 
-                  className="w-full rounded-xl bg-card border border-border px-4 py-3 text-white text-sm outline-none focus:border-lime"
+                  className="w-full rounded-xl bg-white/[0.05] border border-white/15 px-4 py-3 text-white text-[16px] outline-none focus:border-lime"
                 >
                   <option value="">Select Year</option>
                   <option value="1st Year">1st Year</option>
@@ -407,12 +415,18 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
                   <option value="Postgraduate">Postgraduate</option>
                 </select>
               </div>
+              <details className="sm:col-span-2 group">
+                <summary className="cursor-pointer select-none text-[14px] font-medium text-white/70 hover:text-white list-none flex items-center gap-2">
+                  <span className="transition-transform group-open:rotate-90" aria-hidden>›</span>
+                  More details (optional)
+                </summary>
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase">Gender (Optional)</label>
+                <label className="block text-[14px] font-medium text-white/85 mb-1.5">Gender</label>
                 <select 
                   value={gender} 
                   onChange={(e) => setGender(e.target.value)} 
-                  className="w-full rounded-xl bg-card border border-border px-4 py-3 text-white text-sm outline-none focus:border-lime"
+                  className="w-full rounded-xl bg-white/[0.05] border border-white/15 px-4 py-3 text-white text-[16px] outline-none focus:border-lime"
                 >
                   <option value="">Select Gender</option>
                   <option value="Male">Male</option>
@@ -422,15 +436,17 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase">Student ID / Roll No. (Optional)</label>
+                <label className="block text-[14px] font-medium text-white/85 mb-1.5">Student ID or roll number</label>
                 <input 
                   type="text" 
                   value={studentId} 
                   onChange={(e) => setStudentId(e.target.value)} 
                   placeholder="e.g. 2026 CS 105"
-                  className="w-full rounded-xl bg-card border border-border px-4 py-3 text-white text-sm outline-none focus:border-lime" 
+                  className="w-full rounded-xl bg-white/[0.05] border border-white/15 px-4 py-3 text-white text-[16px] outline-none focus:border-lime" 
                 />
               </div>
+                </div>
+              </details>
             </div>
 
             <button 
@@ -438,7 +454,7 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
               disabled={isPending}
               className="btn btn-primary w-full py-4 text-[15px] font-bold flex items-center justify-center gap-2 cursor-pointer"
             >
-              {isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : "Verify & Continue"}
+              {isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : "Save and continue"}
             </button>
           </div>
         )}
@@ -447,48 +463,44 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
         {step === 2 && (
           <div>
             <div className="mb-6">
-              <span className="px-3 py-1 rounded-full bg-lime/10 border border-lime/20 text-lime text-[11px] font-bold tracking-widest uppercase">
-                Step 2 of 6: Event Registration
-              </span>
-              <h2 className="text-3xl font-anton uppercase tracking-wider text-white mt-4">Confirm Participation</h2>
-              <p className="text-sm text-text-faint mt-1">Review the event overview and confirm booking.</p>
+              <p className="text-[14px] font-semibold text-[#FF6B70]">Step 2 of 6</p>
+              <h2 className="text-[28px] sm:text-[32px] leading-tight text-white mt-1.5">Check the event</h2>
+              <p className="text-[15px] text-white/65 mt-2">Make sure this is the one you want to register for.</p>
             </div>
 
-            <div className="bg-card border border-border rounded-2xl overflow-hidden p-5 mb-6 space-y-4">
-              <div className="flex flex-col sm:flex-row gap-4 border-b border-border/50 pb-4">
+            <div className="bg-white/[0.05] border border-white/15 rounded-2xl overflow-hidden p-5 mb-6 space-y-4">
+              <div className="flex flex-col sm:flex-row gap-4 border-b border-white/10 pb-4">
                 {event.img && (
                   <div className="w-full sm:w-28 aspect-video sm:aspect-square relative rounded-xl overflow-hidden shrink-0">
                     <img src={event.img} alt={event.title} className="object-cover w-full h-full" />
                   </div>
                 )}
                 <div className="space-y-2">
-                  <span className="px-2 py-0.5 rounded bg-lime/10 border border-lime/20 text-lime text-[9px] font-bold uppercase tracking-wider">
-                    {event.cat}
-                  </span>
+                  <span className="text-[13px] font-semibold text-[#FF6B70]">{event.cat ? event.cat.charAt(0) + event.cat.slice(1).toLowerCase() : ""}</span>
                   <h3 className="text-xl font-bold text-white leading-tight">{event.title}</h3>
-                  <div className="text-xs text-text-faint flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-lime" /> {event.college} · {event.venue}
+                  <div className="text-[13px] text-white/55 flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5 text-[#FF6B70]" /> {event.college} · {event.venue}
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 text-xs">
+              <div className="grid grid-cols-2 gap-4 text-[13px]">
                 <div>
-                  <span className="text-text-faint block uppercase font-semibold">Date</span>
+                  <span className="text-white/55 block font-semibold">Date</span>
                   <span className="text-white font-medium">{format(new Date(event.date), "MMMM d, yyyy")}</span>
                 </div>
                 <div>
-                  <span className="text-text-faint block uppercase font-semibold">Type</span>
+                  <span className="text-white/55 block font-semibold">Type</span>
                   <span className="text-white font-medium capitalize">{eventType.toLowerCase()} Event</span>
                 </div>
                 {eventType === "TEAM" && (
                   <div>
-                    <span className="text-text-faint block uppercase font-semibold">Team Constraints</span>
+                    <span className="text-white/55 block font-semibold">Team size</span>
                     <span className="text-white font-medium">{teamMin} - {teamMax} Members</span>
                   </div>
                 )}
                 <div>
-                  <span className="text-text-faint block uppercase font-semibold">Capacity Limit</span>
+                  <span className="text-white/55 block font-semibold">Seats</span>
                   <span className="text-white font-medium">{event.capacity.toLocaleString()} Seats</span>
                 </div>
               </div>
@@ -497,7 +509,7 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
             <div className="flex gap-4">
               <button 
                 onClick={() => setStep(1)}
-                className="flex-1 py-4 bg-transparent border border-border hover:border-border-bright text-white font-bold rounded-xl text-sm transition-all"
+                className="flex-1 py-4 bg-transparent border border-white/15 hover:border-white/30 text-white font-bold rounded-xl text-sm transition-all"
               >
                 Back
               </button>
@@ -505,7 +517,7 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
                 onClick={handleConfirmSummary}
                 className="flex-[2] btn btn-primary py-4 text-sm font-bold flex items-center justify-center"
               >
-                Confirm & Proceed
+                Continue
               </button>
             </div>
           </div>
@@ -515,22 +527,20 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
         {step === 3 && (
           <div>
             <div className="mb-6">
-              <span className="px-3 py-1 rounded-full bg-lime/10 border border-lime/20 text-lime text-[11px] font-bold tracking-widest uppercase">
-                Step 3 of 6: Team Setup
-              </span>
-              <h2 className="text-3xl font-anton uppercase tracking-wider text-white mt-4">
-                {eventType === "TEAM" ? "Team Registration" : "Team / Club Affiliation"}
+              <p className="text-[14px] font-semibold text-[#FF6B70]">Step 3 of 6</p>
+              <h2 className="text-[28px] sm:text-[32px] leading-tight text-white mt-1.5">
+                {eventType === "TEAM" ? "Your team" : "Team or club"}
               </h2>
-              <p className="text-sm text-text-faint mt-1">
+              <p className="text-[15px] text-white/65 mt-2">
                 {eventType === "TEAM" 
-                  ? "Specify a unique identifier name for your team." 
-                  : "Specify your team name or college club affiliation (optional)."}
+                  ? "Pick a name for your team." 
+                  : "Add a team or club name if you have one (optional)."}
               </p>
             </div>
 
             <div className="space-y-4 mb-6">
               <div>
-                <label className="block text-xs font-bold text-text-muted mb-2 uppercase">
+                <label className="block text-[14px] font-medium text-white/85 mb-2">
                   {eventType === "TEAM" ? "Team Name *" : "Team / Club Name (Optional)"}
                 </label>
                 <input 
@@ -538,17 +548,17 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
                   value={teamName} 
                   onChange={(e) => setTeamName(e.target.value)} 
                   placeholder={eventType === "TEAM" ? "e.g. Code Gladiators" : "e.g. Cultural Club / Individual"} 
-                  className="w-full rounded-xl bg-card border border-border px-4 py-3 text-white text-sm outline-none focus:border-lime" 
+                  className="w-full rounded-xl bg-white/[0.05] border border-white/15 px-4 py-3 text-white text-[16px] outline-none focus:border-lime" 
                 />
               </div>
 
               {eventType === "TEAM" && (
                 <div>
-                  <label className="block text-xs font-bold text-text-muted mb-2 uppercase">Team Size (Including Captain)</label>
+                  <label className="block text-[14px] font-medium text-white/85 mb-2">Team Size (Including Captain)</label>
                   <select
                     value={teamSize}
                     onChange={(e) => setTeamSize(e.target.value)}
-                    className="w-full rounded-xl bg-card border border-border px-4 py-3 text-white text-sm outline-none focus:border-lime dark-options"
+                    className="w-full rounded-xl bg-white/[0.05] border border-white/15 px-4 py-3 text-white text-[16px] outline-none focus:border-lime dark-options"
                   >
                     {Array.from({ length: teamMax - teamMin + 1 }, (_, i) => {
                       const size = teamMin + i;
@@ -566,7 +576,7 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
             <div className="flex gap-4">
               <button 
                 onClick={() => setStep(2)}
-                className="flex-1 py-4 bg-transparent border border-border hover:border-border-bright text-white font-bold rounded-xl text-sm transition-all"
+                className="flex-1 py-4 bg-transparent border border-white/15 hover:border-white/30 text-white font-bold rounded-xl text-sm transition-all"
               >
                 Back
               </button>
@@ -574,7 +584,7 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
                 onClick={handleTeamDetailsSave}
                 className="flex-[2] btn btn-primary py-4 text-sm font-bold"
               >
-                {eventType === "TEAM" ? "Configure Roster" : "Continue"}
+                {eventType === "TEAM" ? "Add team members" : "Continue"}
               </button>
             </div>
           </div>
@@ -584,73 +594,71 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
         {step === 4 && (
           <div>
             <div className="mb-6">
-              <span className="px-3 py-1 rounded-full bg-lime/10 border border-lime/20 text-lime text-[11px] font-bold tracking-widest uppercase">
-                Step 4 of 6: Team Roster
-              </span>
-              <h2 className="text-3xl font-anton uppercase tracking-wider text-white mt-4">Invite Team Members</h2>
-              <p className="text-sm text-text-faint mt-1">Roster size bounds: {teamMin} to {teamMax} members.</p>
+              <p className="text-[14px] font-semibold text-[#FF6B70]">Step 4 of 6</p>
+              <h2 className="text-[28px] sm:text-[32px] leading-tight text-white mt-1.5">Your team</h2>
+              <p className="text-[15px] text-white/65 mt-2">Teams need {teamMin} to {teamMax} members.</p>
             </div>
 
             <div className="space-y-5 mb-6 max-h-[360px] overflow-y-auto pr-1">
               {/* Captain */}
               <div className="p-4 rounded-xl bg-lime/5 border border-lime/10 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-lime text-black font-anton text-xs flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-lime text-black font-anton text-[13px] flex items-center justify-center">
                   C
                 </div>
                 <div className="flex-grow">
                   <div className="text-sm font-bold text-white">{name} (You)</div>
-                  <div className="text-xs text-text-faint">{accountEmail} · Team Captain</div>
+                  <div className="text-[13px] text-white/55">{accountEmail} · Team Captain</div>
                 </div>
-                <span className="text-[10px] uppercase font-bold tracking-widest text-lime bg-lime/10 border border-lime/20 px-2 py-0.5 rounded-full">
+                <span className="text-[12px] font-bold text-[#FF6B70] bg-lime/10 border border-lime/20 px-2 py-0.5 rounded-full">
                   Leader
                 </span>
               </div>
 
               {/* Members */}
               {teamMembers.map((member, idx) => (
-                <div key={idx} className="p-4 rounded-2xl bg-card border border-border space-y-4 relative">
-                  <h4 className="text-xs font-bold text-lime uppercase tracking-wider">Member #{idx + 2}</h4>
+                <div key={idx} className="p-4 rounded-2xl bg-white/[0.05] border border-white/15 space-y-4 relative">
+                  <h4 className="text-[13px] font-bold text-[#FF6B70] ">Member #{idx + 2}</h4>
                   
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[13px]">
                     <input 
                       type="text" 
                       placeholder="Full Name" 
                       value={member.name}
                       onChange={(e) => handleMemberChange(idx, "name", e.target.value)}
-                      className="w-full rounded-lg bg-black border border-border/80 px-3 py-2 text-white outline-none focus:border-lime" 
+                      className="w-full rounded-lg bg-black border border-white/10 px-3 py-2 text-white outline-none focus:border-lime" 
                     />
                     <input 
                       type="email" 
                       placeholder="Email Address" 
                       value={member.email}
                       onChange={(e) => handleMemberChange(idx, "email", e.target.value)}
-                      className="w-full rounded-lg bg-black border border-border/80 px-3 py-2 text-white outline-none focus:border-lime" 
+                      className="w-full rounded-lg bg-black border border-white/10 px-3 py-2 text-white outline-none focus:border-lime" 
                     />
                     <input 
                       type="text" 
                       placeholder="Phone Number" 
                       value={member.phone}
                       onChange={(e) => handleMemberChange(idx, "phone", e.target.value)}
-                      className="w-full rounded-lg bg-black border border-border/80 px-3 py-2 text-white outline-none focus:border-lime" 
+                      className="w-full rounded-lg bg-black border border-white/10 px-3 py-2 text-white outline-none focus:border-lime" 
                     />
                     <input 
                       type="text" 
                       placeholder="College Name" 
                       value={member.college}
                       onChange={(e) => handleMemberChange(idx, "college", e.target.value)}
-                      className="w-full rounded-lg bg-black border border-border/80 px-3 py-2 text-white outline-none focus:border-lime" 
+                      className="w-full rounded-lg bg-black border border-white/10 px-3 py-2 text-white outline-none focus:border-lime" 
                     />
                     <input 
                       type="text" 
                       placeholder="Branch / Major" 
                       value={member.branch}
                       onChange={(e) => handleMemberChange(idx, "branch", e.target.value)}
-                      className="w-full rounded-lg bg-black border border-border/80 px-3 py-2 text-white outline-none focus:border-lime" 
+                      className="w-full rounded-lg bg-black border border-white/10 px-3 py-2 text-white outline-none focus:border-lime" 
                     />
                     <select 
                       value={member.academicYear}
                       onChange={(e) => handleMemberChange(idx, "academicYear", e.target.value)}
-                      className="w-full rounded-lg bg-black border border-border/80 px-3 py-2 text-white outline-none focus:border-lime"
+                      className="w-full rounded-lg bg-black border border-white/10 px-3 py-2 text-white outline-none focus:border-lime"
                     >
                       <option value="">Year</option>
                       <option value="1st Year">1st Year</option>
@@ -668,7 +676,7 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
             <div className="flex gap-4">
               <button 
                 onClick={() => setStep(3)}
-                className="flex-1 py-4 bg-transparent border border-border hover:border-border-bright text-white font-bold rounded-xl text-sm transition-all"
+                className="flex-1 py-4 bg-transparent border border-white/15 hover:border-white/30 text-white font-bold rounded-xl text-sm transition-all"
               >
                 Back
               </button>
@@ -686,24 +694,22 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
         {step === 5 && (
           <div>
             <div className="mb-6">
-              <span className="px-3 py-1 rounded-full bg-lime/10 border border-lime/20 text-lime text-[11px] font-bold tracking-widest uppercase">
-                Step 5 of 6: Event Forms
-              </span>
-              <h2 className="text-3xl font-anton uppercase tracking-wider text-white mt-4">Attendee spec sheet</h2>
-              <p className="text-sm text-text-faint mt-1">Please answer organizer-created additional questions.</p>
+              <p className="text-[14px] font-semibold text-[#FF6B70]">Step 5 of 6</p>
+              <h2 className="text-[28px] sm:text-[32px] leading-tight text-white mt-1.5">A few questions</h2>
+              <p className="text-[15px] text-white/65 mt-2">The organizers ask these to run the event.</p>
             </div>
 
             <div className="space-y-4 mb-6">
               {dynamicQuestions.map((q, idx: number) => (
                 <div key={idx} className="space-y-1.5">
-                  <label className="block text-xs font-bold text-text-muted uppercase">
+                  <label className="block text-[14px] font-medium text-white/85">
                     {q.label} {q.required && <span className="text-coral">*</span>}
                   </label>
                   {q.type === "SELECT" ? (
                     <select
                       value={answers[q.label] || ""}
                       onChange={(e) => setAnswers({ ...answers, [q.label]: e.target.value })}
-                      className="w-full rounded-xl bg-card border border-border px-4 py-3 text-white text-sm outline-none focus:border-lime dark-options"
+                      className="w-full rounded-xl bg-white/[0.05] border border-white/15 px-4 py-3 text-white text-[16px] outline-none focus:border-lime dark-options"
                     >
                       <option value="">Select option</option>
                       {q.options?.map((opt: string, oIdx: number) => (
@@ -716,7 +722,7 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
                       placeholder={q.placeholder || `Enter details for ${q.label}`}
                       value={answers[q.label] || ""}
                       onChange={(e) => setAnswers({ ...answers, [q.label]: e.target.value })}
-                      className="w-full rounded-xl bg-card border border-border px-4 py-3 text-white text-sm outline-none focus:border-lime" 
+                      className="w-full rounded-xl bg-white/[0.05] border border-white/15 px-4 py-3 text-white text-[16px] outline-none focus:border-lime" 
                     />
                   )}
                 </div>
@@ -726,7 +732,7 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
             <div className="flex gap-4">
               <button 
                 onClick={() => setStep(eventType === "TEAM" ? 4 : 3)}
-                className="flex-1 py-4 bg-transparent border border-border hover:border-border-bright text-white font-bold rounded-xl text-sm transition-all"
+                className="flex-1 py-4 bg-transparent border border-white/15 hover:border-white/30 text-white font-bold rounded-xl text-sm transition-all"
               >
                 Back
               </button>
@@ -744,42 +750,40 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
         {step === 6 && (
           <div>
             <div className="mb-6">
-              <span className="px-3 py-1 rounded-full bg-lime/10 border border-lime/20 text-lime text-[11px] font-bold tracking-widest uppercase">
-                Step 6 of 6: Review & Submit
-              </span>
-              <h2 className="text-3xl font-anton uppercase tracking-wider text-white mt-4">Audit Booking Info</h2>
-              <p className="text-sm text-text-faint mt-1">Review the specs carefully before submitting.</p>
+              <p className="text-[14px] font-semibold text-[#FF6B70]">Step 6 of 6</p>
+              <h2 className="text-[28px] sm:text-[32px] leading-tight text-white mt-1.5">Review and register</h2>
+              <p className="text-[15px] text-white/65 mt-2">Check everything below, then register.</p>
             </div>
 
-            <div className="space-y-4 mb-6 max-h-[340px] overflow-y-auto pr-1 text-xs text-text-muted">
+            <div className="space-y-4 mb-6 max-h-[340px] overflow-y-auto pr-1 text-[13px] text-white/70">
               
               {/* Event Section */}
-              <div className="bg-card border border-border rounded-xl p-4 space-y-2">
-                <span className="text-[10px] uppercase font-bold text-text-faint tracking-wider block border-b border-border/50 pb-1">Event Summary</span>
-                <div className="flex justify-between font-medium"><span className="text-text-faint">Event Name:</span><span className="text-white">{event.title}</span></div>
-                <div className="flex justify-between font-medium"><span className="text-text-faint">Category:</span><span className="text-white">{event.cat}</span></div>
-                <div className="flex justify-between font-medium"><span className="text-text-faint">Location:</span><span className="text-white">{event.venue}</span></div>
-                <div className="flex justify-between font-medium"><span className="text-text-faint">Date:</span><span className="text-white">{format(new Date(event.date), "MMMM d, yyyy")}</span></div>
+              <div className="bg-white/[0.05] border border-white/15 rounded-xl p-4 space-y-2">
+                <span className="text-[12px] font-bold text-white/55 block border-b border-white/10 pb-1">Event Summary</span>
+                <div className="flex justify-between font-medium"><span className="text-white/55">Event Name:</span><span className="text-white">{event.title}</span></div>
+                <div className="flex justify-between font-medium"><span className="text-white/55">Category:</span><span className="text-white">{event.cat}</span></div>
+                <div className="flex justify-between font-medium"><span className="text-white/55">Location:</span><span className="text-white">{event.venue}</span></div>
+                <div className="flex justify-between font-medium"><span className="text-white/55">Date:</span><span className="text-white">{format(new Date(event.date), "MMMM d, yyyy")}</span></div>
               </div>
 
               {/* Attendee Section */}
-              <div className="bg-card border border-border rounded-xl p-4 space-y-2">
-                <span className="text-[10px] uppercase font-bold text-text-faint tracking-wider block border-b border-border/50 pb-1">Participant Summary</span>
-                <div className="flex justify-between font-medium"><span className="text-text-faint">Name:</span><span className="text-white">{name}</span></div>
-                <div className="flex justify-between font-medium"><span className="text-text-faint">Email:</span><span className="text-white">{accountEmail}</span></div>
-                <div className="flex justify-between font-medium"><span className="text-text-faint">Phone:</span><span className="text-white">{phone}</span></div>
-                <div className="flex justify-between font-medium"><span className="text-text-faint">College:</span><span className="text-white">{college}</span></div>
+              <div className="bg-white/[0.05] border border-white/15 rounded-xl p-4 space-y-2">
+                <span className="text-[12px] font-bold text-white/55 block border-b border-white/10 pb-1">Participant Summary</span>
+                <div className="flex justify-between font-medium"><span className="text-white/55">Name:</span><span className="text-white">{name}</span></div>
+                <div className="flex justify-between font-medium"><span className="text-white/55">Email:</span><span className="text-white">{accountEmail}</span></div>
+                <div className="flex justify-between font-medium"><span className="text-white/55">Phone:</span><span className="text-white">{phone}</span></div>
+                <div className="flex justify-between font-medium"><span className="text-white/55">College:</span><span className="text-white">{college}</span></div>
               </div>
 
               {/* Team Section (if applicable) */}
               {(eventType === "TEAM" || teamName.trim() !== "") && (
-                <div className="bg-card border border-border rounded-xl p-4 space-y-2">
-                  <span className="text-[10px] uppercase font-bold text-text-faint tracking-wider block border-b border-border/50 pb-1">Team Summary</span>
-                  <div className="flex justify-between font-medium"><span className="text-text-faint">Team Name:</span><span className="text-white font-bold text-lime">{teamName}</span></div>
+                <div className="bg-white/[0.05] border border-white/15 rounded-xl p-4 space-y-2">
+                  <span className="text-[12px] font-bold text-white/55 block border-b border-white/10 pb-1">Team Summary</span>
+                  <div className="flex justify-between font-medium"><span className="text-white/55">Team Name:</span><span className="text-white font-bold text-[#FF6B70]">{teamName}</span></div>
                   {eventType === "TEAM" && (
                     <>
-                      <div className="flex justify-between font-medium"><span className="text-text-faint">Members Count:</span><span className="text-white">{teamMembers.length + 1} Attendees</span></div>
-                      <div className="text-[10px] text-text-faint pt-1 leading-relaxed">
+                      <div className="flex justify-between font-medium"><span className="text-white/55">Members Count:</span><span className="text-white">{teamMembers.length + 1} Attendees</span></div>
+                      <div className="text-[12px] text-white/55 pt-1 leading-relaxed">
                         <b>Invited Roster:</b> {teamMembers.map(m => m.name).join(", ")}
                       </div>
                     </>
@@ -789,10 +793,10 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
 
               {/* Answers Section (if applicable) */}
               {Object.keys(answers).length > 0 && (
-                <div className="bg-card border border-border rounded-xl p-4 space-y-2">
-                  <span className="text-[10px] uppercase font-bold text-text-faint tracking-wider block border-b border-border/50 pb-1">Questionnaire Responses</span>
+                <div className="bg-white/[0.05] border border-white/15 rounded-xl p-4 space-y-2">
+                  <span className="text-[12px] font-bold text-white/55 block border-b border-white/10 pb-1">Questionnaire Responses</span>
                   {Object.entries(answers).map(([lbl, val]) => (
-                    <div key={lbl} className="flex justify-between font-medium"><span className="text-text-faint">{lbl}:</span><span className="text-white">{val}</span></div>
+                    <div key={lbl} className="flex justify-between font-medium"><span className="text-white/55">{lbl}:</span><span className="text-white">{val}</span></div>
                   ))}
                 </div>
               )}
@@ -805,7 +809,7 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
                   onChange={(e) => setConfirmCorrect(e.target.checked)}
                   className="mt-0.5 accent-lime"
                 />
-                <span className="text-[11px] font-semibold text-white/90 leading-tight">
+                <span className="text-[13px] font-semibold text-white/90 leading-tight">
                   I confirm that all information provided is correct and understand that fake information can lead to registration rejection.
                 </span>
               </label>
@@ -814,7 +818,7 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
             <div className="flex gap-4">
               <button 
                 onClick={() => setStep(dynamicQuestions.length > 0 ? 5 : (eventType === "TEAM" ? 4 : 3))}
-                className="flex-1 py-4 bg-transparent border border-border hover:border-border-bright text-white font-bold rounded-xl text-sm transition-all"
+                className="flex-1 py-4 bg-transparent border border-white/15 hover:border-white/30 text-white font-bold rounded-xl text-sm transition-all"
               >
                 Back
               </button>
@@ -823,7 +827,7 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
                 disabled={isPending}
                 className="flex-[2] btn btn-primary py-4 text-sm font-bold flex items-center justify-center gap-2"
               >
-                {isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : "Verify & Book Ticket"}
+                {isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : "Register"}
               </button>
             </div>
           </div>
@@ -832,17 +836,15 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
         {/* STEP 7: SUCCESS DIGITAL TICKET */}
         {step === 7 && generatedTicket && (
           <div className="text-center py-4">
-            <div className="w-14 h-14 rounded-full bg-lime text-black flex items-center justify-center text-xl font-bold mx-auto mb-5 shadow-lg shadow-lime/15">
-              ✓
-            </div>
-            <h2 className="text-3xl font-anton uppercase tracking-wider text-white">Registration Confirmed!</h2>
-            <p className="text-sm text-text-faint mt-1.5 mb-6 max-w-md mx-auto leading-relaxed">
-              Congratulations! Your entry ticket pass has been successfully generated. Present the QR code for entry.
+            <div className="w-14 h-14 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto mb-5"><Check className="w-7 h-7" aria-hidden /></div>
+            <h2 className="text-[28px] sm:text-[32px] leading-tight text-white">You&apos;re registered</h2>
+            <p className="text-sm text-white/55 mt-1.5 mb-6 max-w-md mx-auto leading-relaxed">
+              Your ticket is saved to My Tickets. Show the QR code below at the gate.
             </p>
 
-            {/* Unstop-style Ticket Card Design */}
-            <div className="max-w-md mx-auto bg-card border border-border rounded-3xl overflow-hidden mb-6 text-left relative shadow-xl">
-              <div className="h-32 relative bg-zinc-950 border-b border-border flex items-end p-4">
+            {/* Ticket */}
+            <div className="max-w-md mx-auto bg-white/[0.05] border border-white/15 rounded-3xl overflow-hidden mb-6 text-left relative shadow-xl">
+              <div className="h-32 relative bg-zinc-950 border-b border-white/15 flex items-end p-4">
                 {event.img && (
                   <div className="absolute inset-0">
                     <img src={event.img} alt={event.title} className="object-cover w-full h-full opacity-40" />
@@ -850,39 +852,37 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
                   </div>
                 )}
                 <div className="relative z-10">
-                  <span className="px-2 py-0.5 rounded bg-lime/15 border border-lime/25 text-lime text-[9px] font-bold uppercase tracking-wider">
-                    {event.cat}
-                  </span>
+                  <span className="text-[13px] font-semibold text-[#FF6B70]">{event.cat ? event.cat.charAt(0) + event.cat.slice(1).toLowerCase() : ""}</span>
                   <h3 className="text-lg font-bold text-white mt-1.5 leading-tight">{event.title}</h3>
                 </div>
               </div>
 
               <div className="p-5 space-y-4">
-                <div className="grid grid-cols-2 gap-x-4 gap-y-3.5 text-[11px] text-text-muted">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-3.5 text-[13px] text-white/70">
                   <div>
-                    <span className="text-[10px] text-text-faint block uppercase font-bold tracking-wider">Attendee</span>
-                    <span className="text-white font-semibold text-xs mt-0.5 block">{name}</span>
+                    <span className="text-[12px] text-white/55 block font-bold">Attendee</span>
+                    <span className="text-white font-semibold text-[13px] mt-0.5 block">{name}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-text-faint block uppercase font-bold tracking-wider">Ticket Number</span>
-                    <span className="text-lime font-mono font-bold text-xs mt-0.5 block">{generatedTicket.ticketNumber}</span>
+                    <span className="text-[12px] text-white/55 block font-bold">Ticket Number</span>
+                    <span className="text-[#FF6B70] font-mono font-bold text-[13px] mt-0.5 block">{generatedTicket.ticketNumber}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-text-faint block uppercase font-bold tracking-wider">Venue</span>
+                    <span className="text-[12px] text-white/55 block font-bold">Venue</span>
                     <span className="text-white font-medium mt-0.5 block">{event.venue}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-text-faint block uppercase font-bold tracking-wider">Date</span>
+                    <span className="text-[12px] text-white/55 block font-bold">Date</span>
                     <span className="text-white font-medium mt-0.5 block">
                       {event.date ? format(new Date(event.date), "MMM d, yyyy") : ""}
                     </span>
                   </div>
                   {eventType === "TEAM" && (
-                    <div className="col-span-2 border-t border-border/40 pt-3">
-                      <span className="text-[10px] text-text-faint block uppercase font-bold tracking-wider">Team Association</span>
-                      <div className="text-white font-semibold text-xs mt-0.5 flex justify-between">
-                        <span>Team: <span className="text-lime">{teamName}</span></span>
-                        <span className="text-text-faint font-medium">({teamMembers.length + 1} members)</span>
+                    <div className="col-span-2 border-t border-white/10 pt-3">
+                      <span className="text-[12px] text-white/55 block font-bold">Team Association</span>
+                      <div className="text-white font-semibold text-[13px] mt-0.5 flex justify-between">
+                        <span>Team: <span className="text-[#FF6B70]">{teamName}</span></span>
+                        <span className="text-white/55 font-medium">({teamMembers.length + 1} members)</span>
                       </div>
                     </div>
                   )}
@@ -900,21 +900,21 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 max-w-md mx-auto mb-4">
               <button 
                 onClick={() => window.print()}
-                className="py-3 px-2 bg-white/5 border border-border text-white rounded-xl hover:border-lime/30 text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer"
+                className="py-3 px-2 bg-white/5 border border-white/15 text-white rounded-xl hover:border-lime/30 text-[13px] font-bold transition-all flex items-center justify-center gap-1 cursor-pointer"
               >
-                <Printer className="w-4 h-4" /> Save PDF
+                <Printer className="w-4 h-4" /> Save as PDF
               </button>
               <button 
                 onClick={handleWhatsAppShare}
-                className="py-3 px-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl hover:bg-emerald-500/20 text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer"
+                className="py-3 px-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl hover:bg-emerald-500/20 text-[13px] font-bold transition-all flex items-center justify-center gap-1 cursor-pointer"
               >
-                Share WA
+                WhatsApp
               </button>
               <button 
                 onClick={handleNativeShare}
-                className="py-3 px-2 bg-lime/10 border border-lime/20 text-lime rounded-xl hover:bg-lime/20 text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer"
+                className="py-3 px-2 bg-lime/10 border border-lime/20 text-[#FF6B70] rounded-xl hover:bg-lime/20 text-[13px] font-bold transition-all flex items-center justify-center gap-1 cursor-pointer"
               >
-                <Share2 className="w-4 h-4" /> Share Pass
+                <Share2 className="w-4 h-4" /> Share
               </button>
             </div>
 
@@ -924,15 +924,15 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
                   onClose();
                   window.location.href = `/dashboard/tickets/${generatedTicket.id}`;
                 }}
-                className="btn btn-primary flex-1 py-3 text-xs font-bold"
+                className="btn btn-primary flex-1 py-3 text-[13px] font-bold"
               >
-                Go to Ticket Page
+                Open ticket
               </button>
               <button 
                 onClick={onClose}
-                className="px-5 py-3 text-xs bg-zinc-900 border border-border text-white hover:bg-zinc-800 rounded-xl transition-all font-bold"
+                className="px-5 py-3 text-[13px] bg-zinc-900 border border-white/15 text-white hover:bg-zinc-800 rounded-xl transition-all font-bold"
               >
-                Close Explore
+                Done
               </button>
             </div>
           </div>

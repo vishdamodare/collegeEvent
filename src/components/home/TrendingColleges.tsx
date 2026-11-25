@@ -7,6 +7,7 @@ import { CheckCircle2, GraduationCap, Star } from "lucide-react";
 
 interface College {
   name: string;
+  short?: string;
   loc: string;
   events: string;
   registrations: string;
@@ -45,39 +46,26 @@ export function TrendingColleges({ colleges }: TrendingCollegesProps) {
   return (
     <section 
       id="colleges" 
-      className="py-20 sm:py-[140px] bg-[var(--color-bg-elevated)] border-y border-[var(--color-border)]"
+      className="py-16 sm:py-24 bg-[var(--color-bg-elevated)] border-y border-[var(--color-border)]"
       ref={sectionRef}
     >
       <div className="max-w-[1360px] mx-auto px-5 sm:px-10">
-        <div className="reveal max-w-[640px] mx-auto text-center mb-[60px]">
-          <span className="eyebrow">
-            <span className="dot" style={{ background: "var(--color-cobalt)", boxShadow: "0 0 10px var(--color-cobalt)" }}></span> 
-            The big leagues
-          </span>
-          <h2 className="text-[clamp(32px,4.2vw,52px)] mt-4 mb-[14px]">Trending Campuses</h2>
-          <p className="text-[var(--color-text-muted)] text-[17px] font-normal leading-[1.6]">
-            The colleges hosting the most buzzed-about events this season.
+        <div className="mb-8 sm:mb-10">
+          <h2 className="text-[clamp(28px,3.6vw,40px)]">Trending campuses</h2>
+          <p className="mt-2 text-[var(--color-text-muted)] text-[17px] leading-[1.6]">
+            Where the events are happening this season.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 stagger">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {colleges.map((college, idx) => (
             <Link
               key={idx}
               href={`/colleges/${college.slug}`}
-              className="rounded-[24px] overflow-hidden bg-[var(--color-card)] border border-[var(--color-border)] relative cursor-pointer group flex flex-col justify-between"
+              className="rounded-2xl overflow-hidden bg-[var(--color-card)] border border-[var(--color-border)] relative cursor-pointer group flex flex-col justify-between"
             >
               <div>
                 <div className="h-[200px] relative overflow-hidden">
-                  <div className="absolute top-4 left-4 w-[34px] h-[34px] rounded-full bg-[#05050599] backdrop-blur-[10px] border border-white/10 text-white flex items-center justify-center font-bold text-[14px] font-anton z-[2]">
-                    #{idx + 1}
-                  </div>
-                  {college.verified && (
-                    <div className="absolute top-4 right-4 bg-emerald-500/90 backdrop-blur-[5px] rounded-lg border border-white/10 px-2.5 py-1 flex items-center gap-1 z-[2] text-[10px] font-bold text-white uppercase tracking-wider">
-                      <CheckCircle2 className="w-3 h-3 fill-emerald-500 text-black" />
-                      Verified
-                    </div>
-                  )}
                   {college.img ? (
                     <Image
                       src={college.img}
@@ -102,6 +90,9 @@ export function TrendingColleges({ colleges }: TrendingCollegesProps) {
                   <div className="flex items-start justify-between gap-3 mb-[6px]">
                     <h4 className="text-[20px] font-archivo font-bold leading-tight group-hover:text-[var(--color-lime)] transition-colors">
                       {college.name}
+                      {college.verified && (
+                        <CheckCircle2 className="inline-block w-[17px] h-[17px] ml-1.5 -mt-0.5 text-emerald-500" aria-label="Verified campus" />
+                      )}
                     </h4>
                     {college.rating && (
                       <span className="flex items-center gap-1 text-xs font-bold text-amber-400 shrink-0 mt-1" aria-label={`Rated ${college.rating} out of 5`}>
@@ -113,9 +104,7 @@ export function TrendingColleges({ colleges }: TrendingCollegesProps) {
                   <div className="text-[13px] text-[var(--color-text-faint)] mb-4">{college.loc}</div>
                   
                   {college.categories && (
-                    <div className="text-[11px] text-[var(--color-text-muted)] font-medium mb-4 uppercase tracking-wider">
-                      <span className="text-[var(--color-lime)] font-bold">Top:</span> {college.categories}
-                    </div>
+                    <div className="text-[14px] text-[var(--color-text-muted)] mb-4">{college.categories}</div>
                   )}
                 </div>
               </div>
