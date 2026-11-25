@@ -69,7 +69,7 @@ export default async function CollegesDirectoryPage() {
             <p className="text-sm text-text-faint">Check back soon as new host colleges join the platform!</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
             {collegesList.map((col) => (
               <Link
                 key={col.slug}
@@ -81,13 +81,13 @@ export default async function CollegesDirectoryPage() {
                     <div className="w-12 h-12 rounded-2xl bg-card border border-border flex items-center justify-center group-hover:border-[var(--color-lime)]/50 group-hover:bg-[var(--color-lime)]/10 transition-colors">
                       <Building2 className="w-6 h-6 text-text-main group-hover:text-[var(--color-lime)] transition-colors" />
                     </div>
-                    <span className="px-3 py-1 rounded-full bg-[var(--color-lime)]/10 border border-[var(--color-lime)]/20 text-[var(--color-lime)] font-bold text-[11px] uppercase">
-                      {col.eventsCount} Active Fests
+                    <span className={`px-3 py-1 rounded-full border font-bold text-[11px] uppercase whitespace-nowrap ${col.eventsCount > 0 ? "bg-[var(--color-lime)]/10 border-[var(--color-lime)]/20 text-[var(--color-lime)]" : "bg-card border-border text-text-faint"}`}>
+                      {col.eventsCount > 0 ? `${col.eventsCount} Active Fest${col.eventsCount === 1 ? "" : "s"}` : "No active fests"}
                     </span>
                   </div>
 
                   <div>
-                    <h3 className="text-xl font-bold text-text-main group-hover:text-[var(--color-lime)] transition-colors leading-tight">
+                    <h3 className="text-xl font-bold text-text-main group-hover:text-[var(--color-lime)] transition-colors leading-tight min-h-[3.2rem]">
                       {col.name}
                     </h3>
                     {col.address && (
@@ -98,11 +98,11 @@ export default async function CollegesDirectoryPage() {
                     )}
                   </div>
 
-                  <div className="pt-2 flex flex-wrap gap-1.5">
+                  <div className="pt-2 flex flex-wrap gap-1.5 min-h-[2rem] content-start">
                     {Array.from(col.departments).slice(0, 3).map((dept) => (
                       <span
                         key={dept}
-                        className="text-[10.5px] px-2.5 py-0.5 rounded-md bg-card border border-border text-text-muted"
+                        className={`text-[10.5px] px-2.5 py-0.5 rounded-md bg-card border border-border text-text-muted ${dept.length <= 4 ? "uppercase" : ""}`}
                       >
                         {dept}
                       </span>
