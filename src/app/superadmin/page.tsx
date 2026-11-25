@@ -43,7 +43,7 @@ export default async function SuperAdminOverview() {
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const since = new Date(now.getTime() - DAYS * 24 * 60 * 60 * 1000);
 
-  const [roles, orgStatus, eventStatus, regs, checkedIn, newUsers, upcoming, pendingOrganizers, recentRegs, recentUsers, categories, topEvents] = await Promise.all([
+  const [roles, orgStatus, eventStatus, regs, checkedIn, newUsers, upcoming, pendingOrganizers, newInquiries, recentRegs, recentUsers, categories, topEvents] = await Promise.all([
     prisma.user.groupBy({ by: ["role"], _count: true }),
     prisma.organizerProfile.groupBy({ by: ["verificationStatus"], _count: true }),
     prisma.event.groupBy({ by: ["status"], _count: true }),
@@ -57,6 +57,7 @@ export default async function SuperAdminOverview() {
       take: 5,
       include: { user: { select: { id: true, name: true, email: true } } },
     }),
+    prisma.inquiry.count({ where: { status: "NEW" } }),
     prisma.registration.findMany({ where: { createdAt: { gte: since } }, select: { createdAt: true } }),
     prisma.user.findMany({ where: { createdAt: { gte: since } }, select: { createdAt: true } }),
     prisma.category.findMany({ select: { name: true, _count: { select: { events: true } } }, orderBy: { events: { _count: "desc" } }, take: 6 }),
@@ -125,6 +126,20 @@ export default async function SuperAdminOverview() {
               </li>
             ))}
           </ul>
+        </section>
+      )}
+
+      {newInquiries > 0 && (
+        <section aria-label="New inquiries" className="rounded-2xl border border-amber-400/30 bg-amber-400/[0.04] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <p className="font-semibold text-[15px]">
+              {newInquiries} unread contact {newInquiries === 1 ? "inquiry" : "inquiries"}
+            </p>
+            <p className="text-[13px] text-white/50">Submitted from the homepage contact form.</p>
+          </div>
+          <Link href="/superadmin/inquiries?status=NEW" className="px-4 py-2 rounded-lg bg-amber-400 text-black text-[13px] font-bold hover:bg-amber-300 transition w-fit">
+            Review inquiries
+          </Link>
         </section>
       )}
 

@@ -103,47 +103,110 @@ export function HeroSection({ events, campuses, qr, onOpenDetails, onOpenRegiste
               <div className="stub-in">
                 <div className="sway-touch">
                 <div className="float-slow">
-                  <div className="relative w-[290px] sm:w-[310px] rounded-[44px] bg-[#0A0D1C] p-[10px] ring-1 ring-white/15 shadow-[0_40px_90px_-30px_rgba(0,0,0,.8)]">
-                    <div className="rounded-[35px] bg-[#F3F5FB] text-[#0A1024] overflow-hidden">
-                      <div className="mx-auto mt-2.5 h-[6px] w-[72px] rounded-full bg-[#0A0D1C]/80" aria-hidden />
-                      <div className="px-4 pt-3 pb-1 text-[12px] font-semibold text-[#5A6382]">Your ticket</div>
+                  <div className="relative w-[294px] sm:w-[314px] rounded-[50px] p-[2.5px] bg-gradient-to-b from-[#555B70] via-[#252A3A] to-[#121520] shadow-[0_45px_95px_-28px_rgba(0,0,0,.85),inset_0_1px_1px_rgba(255,255,255,.42),inset_0_-1px_1px_rgba(255,255,255,.1)]">
+                    {/* Hardware side buttons */}
+                    <span aria-hidden className="absolute -left-[3px] top-[88px] w-[3px] h-[20px] rounded-l-[2px] bg-gradient-to-b from-[#6B728A] via-[#3A4054] to-[#1F2331] shadow-[-1px_0_2px_rgba(0,0,0,.5)]" />
+                    <span aria-hidden className="absolute -left-[3px] top-[124px] w-[3px] h-[38px] rounded-l-[2px] bg-gradient-to-b from-[#6B728A] via-[#3A4054] to-[#1F2331] shadow-[-1px_0_2px_rgba(0,0,0,.5)]" />
+                    <span aria-hidden className="absolute -left-[3px] top-[172px] w-[3px] h-[38px] rounded-l-[2px] bg-gradient-to-b from-[#6B728A] via-[#3A4054] to-[#1F2331] shadow-[-1px_0_2px_rgba(0,0,0,.5)]" />
+                    <span aria-hidden className="absolute -right-[3px] top-[138px] w-[3px] h-[56px] rounded-r-[2px] bg-gradient-to-b from-[#6B728A] via-[#3A4054] to-[#1F2331] shadow-[1px_0_2px_rgba(0,0,0,.5)]" />
 
-                      <div className="px-3">
-                        <div className="relative h-[132px] rounded-2xl overflow-hidden bg-[#DDE2F0]">
-                          {event.img && <Image src={event.img} alt="" fill priority sizes="310px" className="object-cover" aria-hidden />}
-                        </div>
-                      </div>
+                    {/* Antenna bands on titanium frame */}
+                    <span aria-hidden className="absolute top-[52px] left-0 w-[2.5px] h-[5px] bg-black/50" />
+                    <span aria-hidden className="absolute top-[52px] right-0 w-[2.5px] h-[5px] bg-black/50" />
+                    <span aria-hidden className="absolute bottom-[52px] left-0 w-[2.5px] h-[5px] bg-black/50" />
+                    <span aria-hidden className="absolute bottom-[52px] right-0 w-[2.5px] h-[5px] bg-black/50" />
 
-                      <div className="px-4 pt-3.5 flex gap-3">
-                        <div className="shrink-0 w-[46px] rounded-lg bg-[var(--color-marigold)] text-[#0B0B08] py-1.5 text-center leading-none">
-                          <div className="text-[11px] font-bold">{splitDate(event.date).month}</div>
-                          <div className="mt-0.5 font-anton text-[22px]">{splitDate(event.date).day}</div>
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-[15px] font-bold leading-tight line-clamp-2">{event.title}</div>
-                          <div className="mt-1 text-[12px] text-[#5A6382] line-clamp-1">
-                            {event.venue}, {event.college}
+                    {/* Ceramic Shield black glass bezel */}
+                    <div className="rounded-[47.5px] bg-[#07080D] p-[8.5px] ring-1 ring-black/90">
+                      <div className="relative rounded-[39px] bg-[#F5F7FC] text-[#0A1024] overflow-hidden ring-1 ring-white/[0.08]">
+                        {/* Subtle screen glass sheen */}
+                        <div
+                          aria-hidden
+                          className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-br from-white/30 via-transparent to-transparent opacity-50"
+                        />
+
+                        {/* iOS status bar + Dynamic Island */}
+                        <div className="relative z-20 px-5 pt-2.5 pb-1 flex items-center justify-between select-none" aria-hidden>
+                          <span className="w-[42px] text-[11px] font-semibold tracking-[-0.02em] text-[#0A1024] tabular-nums">
+                            9:41
+                          </span>
+
+                          <div className="w-[86px] h-[23px] rounded-full bg-[#05060A] shadow-[inset_0_0_0_1px_rgba(255,255,255,.06)] flex items-center justify-end pr-[7px]">
+                            <span className="w-[9px] h-[9px] rounded-full bg-[#0B0F1E] ring-1 ring-[#1D2540] flex items-center justify-center">
+                              <span
+                                className="w-[4px] h-[4px] rounded-full"
+                                style={{ background: "radial-gradient(circle at 35% 35%, #5B8CFF 0%, #16285A 60%, #05070E 100%)" }}
+                              />
+                            </span>
+                          </div>
+
+                          <div className="w-[46px] flex items-center justify-end gap-[4px] text-[#0A1024]">
+                            {/* Cellular signal */}
+                            <svg className="w-[13px] h-[9px]" viewBox="0 0 16 11" fill="currentColor">
+                              <rect x="0.5" y="7" width="2.4" height="3.5" rx="0.8" />
+                              <rect x="4.5" y="5" width="2.4" height="5.5" rx="0.8" />
+                              <rect x="8.5" y="2.8" width="2.4" height="7.7" rx="0.8" />
+                              <rect x="12.5" y="0.5" width="2.4" height="10" rx="0.8" />
+                            </svg>
+                            {/* Wi-Fi */}
+                            <svg className="w-[12px] h-[9px]" viewBox="0 0 16 12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+                              <path d="M1.5 4.2a9.8 9.8 0 0 1 13 0" />
+                              <path d="M4.2 7a6 6 0 0 1 7.6 0" />
+                              <circle cx="8" cy="10" r="1.1" fill="currentColor" stroke="none" />
+                            </svg>
+                            {/* Battery */}
+                            <svg className="w-[20px] h-[10px]" viewBox="0 0 25 12" fill="none">
+                              <rect x="0.75" y="1" width="20.5" height="10" rx="2.8" stroke="currentColor" strokeOpacity="0.4" strokeWidth="1.2" />
+                              <rect x="2.2" y="2.5" width="15.5" height="7" rx="1.6" fill="currentColor" />
+                              <path d="M22.5 4.2v3.6a1.4 1.4 0 0 0 0-3.6z" fill="currentColor" fillOpacity="0.45" />
+                            </svg>
                           </div>
                         </div>
-                      </div>
 
-                      {/* Perforation */}
-                      <div className="relative mt-4 h-0" aria-hidden>
-                        <div className="absolute left-4 right-4 border-t-2 border-dashed border-[#0A1024]/20" />
-                        <span className="absolute -left-2.5 -top-2.5 w-5 h-5 rounded-full bg-[#0A0D1C]" />
-                        <span className="absolute -right-2.5 -top-2.5 w-5 h-5 rounded-full bg-[#0A0D1C]" />
-                      </div>
+                        <div className="px-4 pt-2 pb-1 text-[12px] font-semibold text-[#5A6382]">Your ticket</div>
 
-                      <div className="px-4 pt-6 pb-5 flex flex-col items-center">
-                        <div className="relative w-[168px] h-[168px]">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={qr} alt="Example QR code" width={168} height={168} className="w-[168px] h-[168px]" />
-                          <span
-                            aria-hidden
-                            className="qr-scan absolute -left-2 -right-2 h-[3px] rounded-full bg-[var(--color-lime)] shadow-[0_0_16px_2px_var(--color-lime)] opacity-0"
-                          />
+                        <div className="px-3">
+                          <div className="relative h-[126px] rounded-2xl overflow-hidden bg-[#DDE2F0]">
+                            {event.img && <Image src={event.img} alt="" fill priority sizes="314px" className="object-cover" aria-hidden />}
+                          </div>
                         </div>
-                        <div className="mt-2 text-[12px] text-[#5A6382]">Show this at the gate</div>
+
+                        <div className="px-4 pt-3 flex gap-3">
+                          <div className="shrink-0 w-[46px] rounded-lg bg-[var(--color-marigold)] text-[#0B0B08] py-1.5 text-center leading-none">
+                            <div className="text-[11px] font-bold">{splitDate(event.date).month}</div>
+                            <div className="mt-0.5 font-anton text-[22px]">{splitDate(event.date).day}</div>
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-[15px] font-bold leading-tight line-clamp-2">{event.title}</div>
+                            <div className="mt-1 text-[12px] text-[#5A6382] line-clamp-1">
+                              {event.venue}, {event.college}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Perforation */}
+                        <div className="relative mt-4 h-0" aria-hidden>
+                          <div className="absolute left-4 right-4 border-t-2 border-dashed border-[#0A1024]/20" />
+                          <span className="absolute -left-2.5 -top-2.5 w-5 h-5 rounded-full bg-[#07080D]" />
+                          <span className="absolute -right-2.5 -top-2.5 w-5 h-5 rounded-full bg-[#07080D]" />
+                        </div>
+
+                        <div className="px-4 pt-5 pb-3 flex flex-col items-center">
+                          <div className="relative w-[164px] h-[164px]">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={qr} alt="Example QR code" width={164} height={164} className="w-[164px] h-[164px]" />
+                            <span
+                              aria-hidden
+                              className="qr-scan absolute -left-2 -right-2 h-[3px] rounded-full bg-[var(--color-lime)] shadow-[0_0_16px_2px_var(--color-lime)] opacity-0"
+                            />
+                          </div>
+                          <div className="mt-2 text-[12px] text-[#5A6382]">Show this at the gate</div>
+                        </div>
+
+                        {/* iOS Home Indicator */}
+                        <div className="pb-2 pt-0.5 flex justify-center" aria-hidden>
+                          <span className="w-[104px] h-[4px] rounded-full bg-[#0A1024]/75" />
+                        </div>
                       </div>
                     </div>
                   </div>

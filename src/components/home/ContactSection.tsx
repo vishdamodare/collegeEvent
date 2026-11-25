@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useState } from "react";
+import { submitInquiry } from "@/actions/inquiries";
 
 export function ContactSection() {
   const [formData, setFormData] = useState({
@@ -10,16 +11,28 @@ export function ContactSection() {
     subject: "",
     message: ""
   });
-  const [status, setStatus] = useState<"idle" | "success" | "loading">("idle");
+  const [status, setStatus] = useState<"idle" | "success" | "loading" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus("loading");
-    setTimeout(() => {
+    setErrorMsg(null);
+
+    try {
+      const res = await submitInquiry(formData);
+      if (res.error) {
+        setStatus("error");
+        setErrorMsg(res.error);
+        return;
+      }
       setStatus("success");
       setFormData({ name: "", email: "", subject: "", message: "" });
       setTimeout(() => setStatus("idle"), 4000);
-    }, 1200);
+    } catch {
+      setStatus("error");
+      setErrorMsg("Could not send your inquiry right now. Please try again.");
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -228,6 +241,12 @@ export function ContactSection() {
                   className="w-full rounded-xl px-5 py-4 bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-text-main)] placeholder-white/20 focus:border-[var(--color-lime)] focus:outline-none transition-colors resize-none"
                 />
               </div>
+
+              {status === "error" && errorMsg && (
+                <p role="alert" className="text-[13.5px] font-medium text-red-400">
+                  {errorMsg}
+                </p>
+              )}
 
               <button
                 suppressHydrationWarning

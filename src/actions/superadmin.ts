@@ -7,6 +7,8 @@ import { requireSuperAdmin } from "@/lib/superadmin";
 
 const ORGANIZER_STATUSES = ["PENDING", "APPROVED", "REJECTED", "BLOCKED"] as const;
 type OrganizerStatus = (typeof ORGANIZER_STATUSES)[number];
+const INQUIRY_STATUSES = ["NEW", "READ", "RESOLVED"] as const;
+type InquiryStatus = (typeof INQUIRY_STATUSES)[number];
 
 const ORGANIZER_MESSAGES: Record<OrganizerStatus, string> = {
   APPROVED: "Your organizer account has been approved. You can now create and manage events.",
@@ -95,5 +97,44 @@ export async function deleteEventAsSuperAdmin(eventId: string) {
   } catch (err) {
     console.error("deleteEventAsSuperAdmin failed:", err);
     return { error: "Could not delete the event." };
+  }
+}
+
+/** Mark a homepage contact inquiry as NEW / READ / RESOLVED. */
+export async function setInquiryStatus(inquiryId: string, status: string) {
+  try {
+    await requireSuperAdmin("throw");
+  } catch {
+    return { error: "Not allowed." };
+  }
+  if (!INQUIRY_STATUSES.includes(status as InquiryStatus)) return { error: "Invalid status." };
+
+  try {
+    await prisma.inquiry.update({
+      where: { id: inquiryId },
+      data: { status },
+    });
+    revalidatePath("/superadmin", "layout");
+    return { success: true };
+  } catch (err) {
+    console.error("setInquiryStatus failed:", err);
+    return { error: "Could not update the inquiry." };
+  }
+}
+
+/** Permanently delete a homepage contact inquiry. */
+export async function deleteInquiryAsSuperAdmin(inquiryId: string) {
+  try {
+    await requireSuperAdmin("throw");
+  } catch {
+    return { error: "Not allowed." };
+  }
+  try {
+    await prisma.inquiry.delete({ where: { id: inquiryId } });
+    revalidatePath("/superadmin", "layout");
+    return { success: true };
+  } catch (err) {
+    console.error("deleteInquiryAsSuperAdmin failed:", err);
+    return { error: "Could not delete the inquiry." };
   }
 }
