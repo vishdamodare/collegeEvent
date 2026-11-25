@@ -23,6 +23,16 @@ export function Footer() {
             <h5 className="text-[13px] tracking-[.06em] uppercase text-[var(--color-text-faint)] mb-[18px]">Explore</h5>
             <Link href="/events" className="text-[14.5px] text-[var(--color-text-muted)] mb-[13px] hover:text-[var(--color-text-main)] transition-colors">Events</Link>
             <Link href="/colleges" className="text-[14.5px] text-[var(--color-text-muted)] mb-[13px] hover:text-[var(--color-text-main)] transition-colors">Colleges</Link>
+            {/* Landing pages (src/lib/seo-topics.ts): crawlable entry points for the most-searched event types */}
+            {[
+              ["/college-events/hackathons", "Hackathons"],
+              ["/college-events/technical", "Technical events"],
+              ["/college-events/cultural-fests", "Cultural fests"],
+              ["/college-events/competitions", "Competitions"],
+              ["/college-events/mumbai", "Events in Mumbai"],
+            ].map(([href, label]) => (
+              <Link key={href} href={href} className="text-[14.5px] text-[var(--color-text-muted)] mb-[13px] hover:text-[var(--color-text-main)] transition-colors">{label}</Link>
+            ))}
           </div>
 
           <div className="flex flex-col">
@@ -34,6 +44,9 @@ export function Footer() {
             <h5 className="text-[13px] tracking-[.06em] uppercase text-[var(--color-text-faint)] mb-[18px]">Support</h5>
             <Link href="/#contact" className="text-[14.5px] text-[var(--color-text-muted)] mb-[13px] hover:text-[var(--color-text-main)] transition-colors">Contact</Link>
             <Link href="/organizer" className="text-[14.5px] text-[var(--color-text-muted)] mb-[13px] hover:text-[var(--color-text-main)] transition-colors">Organizer login</Link>
+            <a href="mailto:supportcollegeevents@gmail.com" className="text-[14.5px] text-[var(--color-text-muted)] mb-[13px] hover:text-[var(--color-text-main)] transition-colors break-all">supportcollegeevents@gmail.com</a>
+            <a href="https://www.instagram.com/College.events.in" target="_blank" rel="noopener noreferrer" className="text-[14.5px] text-[var(--color-text-muted)] mb-[13px] hover:text-[var(--color-text-main)] transition-colors">Instagram</a>
+            <a href="https://www.linkedin.com/in/collage-events-67b194452" target="_blank" rel="noopener noreferrer" className="text-[14.5px] text-[var(--color-text-muted)] mb-[13px] hover:text-[var(--color-text-main)] transition-colors">LinkedIn</a>
           </div>
 
         </div>

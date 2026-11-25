@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { EventExtraDetails, priceLabel, type PublicEventDetails } from "@/components/events/EventExtraDetails";
 import Image from "next/image";
 import Link from "next/link";
+import { campusFor } from "@/lib/campuses";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import {
@@ -355,12 +356,22 @@ export function EventDetailClient({
 
                   <div>
                     <span className="text-[10px] text-text-faint block uppercase font-bold tracking-wider leading-none mb-1">Hosted by</span>
-                    <Link 
-                      href={`/colleges/${(event.organizer.organizerProfile?.college || "college").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}`}
-                      className="text-base font-bold text-text-main hover:text-[var(--color-lime)] hover:underline leading-tight transition-colors"
-                    >
-                      {event.organizer.organizerProfile?.college || "College Campus"}
-                    </Link>
+                    {(() => {
+                      // Link only to real campus pages (same mapping /colleges uses); free-typed names stay plain text
+                      const campus = campusFor(event.organizer.organizerProfile?.college);
+                      return campus ? (
+                        <Link
+                          href={`/colleges/${campus.slug}`}
+                          className="text-base font-bold text-text-main hover:text-[var(--color-lime)] hover:underline leading-tight transition-colors"
+                        >
+                          {campus.name}
+                        </Link>
+                      ) : (
+                        <span className="text-base font-bold text-text-main leading-tight">
+                          {event.organizer.organizerProfile?.college || "College Campus"}
+                        </span>
+                      );
+                    })()}
                     <span className="text-xs text-text-muted mt-1.5 block">
                       Organized by <span className="text-text-main font-semibold">{event.organizer.name}</span> • {event.organizer.organizerProfile?.position || "Coordinator"}
                     </span>

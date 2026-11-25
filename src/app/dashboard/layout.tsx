@@ -6,6 +6,9 @@ import { DashboardShell } from "@/components/dashboard/DashboardShell";
 
 export const dynamic = "force-dynamic";
 
+// Private student area: never index (access itself is enforced by auth, not by this)
+export const metadata = { title: "My Dashboard — CollegeEvents", robots: { index: false, follow: false } };
+
 export default async function DashboardLayout({
   children,
 }: {

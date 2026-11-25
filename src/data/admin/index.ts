@@ -1,4 +1,3 @@
-export * from "./sidebar";
 export * from "./quickActions";
 export * from "./dashboard";
 export * from "./events";
@@ -9,11 +8,9 @@ export * from "./notifications";
 export * from "./settings";
 export * from "./tickets";
 export * from "./coupons";
-export * from "./registrationForm";
 export * from "./attendance";
 export * from "./auditLogs";
 export * from "./sponsors";
-export * from "./templates";
 export * from "./media";
 export * from "./certificates";
 export * from "./preview";

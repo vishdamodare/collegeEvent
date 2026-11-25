@@ -3,7 +3,7 @@
 import { useState, useTransition, useEffect, useRef, useCallback, useSyncExternalStore } from "react";
 import { 
   QrCode, Search, Upload, Camera, CheckCircle, 
-  XCircle, Loader2, UserCheck, AlertTriangle 
+  XCircle, Loader2, UserCheck, AlertTriangle, Flashlight
 } from "lucide-react";
 import jsQR from "jsqr";
 import { verifyCheckInTicket, confirmCheckInAction, scanCheckIn, type ScanResult } from "@/actions/registrations";
@@ -109,6 +109,30 @@ function decodeQRFromImage(img: HTMLImageElement): { identifier: string; token: 
   return null;
 }
 
+// Scanner beeps (Web Audio, no files). Browsers only allow audio after a user gesture, so the context is
+// created/resumed on the first tap anywhere on the page; until then beeps are silently skipped.
+let audioCtx: AudioContext | null = null;
+function unlockAudio() {
+  try {
+    audioCtx ??= new AudioContext();
+    if (audioCtx.state === "suspended") void audioCtx.resume();
+  } catch {}
+}
+function beep(freq: number, ms: number, at = 0) {
+  if (!audioCtx || audioCtx.state !== "running") return;
+  const t = audioCtx.currentTime + at;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = "sine";
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(0.0001, t);
+  gain.gain.exponentialRampToValueAtTime(0.25, t + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + ms / 1000);
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start(t);
+  osc.stop(t + ms / 1000 + 0.02);
+}
+
 type ScanState =
   | { phase: "idle" }
   | { phase: "verifying" }
@@ -158,6 +182,25 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
+  // Flashlight for dark venues (Chrome/Android expose it; iOS Safari doesn't, so the button just won't show)
+  const trackRef = useRef<MediaStreamTrack | null>(null);
+  const [torchSupported, setTorchSupported] = useState(false);
+  const [torchOn, setTorchOn] = useState(false);
+  const toggleTorch = async () => {
+    const track = trackRef.current;
+    if (!track) return;
+    try {
+      await track.applyConstraints({ advanced: [{ torch: !torchOn } as MediaTrackConstraintSet] });
+      setTorchOn(!torchOn);
+    } catch {
+      toast.error("Couldn't switch the flashlight on this device.");
+    }
+  };
+
+  useEffect(() => {
+    window.addEventListener("pointerdown", unlockAudio);
+    return () => window.removeEventListener("pointerdown", unlockAudio);
+  }, []);
 
   // Stable (only touches refs, setters and an imported action) so the camera loop never holds a stale copy
   const runScan = useCallback(async (payload: { identifier: string; token: string }) => {
@@ -171,6 +214,7 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
     setScannedDetails(null);
     setErrorMsg(null);
     setScan({ phase: "verifying" });
+    beep(1760, 80); // Google Pay-style "got it" the moment the QR is read, before the server answers
     try { navigator.vibrate?.(30); } catch {}
 
     const device = navigator.userAgent.includes("Mobile") ? "Mobile Scanner" : "Desktop Terminal";
@@ -180,6 +224,8 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
     setLastScan(next);
     lastCodeRef.current.at = Date.now();
     try { navigator.vibrate?.(result.state === "valid" ? 80 : [120, 60, 120]); } catch {}
+    if (result.state === "valid") beep(2350, 110);
+    else { beep(330, 160); beep(330, 160, 0.22); } // low double buzz = stop them
 
     // Auto-prepare for the next ticket
     window.clearTimeout(resetTimer.current);
@@ -228,7 +274,7 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
       try {
         const res = await confirmCheckInAction(
           scannedDetails.ticket.id,
-          "MANUAL",
+          activeTab === "manual" ? "MANUAL" : "QR",
           navigator.userAgent.includes("Mobile") ? "Mobile Scanner" : "Desktop Terminal"
         );
 
@@ -383,7 +429,9 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
 
         // Continuous autofocus where the browser exposes it (Chrome/Android); silently ignored elsewhere
         const track = mediaStream.getVideoTracks()[0];
-        const caps = track?.getCapabilities?.() as { focusMode?: string[] } | undefined;
+        const caps = track?.getCapabilities?.() as { focusMode?: string[]; torch?: boolean } | undefined;
+        trackRef.current = track ?? null;
+        setTorchSupported(!!caps?.torch);
         if (caps?.focusMode?.includes("continuous")) {
           await track.applyConstraints({ advanced: [{ focusMode: "continuous" } as MediaTrackConstraintSet] }).catch(() => {});
         }
@@ -408,6 +456,9 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
       cancelled = true;
       cancelAnimationFrame(raf);
       setCameraActive(false);
+      trackRef.current = null;
+      setTorchSupported(false);
+      setTorchOn(false);
       stream?.getTracks().forEach((track) => track.stop());
       video.srcObject = null;
     };
@@ -469,6 +520,21 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
                 </div>
               </div>
 
+              {torchSupported && cameraActive && (
+                <button
+                  type="button"
+                  onClick={toggleTorch}
+                  aria-pressed={torchOn}
+                  aria-label={torchOn ? "Turn flashlight off" : "Turn flashlight on"}
+                  className={cn(
+                    "absolute bottom-3 right-3 z-10 w-11 h-11 rounded-full flex items-center justify-center backdrop-blur cursor-pointer transition-colors",
+                    torchOn ? "bg-white text-black" : "bg-black/60 text-white hover:bg-black/80"
+                  )}
+                >
+                  <Flashlight className="w-5 h-5" />
+                </button>
+              )}
+
               {/* Instant result: yellow = verifying, green = valid, red = invalid / already used */}
               {scan.phase !== "idle" && (
                 <div
@@ -494,7 +560,7 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
               {!cameraActive && (
                 <div className="absolute inset-0 bg-bg-elevated/90 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center">
                   <Camera className="w-10 h-10 text-text-faint mb-3 animate-pulse" />
-                  <p className="text-sm font-semibold text-white">Starting Optical Camera...</p>
+                  <p className="text-sm font-semibold text-white">Starting camera…</p>
                   <p className="text-xs text-text-faint mt-1">Please allow camera permissions in your browser, or switch to Upload/Manual mode.</p>
                 </div>
               )}
@@ -587,7 +653,7 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
         {process.env.NODE_ENV !== "production" && demoTickets.length > 0 && (
           <div className="border-t border-border/50 pt-4">
             <p className="text-[11px] font-bold text-text-faint uppercase tracking-wider mb-2">
-              Recent Issued Tickets (Click to Fast-Test):
+              Recent tickets (tap to look up):
             </p>
             <div className="flex flex-wrap gap-2">
               {demoTickets.slice(0, 4).map(t => (
@@ -680,6 +746,7 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
                   Approve Entry & Check In
                 </button>
               )}
+
             </div>
           </div>
         ) : errorMsg ? (
@@ -716,7 +783,7 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
             <div className="w-16 h-16 rounded-2xl bg-bg-elevated border border-border flex items-center justify-center mb-4 text-text-faint">
               <QrCode className="w-8 h-8" />
             </div>
-            <h3 className="text-lg font-bold text-white">No Pass Scanned Yet</h3>
+            <h3 className="text-lg font-bold text-white">Ready to scan</h3>
             <p className="text-xs text-text-faint max-w-xs mt-1">
               Position a ticket QR code inside the camera viewfinder, upload a screenshot, or enter the ticket number manually.
             </p>

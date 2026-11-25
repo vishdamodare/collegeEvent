@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Colleges — CollegeEvents",
-  description: "Browse colleges hosting events on CollegeEvents.",
+  title: "Colleges Hosting Fests & Events — IIT Bombay, Atharva & More | CollegeEvents",
+  description: "Browse colleges hosting fests, hackathons and competitions on CollegeEvents. See each campus, its upcoming events, and register free.",
   alternates: { canonical: "/colleges" },
 };
 

@@ -438,3 +438,65 @@ select.form-input option {
 @media (prefers-reduced-motion: reduce) {
   .sway-touch { animation: none; }
 }
+
+/* ─── Organizer console ("the desk") ──────────────────────────────────────────
+   Calm fest control desk: navy night-stage surfaces that step up a few % in lightness,
+   borders-only depth, one red accent (--color-lime under the spidey palette), green only
+   means "checked in". Scoped to .admin-ui so the public site is untouched. */
+.admin-ui {
+  --desk: #070914;          /* canvas + sidebar (same surface, split by a hairline) */
+  --desk-raised: #0D1124;   /* cards */
+  --desk-overlay: #141A33;  /* menus, tooltips, hovered rows */
+  --desk-inset: #05070F;    /* inputs: darker = "type here" */
+  --desk-line: rgba(226, 232, 255, 0.08);
+  --desk-line-strong: rgba(226, 232, 255, 0.14);
+  --ink: #F3F5FB;
+  --ink-2: #C2C8DC;
+  --ink-3: #8189A6;
+  --stamp: #34D399;         /* checked-in / success only */
+  --pending: #FFC933;
+  background: var(--desk);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+/* Older admin pages hardcode near-black greys; map them onto the desk scale so every page matches */
+.admin-ui :is(.bg-\[\#0A0A0A\], .bg-\[\#0A0A0A\]\/95, .bg-\[\#0B0B08\], .bg-\[\#0E0E0E\]\/90) { background-color: var(--desk); }
+.admin-ui :is(.bg-\[\#121212\], .bg-\[\#121212\]\/30, .bg-\[\#121212\]\/40, .bg-\[\#121212\]\/50, .bg-\[\#121212\]\/60,
+  .bg-\[\#131313\], .bg-\[\#141414\], .bg-\[\#141414\]\/40, .bg-\[\#141414\]\/50, .bg-\[\#151515\]) { background-color: var(--desk-raised); }
+.admin-ui :is(.bg-\[\#181818\], .bg-\[\#181818\]\/60) { background-color: var(--desk-inset); }
+.admin-ui .bg-\[\#1C1C1C\] { background-color: var(--desk-overlay); }
+.admin-ui :is(.border-white\/5, .border-white\/10) { border-color: var(--desk-line); }
+.admin-ui :is(.border-white\/15, .border-white\/20) { border-color: var(--desk-line-strong); }
+.admin-ui .backdrop-blur-md, .admin-ui .backdrop-blur-xl { backdrop-filter: none; }
+.admin-ui h1, .admin-ui h2, .admin-ui h3 { text-wrap: balance; }
+.admin-ui { color-scheme: dark; }
+
+/* Light desk: same structure, paper surfaces, navy ink. Older admin pages hardcode white-on-dark
+   utilities, so they are remapped here; text-white on a strong colour bg (red buttons, green/red
+   scan results, dark image overlays) is left white on purpose. */
+[data-theme="light"] .admin-ui {
+  color-scheme: light;
+  --desk: #F4F6FB;
+  --desk-raised: #FFFFFF;
+  --desk-overlay: #EDF0F7;
+  --desk-inset: #EEF1F7;
+  --desk-line: rgba(10, 16, 36, 0.09);
+  --desk-line-strong: rgba(10, 16, 36, 0.16);
+  --ink: #0A1024;
+  --ink-2: #3B4363;
+  --ink-3: #646C8A;
+  --stamp: #047857;
+  --pending: #B45309;
+}
+[data-theme="light"] .admin-ui .text-white:not(:is([class*="bg-[var(--color-lime)]"], [class*=" bg-lime"], [class^="bg-lime"], [class*="bg-red-"], [class*="bg-emerald-"], [class*="bg-green-"], [class*="bg-amber-"], [class*="bg-blue-"], [class*="bg-orange-"], [class*=" bg-black"], [class^="bg-black"], [class*="bg-cobalt"])) { color: var(--ink); }
+[data-theme="light"] .admin-ui :is(.text-white\/90, .text-white\/80, .text-white\/70):not(:is([class*="bg-[var(--color-lime)]"], [class*=" bg-lime"], [class^="bg-lime"], [class*="bg-red-"], [class*="bg-emerald-"], [class*="bg-green-"], [class*="bg-amber-"], [class*="bg-blue-"], [class*="bg-orange-"], [class*=" bg-black"], [class^="bg-black"], [class*="bg-cobalt"])) { color: var(--ink-2); }
+[data-theme="light"] .admin-ui :is(.text-white\/60, .text-white\/55, .text-white\/50, .text-white\/45, .text-white\/40):not(:is([class*="bg-[var(--color-lime)]"], [class*=" bg-lime"], [class^="bg-lime"], [class*="bg-red-"], [class*="bg-emerald-"], [class*="bg-green-"], [class*="bg-amber-"], [class*="bg-blue-"], [class*="bg-orange-"], [class*=" bg-black"], [class^="bg-black"], [class*="bg-cobalt"])) { color: var(--ink-3); }
+[data-theme="light"] .admin-ui :is(.text-white\/30, .text-white\/25, .text-white\/20, .text-white\/10):not(:is([class*="bg-[var(--color-lime)]"], [class*=" bg-lime"], [class^="bg-lime"], [class*="bg-red-"], [class*="bg-emerald-"], [class*="bg-green-"], [class*="bg-amber-"], [class*="bg-blue-"], [class*="bg-orange-"], [class*=" bg-black"], [class^="bg-black"], [class*="bg-cobalt"])) { color: #9AA1B9; }
+[data-theme="light"] .admin-ui :is(.hover\:text-white, .hover\:text-white\/80):hover { color: var(--ink); }
+[data-theme="light"] .admin-ui :is(.bg-white\/5, .bg-white\/10, .bg-white\/15) { background-color: rgba(10, 16, 36, 0.05); }
+[data-theme="light"] .admin-ui :is(.bg-white\/\[0\.01\], .bg-white\/\[0\.02\], .bg-white\/\[0\.03\]) { background-color: rgba(10, 16, 36, 0.025); }
+[data-theme="light"] .admin-ui :is(.hover\:bg-white\/5, .hover\:bg-white\/10, .hover\:bg-white\/20, .hover\:bg-white\/\[0\.01\], .hover\:bg-white\/\[0\.015\], .hover\:bg-white\/\[0\.02\]):hover { background-color: rgba(10, 16, 36, 0.06); }
+[data-theme="light"] .admin-ui :is(.hover\:border-white\/10, .hover\:border-white\/15, .hover\:border-white\/20, .focus\:border-white\/10, .focus\:border-white\/20):is(:hover, :focus) { border-color: var(--desk-line-strong); }
+[data-theme="light"] .admin-ui .divide-white\/5 > :not(:last-child) { border-color: var(--desk-line); }
+[data-theme="light"] .admin-ui :is(.placeholder\:text-white\/30, .placeholder\:text-white\/20)::placeholder { color: #9AA1B9; }
+[data-theme="light"] .admin-ui .shadow-xl, [data-theme="light"] .admin-ui .shadow-2xl { box-shadow: 0 0 0 1px rgba(10,16,36,.05), 0 8px 24px rgba(10,16,36,.08); }

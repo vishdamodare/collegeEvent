@@ -10,6 +10,9 @@ import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import type { PublicEventDetails } from "@/components/events/EventExtraDetails";
 import { cache } from "react";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { absoluteUrl, breadcrumbLd, clip, istDate } from "@/lib/seo";
+import { campusFor } from "@/lib/campuses";
 
 // generateMetadata and the page both need the event — fetch it once per request
 const getEvent = cache(getEventBySlug);
@@ -23,26 +26,34 @@ export async function generateMetadata({ params }: EventDetailPageProps): Promis
   const event = await getEvent(slug);
 
   if (!event) {
-    return { title: "Event Not Found — CollegeEvents" };
+    return { title: "Event not found — CollegeEvents", robots: { index: false, follow: true } };
   }
 
   const heroImage = event.images.find((i) => i.isHero)?.url || event.images[0]?.url;
+  const college = campusFor(event.organizer.organizerProfile?.college)?.name ?? event.organizer.organizerProfile?.college;
+  const isPublic = event.status === "PUBLISHED" || event.status === "COMPLETED";
+  // e.g. "Tue, 15 Dec 2026 at IIT Bombay. Perceptron is Techfest's flagship AI hackathon…"
+  const description = clip(`${istDate(event.date)}${college ? ` at ${college}` : ""}. ${event.description}`);
+  const path = `/events/${event.slug}`;
 
   return {
-    title: `${event.title} — CollegeEvents`,
-    description: event.description.slice(0, 160),
-    alternates: { canonical: `/events/${event.slug}` },
+    title: `${event.title}${college && !event.title.toLowerCase().includes(college.toLowerCase().split(" ")[0]) ? ` — ${college}` : ""} | CollegeEvents`,
+    description,
+    alternates: { canonical: path },
+    // Drafts / cancelled / archived are organizer-only previews: never index them
+    robots: isPublic ? undefined : { index: false, follow: false },
     openGraph: {
       title: event.title,
-      description: event.description.slice(0, 160),
-      type: "article",
-      images: heroImage ? [{ url: heroImage, width: 1200, height: 630 }] : [],
+      description,
+      url: path,
+      type: "website",
+      images: heroImage ? [{ url: heroImage, alt: event.title }] : undefined,
     },
     twitter: {
       card: "summary_large_image",
       title: event.title,
-      description: event.description.slice(0, 160),
-      images: heroImage ? [heroImage] : [],
+      description,
+      images: heroImage ? [heroImage] : undefined,
     },
   };
 }
@@ -111,28 +122,11 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
 
   const details = toPublicDetails(row?.details, isRegistered);
 
-  // schema.org Event lets Google show this in event search results (date, venue, image)
-  const heroImage = event.images.find((i) => i.isHero)?.url || event.images[0]?.url;
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Event",
-    name: event.title,
-    description: event.description.slice(0, 300),
-    startDate: event.date.toISOString(),
-    eventStatus: "https://schema.org/EventScheduled",
-    eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
-    location: { "@type": "Place", name: event.location, address: event.location },
-    ...(heroImage ? { image: [heroImage] } : {}),
-    url: `${appUrl}/events/${event.slug}`,
-  };
+  const jsonLd = eventJsonLd(event, row?.details ?? null);
 
   return (
     <>
-    <script
-      type="application/ld+json"
-      // Escape "<" so event text can't close the script tag
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
-    />
+    {isPublic && <JsonLd data={jsonLd} />}
     <EventDetailClient
       event={event}
       details={details}
@@ -190,4 +184,67 @@ function toPublicDetails(raw: unknown, isRegistered: boolean): PublicEventDetail
       rulebook: d.media?.rulebookPdfUrl || "",
     },
   };
+}
+
+type EventForLd = NonNullable<Awaited<ReturnType<typeof getEventBySlug>>>;
+
+/** schema.org Event + breadcrumbs, built only from real data the page also shows. */
+function eventJsonLd(event: EventForLd, details: unknown) {
+  // schema.org Event, built only from real data the page also shows (Google event results: date, venue, image)
+  const heroImage = event.images.find((i) => i.isHero)?.url || event.images[0]?.url;
+  const raw = details as {
+    schedule?: { end?: string; registrationOpens?: string; registrationCloses?: string };
+    venue?: { address?: string };
+    rules?: { prizes?: unknown[] };
+  } | null;
+  const campus = campusFor(event.organizer.organizerProfile?.college);
+  const url = absoluteUrl(`/events/${event.slug}`);
+  const upcoming = event.status === "PUBLISHED" && event.date.getTime() > Date.now();
+  const closes = raw?.schedule?.registrationCloses;
+  const regOpen = upcoming && !event.isClosed && (!closes || new Date(closes).getTime() > Date.now());
+  return [
+    {
+      "@context": "https://schema.org",
+      "@type": "Event",
+      name: event.title,
+      description: event.description.slice(0, 500),
+      url,
+      startDate: event.date.toISOString(),
+      ...(raw?.schedule?.end ? { endDate: new Date(raw.schedule.end).toISOString() } : {}),
+      eventStatus: "https://schema.org/EventScheduled",
+      eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+      location: {
+        "@type": "Place",
+        name: event.location,
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: raw?.venue?.address || event.location,
+          ...(campus ? { addressLocality: campus.city, addressRegion: campus.state } : {}),
+          addressCountry: "IN",
+        },
+      },
+      ...(heroImage ? { image: [heroImage] } : {}),
+      organizer: {
+        "@type": "Organization",
+        name: campus?.name ?? event.organizer.organizerProfile?.college ?? event.organizer.name,
+        ...(campus ? { url: absoluteUrl(`/colleges/${campus.slug}`) } : {}),
+      },
+      isAccessibleForFree: true,
+      // Registration on CollegeEvents is free; only advertise an offer while it can actually be used
+      ...(upcoming
+        ? {
+            offers: {
+              "@type": "Offer",
+              url,
+              price: 0,
+              priceCurrency: "INR",
+              availability: regOpen && event._count.registrations < event.capacity ? "https://schema.org/InStock" : "https://schema.org/SoldOut",
+              ...(raw?.schedule?.registrationOpens ? { validFrom: new Date(raw.schedule.registrationOpens).toISOString() } : {}),
+            },
+          }
+        : {}),
+    },
+    breadcrumbLd([["Home", "/"], ["Events", "/events"], [event.title, `/events/${event.slug}`]]),
+  ];
+
 }

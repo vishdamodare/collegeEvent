@@ -3,54 +3,36 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { 
-  LayoutDashboard, 
-  CalendarRange, 
-  Users, 
-  CreditCard, 
-  Award, 
-  BarChart3, 
-  School, 
-  Bell, 
-  Settings, 
-  HelpCircle, 
-  LogOut,
-  Menu,
-  ChevronLeft,
-  ChevronRight,
-  QrCode,
-  ShieldCheck
-} from "lucide-react";
+import { Award, CalendarDays, HelpCircle, Home, LogOut, ScanLine, Settings, ShieldCheck, Users, X } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
-import { SIDEBAR_ITEMS } from "@/data/admin";
+
+// Organizers do five things; the nav is those five verbs plus settings. Other admin pages
+// (analytics, payments, notifications, support) stay reachable from links where they matter.
+const NAV = [
+  { href: "/admin", label: "Home", icon: Home },
+  { href: "/admin/events", label: "Events", icon: CalendarDays },
+  { href: "/admin/check-in", label: "Check-in", icon: ScanLine },
+  { href: "/admin/participants", label: "Participants", icon: Users },
+  { href: "/admin/certificates", label: "Certificates", icon: Award },
+  { href: "/admin/settings", label: "Settings", icon: Settings },
+];
 
 interface SidebarProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
+  profile: { name: string; college: string };
 }
 
-export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
+export function Sidebar({ isOpen, setIsOpen, profile }: SidebarProps) {
   const pathname = usePathname();
-  const [isCollapsed, setIsCollapsed] = useState(false);
   const { data: session } = authClient.useSession();
-
-  const getIcon = (name: string) => {
-    switch (name) {
-      case "LayoutDashboard": return <LayoutDashboard className="w-5 h-5" />;
-      case "CalendarRange": return <CalendarRange className="w-5 h-5" />;
-      case "Users": return <Users className="w-5 h-5" />;
-      case "CreditCard": return <CreditCard className="w-5 h-5" />;
-      case "Award": return <Award className="w-5 h-5" />;
-      case "BarChart3": return <BarChart3 className="w-5 h-5" />;
-      case "School": return <School className="w-5 h-5" />;
-      case "Bell": return <Bell className="w-5 h-5" />;
-      case "Settings": return <Settings className="w-5 h-5" />;
-      case "QrCode": return <QrCode className="w-5 h-5" />;
-      case "HelpCircle": return <HelpCircle className="w-5 h-5" />;
-      default: return <HelpCircle className="w-5 h-5" />;
-    }
-  };
+  const isActive = (href: string) => (href === "/admin" ? pathname === "/admin" : pathname.startsWith(href));
+  const initials = (profile.college || profile.name || "?")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]!.toUpperCase())
+    .join("");
 
   const handleLogout = async () => {
     await authClient.signOut();
@@ -59,90 +41,70 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
 
   return (
     <>
-      {/* Mobile Backdrop */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
+      {isOpen && <div className="fixed inset-0 z-40 bg-black/60 lg:hidden" onClick={() => setIsOpen(false)} aria-hidden />}
 
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col bg-[#0E0E0E]/90 border-r border-white/10 backdrop-blur-md transition-all duration-300
-          ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-          ${isCollapsed ? "w-20" : "w-64"}
-        `}
+        aria-label="Organizer navigation"
+        className={`fixed inset-y-0 left-0 z-50 w-60 flex flex-col bg-[var(--desk)] border-r border-[var(--desk-line)] transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] lg:translate-x-0 ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
       >
-        {/* Brand Logo & Toggle */}
-        <div className="h-20 flex items-center justify-between px-6 border-b border-white/5">
-          <Link href="/admin" className="flex items-center gap-2.5">
-            <Image src="/logo-mark.png" alt="CollegeEvents logo" width={32} height={32} className="logo-mark-on-dark w-8 h-8 shrink-0" priority />
-            {!isCollapsed && (
-              <span className="font-anton text-lg tracking-wider text-white">
-                COLLEGE<span className="text-[var(--color-lime)]">EVENTS</span>
-              </span>
-            )}
+        <div className="h-16 flex items-center justify-between px-5">
+          <Link href="/admin" className="flex items-center gap-2.5" onClick={() => setIsOpen(false)}>
+            <Image src="/logo-mark.png" alt="" width={28} height={28} className="logo-mark-on-dark w-7 h-7 shrink-0" priority />
+            <span className="font-anton text-[17px] font-bold tracking-tight text-[var(--ink)]">
+              College<span className="text-[var(--color-lime)]">Events</span>
+            </span>
           </Link>
-          
-          <button 
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="hidden lg:flex p-1.5 rounded-lg border border-white/5 hover:bg-white/5 text-white/60 hover:text-white transition-colors cursor-pointer"
-          >
-            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          <button onClick={() => setIsOpen(false)} aria-label="Close menu" className="lg:hidden p-2 -mr-2 rounded-lg text-[var(--ink-3)] hover:text-[var(--ink)] cursor-pointer">
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Navigation Items */}
-        <nav className="flex-1 py-6 px-4 space-y-1.5 overflow-y-auto scrollbar-thin">
-          {SIDEBAR_ITEMS.map((item) => {
-            const isActive = pathname === item.href;
+        <nav className="flex-1 px-3 pt-4 space-y-0.5 overflow-y-auto">
+          {NAV.map(({ href, label, icon: Icon }) => {
+            const active = isActive(href);
             return (
               <Link
-                key={item.href}
-                href={item.href}
+                key={href}
+                href={href}
                 onClick={() => setIsOpen(false)}
-                className={`flex items-center gap-4 py-3 px-3.5 rounded-xl font-archivo text-[14px] font-medium transition-all group relative cursor-pointer
-                  ${isActive 
-                    ? "bg-[var(--color-lime)]/10 text-[var(--color-lime)] border border-[var(--color-lime)]/20 shadow-[inset_0_0_12px_rgba(var(--lime-rgb),0.08)]" 
-                    : "text-white/60 hover:text-white border border-transparent hover:bg-white/5"
-                  }
-                `}
+                aria-current={active ? "page" : undefined}
+                className={`relative flex items-center gap-3 h-10 px-3 rounded-lg text-[14px] transition-colors ${
+                  active ? "bg-[var(--desk-raised)] text-[var(--ink)] font-semibold" : "text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--desk-raised)]/60 font-medium"
+                }`}
               >
-                <span className={`transition-transform duration-200 group-hover:scale-110 ${isActive ? "text-[var(--color-lime)]" : "text-white/60 group-hover:text-white"}`}>
-                  {getIcon(item.icon)}
-                </span>
-                
-                {!isCollapsed && <span>{item.title}</span>}
-
-                {/* Tooltip for Collapsed Sidebar */}
-                {isCollapsed && (
-                  <div className="absolute left-24 scale-0 group-hover:scale-100 transition-all bg-[#141414] border border-white/10 text-white text-[12px] font-archivo py-1.5 px-3 rounded-lg pointer-events-none whitespace-nowrap shadow-xl z-50">
-                    {item.title}
-                  </div>
-                )}
+                {active && <span aria-hidden className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-[var(--color-lime)]" />}
+                <Icon className={`w-[18px] h-[18px] ${active ? "text-[var(--color-lime)]" : "text-[var(--ink-3)]"}`} />
+                {label}
               </Link>
             );
           })}
         </nav>
 
-        {/* Footer / Logout Button */}
-        <div className="p-4 border-t border-white/5 space-y-1.5">
+        <div className="p-3 space-y-0.5">
           {(session?.user as { role?: string } | undefined)?.role === "SUPER_ADMIN" && (
-            <Link
-              href="/superadmin"
-              className="w-full flex items-center gap-4 py-3 px-3.5 rounded-xl font-archivo text-[14px] font-semibold text-white/80 hover:bg-white/5 transition-colors"
-            >
-              <ShieldCheck className="w-5 h-5 text-[var(--color-lime)]" />
-              {!isCollapsed && <span>Super Admin</span>}
+            <Link href="/superadmin" className="flex items-center gap-3 h-10 px-3 rounded-lg text-[14px] font-medium text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--desk-raised)]">
+              <ShieldCheck className="w-[18px] h-[18px] text-[var(--ink-3)]" /> Super admin
             </Link>
           )}
-          <button
-            onClick={handleLogout}
-            className={`w-full flex items-center gap-4 py-3 px-3.5 rounded-xl font-archivo text-[14px] font-semibold text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all cursor-pointer group`}
-          >
-            <LogOut className="w-5 h-5 text-red-400 transition-transform group-hover:translate-x-0.5" />
-            {!isCollapsed && <span>Logout</span>}
-          </button>
+          <Link href="/admin/support" onClick={() => setIsOpen(false)} className="flex items-center gap-3 h-10 px-3 rounded-lg text-[14px] font-medium text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--desk-raised)]">
+            <HelpCircle className="w-[18px] h-[18px] text-[var(--ink-3)]" /> Help
+          </Link>
+
+          {/* Who you're organizing for */}
+          <div className="mt-2 pt-3 border-t border-[var(--desk-line)] flex items-center gap-3 px-2">
+            <Link href="/admin/college" onClick={() => setIsOpen(false)} title="College profile" className="w-9 h-9 shrink-0 rounded-lg bg-[var(--desk-raised)] border border-[var(--desk-line)] flex items-center justify-center text-[12px] font-bold text-[var(--ink)]">
+              {initials}
+            </Link>
+            <Link href="/admin/college" onClick={() => setIsOpen(false)} className="min-w-0 flex-1">
+              <p className="text-[13px] font-semibold text-[var(--ink)] truncate">{profile.college || "Your college"}</p>
+              <p className="text-[12px] text-[var(--ink-3)] truncate">{profile.name}</p>
+            </Link>
+            <button onClick={handleLogout} aria-label="Log out" title="Log out" className="p-2 rounded-lg text-[var(--ink-3)] hover:text-red-400 hover:bg-red-500/10 cursor-pointer">
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </aside>
     </>

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { RegistrationStatus, type Prisma } from "@prisma/client";
 import {
   generateTicketNumber,
@@ -905,10 +906,13 @@ async function claimCheckIn(
   ]);
   if (gate.count !== 1) return { claimed: false, checkedInAt };
 
-  // Best effort: the check-in is already committed, so a failed notification must not fail the scan
-  await prisma.notification
-    .create({ data: { userId: t.studentUserId, message: `Check-in successful for ${t.eventTitle}! Welcome to the event.` } })
-    .catch((e) => console.error("Check-in notification failed:", e));
+  // Best effort, after the response: the check-in is committed, so the gate shows green without waiting
+  // on this extra DB round trip (and a failed notification can never fail the scan)
+  after(() =>
+    prisma.notification
+      .create({ data: { userId: t.studentUserId, message: `Check-in successful for ${t.eventTitle}! Welcome to the event.` } })
+      .catch((e) => console.error("Check-in notification failed:", e))
+  );
   revalidatePath(`/events/${t.eventSlug}`);
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/events");
@@ -1005,60 +1009,113 @@ export async function scanCheckIn(
     const token = verificationToken?.trim();
     if (!id || !token) return { state: "invalid", message: "Not a valid ticket QR code." };
 
-    const ticket = await prisma.ticket.findFirst({
-      where: { OR: [{ id }, { ticketNumber: id }], verificationToken: token },
-      select: {
-        id: true,
-        ticketNumber: true,
-        status: true,
-        registrationId: true,
-        event: { select: { title: true, slug: true, organizerId: true } },
-        registration: { select: { status: true, checkedIn: true, checkedInAt: true, teamName: true, timeline: true } },
-        student: { select: { userId: true, college: true, user: { select: { name: true } } } },
-      },
-    });
+    // ONE database round trip: find + validate + check in atomically (data-modifying CTEs).
+    // The UPDATE only fires for an active, unused, non-cancelled ticket of this organizer, and its
+    // "checkedIn = false" guard makes concurrent scans of the same QR safe (only one gets a row back).
+    const at = new Date().toISOString();
+    const isSuper = user.role === "SUPER_ADMIN";
+    const label = `Checked In via QR (${device})`;
+    const rows = await prisma.$queryRaw<
+      {
+        ticketNumber: string;
+        ticketStatus: string;
+        regStatus: string;
+        checkedIn: boolean;
+        checkedInAt: Date | null;
+        teamName: string | null;
+        eventTitle: string;
+        eventSlug: string;
+        organizerId: string;
+        college: string;
+        studentUserId: string;
+        studentName: string;
+        claimedAt: Date | null;
+      }[]
+    >`
+      WITH t AS (
+        SELECT tk.id, tk."registrationId", tk."ticketNumber", tk.status AS "ticketStatus",
+               r.status::text AS "regStatus", r."checkedIn", r."checkedInAt", r."teamName",
+               e.title AS "eventTitle", e.slug AS "eventSlug", e."organizerId",
+               sp.college, sp."userId" AS "studentUserId", u.name AS "studentName"
+        FROM "Ticket" tk
+        JOIN "Registration" r ON r.id = tk."registrationId"
+        JOIN "Event" e ON e.id = tk."eventId"
+        JOIN "StudentProfile" sp ON sp.id = tk."studentId"
+        JOIN "User" u ON u.id = sp."userId"
+        WHERE (tk.id = ${id} OR tk."ticketNumber" = ${id}) AND tk."verificationToken" = ${token}
+        LIMIT 1
+      ),
+      claim AS (
+        UPDATE "Registration" r SET
+          "checkedIn" = true,
+          "checkedInAt" = (${at}::timestamptz AT TIME ZONE 'UTC'),
+          "checkedInBy" = ${user.id},
+          "checkInDevice" = ${device},
+          "checkInMethod" = 'QR',
+          "checkInStatus" = 'CHECKED_IN',
+          status = 'CHECKED_IN',
+          timeline = (CASE WHEN jsonb_typeof(r.timeline) = 'array' THEN r.timeline ELSE '[]'::jsonb END)
+                     || jsonb_build_array(jsonb_build_object('status', 'CHECKED_IN', 'time', ${at}::text, 'label', ${label}::text)),
+          "updatedAt" = (${at}::timestamptz AT TIME ZONE 'UTC')
+        FROM t
+        WHERE r.id = t."registrationId"
+          AND r."checkedIn" = false
+          AND r.status <> 'CANCELLED'
+          AND t."ticketStatus" = 'ACTIVE'
+          AND (${isSuper} OR t."organizerId" = ${user.id})
+        RETURNING r.id, r."checkedInAt"
+      ),
+      used AS (
+        UPDATE "Ticket" tk SET status = 'USED', "updatedAt" = (${at}::timestamptz AT TIME ZONE 'UTC')
+        FROM claim WHERE tk."registrationId" = claim.id
+        RETURNING tk.id
+      )
+      SELECT t."ticketNumber", t."ticketStatus", t."regStatus", t."checkedIn", t."checkedInAt", t."teamName",
+             t."eventTitle", t."eventSlug", t."organizerId", t.college, t."studentUserId", t."studentName",
+             (SELECT claim."checkedInAt" FROM claim) AS "claimedAt",
+             (SELECT count(*) FROM used) AS "_used"
+      FROM t
+    `;
+    const ticket = rows[0];
     if (!ticket) return { state: "invalid", message: "Ticket not found or QR code was tampered with." };
 
     const info = {
-      studentName: ticket.student.user.name,
-      college: ticket.student.college,
+      studentName: ticket.studentName,
+      college: ticket.college,
       ticketNumber: ticket.ticketNumber,
-      eventTitle: ticket.event.title,
-      teamName: ticket.registration.teamName,
+      eventTitle: ticket.eventTitle,
+      teamName: ticket.teamName,
     };
-
-    if (user.role !== "SUPER_ADMIN" && ticket.event.organizerId !== user.id) {
-      return { state: "invalid", message: "This ticket is for another organizer's event.", ...info };
-    }
-    if (ticket.registration.status === RegistrationStatus.CANCELLED || ticket.status === "CANCELLED") {
-      return { state: "invalid", message: "Registration was cancelled.", ...info };
-    }
-    const alreadyUsed = (at: Date | null) => ({
+    const alreadyUsed = (when: Date | null) => ({
       state: "used" as const,
-      message: `Already checked in${at ? ` at ${at.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })}` : ""}.`,
-      checkedInAt: at?.toISOString() ?? null,
+      message: `Already checked in${when ? ` at ${when.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" })}` : ""}.`,
+      checkedInAt: when?.toISOString() ?? null,
       ...info,
     });
-    if (ticket.registration.checkedIn || ticket.status === "USED") return alreadyUsed(ticket.registration.checkedInAt);
-    if (ticket.status !== "ACTIVE") return { state: "invalid", message: "Ticket is not active.", ...info };
 
-    const { claimed, checkedInAt } = await claimCheckIn(
-      {
-        id: ticket.id,
-        registrationId: ticket.registrationId,
-        studentUserId: ticket.student.userId,
-        eventTitle: ticket.event.title,
-        eventSlug: ticket.event.slug,
-        timeline: ticket.registration.timeline,
-      },
-      user.id,
-      "QR",
-      device
+    if (!ticket.claimedAt) {
+      // Not checked in by this scan: explain why (all from the row we already have, no extra query)
+      if (!isSuper && ticket.organizerId !== user.id) return { state: "invalid", message: "This ticket is for another organizer's event.", ...info };
+      if (ticket.regStatus === RegistrationStatus.CANCELLED || ticket.ticketStatus === "CANCELLED") {
+        return { state: "invalid", message: "Registration was cancelled.", ...info };
+      }
+      if (ticket.checkedIn || ticket.ticketStatus === "USED") return alreadyUsed(ticket.checkedInAt);
+      if (ticket.ticketStatus !== "ACTIVE") return { state: "invalid", message: "Ticket is not active.", ...info };
+      return alreadyUsed(null); // lost a race with another scanner
+    }
+
+    // Side effects after the response so the gate turns green immediately
+    after(() =>
+      prisma.notification
+        .create({ data: { userId: ticket.studentUserId, message: `Check-in successful for ${ticket.eventTitle}! Welcome to the event.` } })
+        .catch((e) => console.error("Check-in notification failed:", e))
     );
-    // Lost the race to another scanner: report the winner's check-in, never a second acceptance
-    if (!claimed) return alreadyUsed(null);
+    revalidatePath(`/events/${ticket.eventSlug}`);
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/events");
+    revalidatePath("/dashboard/notifications");
 
-    return { state: "valid", message: "Entry approved.", checkedInAt: checkedInAt.toISOString(), ...info };
+    return { state: "valid", message: "Entry approved.", checkedInAt: at, ...info };
   } catch (error) {
     console.error("Error scanning ticket:", error);
     return { state: "invalid", message: "Could not verify ticket. Try again." };

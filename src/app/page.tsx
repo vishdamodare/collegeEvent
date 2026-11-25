@@ -1,5 +1,6 @@
 import { getRecommendedEvents, getCategoryRecommendations, getDynamicColleges } from "@/actions/events";
 import { HomeClient } from "./HomeClient";
+import type { Metadata } from "next";
 import { format } from "date-fns";
 import type { Event } from "@/types";
 import { auth } from "@/lib/auth";
@@ -9,23 +10,10 @@ import { unstable_cache } from "next/cache";
 import { appUrl } from "@/lib/app-url";
 import QRCode from "qrcode";
 
-const siteJsonLd = [
-  {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    name: "CollegeEvents",
-    url: appUrl,
-    logo: `${appUrl}/logo-mark.png`,
-  },
-  {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    name: "CollegeEvents",
-    url: appUrl,
-  },
-];
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 // The QR in the hero's phone mock links to the site itself. Computed once per server instance.
 const siteQr = QRCode.toDataURL(appUrl, { margin: 1, width: 400, errorCorrectionLevel: "M" });
@@ -115,11 +103,7 @@ export default async function Home() {
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        // Tells Google the site name and logo (used for the brand in search results)
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }}
-      />
+      {/* Organization + WebSite JSON-LD is emitted site-wide by app/layout.tsx */}
       <HomeClient events={events} categories={categories} colleges={dbColleges} qr={qr} />
     </>
   );

@@ -4,6 +4,8 @@ import { AdminShell } from "@/components/admin/AdminShell";
 
 export const metadata = {
   title: "Admin Dashboard — CollegeEvents",
+  // Private organizer console: never index (access itself is enforced by auth, not by this)
+  robots: { index: false, follow: false },
 };
 
 export default async function AdminLayout({
@@ -37,8 +39,6 @@ export default async function AdminLayout({
 
   return (
     <>
-      {/* Runs before first paint so there's no light-theme flash; AdminShell keeps it in sync on client navigation */}
-      <script dangerouslySetInnerHTML={{ __html: `document.documentElement.setAttribute('data-theme','dark')` }} />
       <AdminShell profile={profile}>{children}</AdminShell>
     </>
   );

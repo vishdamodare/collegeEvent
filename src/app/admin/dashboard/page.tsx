@@ -1,8 +1,6 @@
-import { getAdminDashboardStats } from "@/actions/admin";
-import { AdminDashboardClient } from "./AdminDashboardClient";
+import { redirect } from "next/navigation";
 
-export default async function AdminDashboardPage() {
-  const data = await getAdminDashboardStats();
-
-  return <AdminDashboardClient initialData={data} />;
+// Old duplicate dashboard; Home lives at /admin
+export default function AdminDashboardRedirect() {
+  redirect("/admin");
 }

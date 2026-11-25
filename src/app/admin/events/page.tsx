@@ -170,20 +170,10 @@ export default function AdminEventsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-[28px] font-anton uppercase text-white tracking-wider">Manage Events</h1>
-          <p className="font-archivo text-[13px] text-white/40">Create, publish, and monitor your college event registrations.</p>
-        </div>
-        <Link 
-          href="/admin/events/create" 
-          className="flex items-center justify-center gap-2 py-3 px-5 rounded-xl bg-[var(--color-lime)] hover:bg-[var(--color-lime)]/90 text-white font-bold text-[14px] font-archivo shadow-[0_4px_15px_rgba(215,255,61,0.15)] transition-all cursor-pointer whitespace-nowrap"
-        >
-          <PlusCircle className="w-4 h-4" />
-          Create Event
-        </Link>
-      </div>
+      <header>
+        <h1 className="font-anton text-[28px] font-bold tracking-tight leading-tight">Your events</h1>
+        <p className="text-[14px] text-[var(--ink-3)] mt-1">Publish, edit and keep an eye on sign-ups.</p>
+      </header>
 
       {/* Tabs & Filters */}
       <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center border-b border-white/5 pb-4">
@@ -243,7 +233,7 @@ export default function AdminEventsPage() {
           <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-2xl mx-auto mb-5 opacity-60">
             <Inbox className="w-6 h-6 text-white/40" />
           </div>
-          <h3 className="text-white font-bold text-[17px] mb-1.5 uppercase tracking-wide">No Events Created</h3>
+          <h3 className="text-white font-semibold text-[17px] mb-1.5">No events here yet</h3>
           <p className="text-white/40 text-[13.5px] leading-relaxed mb-6">
             Create your first event to start accepting registrations and managing participants.
           </p>
@@ -251,7 +241,7 @@ export default function AdminEventsPage() {
             href="/admin/events/create"
             className="inline-flex items-center gap-2 py-3 px-6 rounded-xl bg-[var(--color-lime)] hover:bg-[var(--color-lime)]/90 text-white font-bold text-[14px]"
           >
-            <PlusCircle className="w-4 h-4" /> Create First Event
+            <PlusCircle className="w-4 h-4" /> Create your first event
           </Link>
         </div>
       ) : (
@@ -262,7 +252,7 @@ export default function AdminEventsPage() {
               className="group rounded-2xl border border-white/5 bg-[#121212]/40 overflow-hidden flex flex-col justify-between hover:border-white/15 transition-all duration-300"
             >
               {/* Event Header Image */}
-              <div className="h-44 relative bg-white/5 overflow-hidden">
+              <div className="h-36 relative bg-white/5 overflow-hidden">
                 {evt.media?.banner ? (
                   <img 
                     src={evt.media.banner} 
@@ -271,8 +261,8 @@ export default function AdminEventsPage() {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-white/20 text-[32px]">
-                    🖼️
+                  <div className="w-full h-full flex items-center justify-center text-white/20">
+                    <FileText className="w-7 h-7" />
                   </div>
                 )}
                 {/* Status Float */}
@@ -330,33 +320,24 @@ export default function AdminEventsPage() {
               </div>
 
               {/* Event Body Info */}
-              <div className="p-5 flex-1 flex flex-col justify-between font-archivo">
+              <div className="p-5 flex-1 flex flex-col gap-4 font-archivo">
                 <div>
-                  <div className="flex justify-between items-center text-[11px] text-white/30 font-semibold mb-2">
-                    <span className="uppercase tracking-wider">{evt.basic.category}</span>
-                    <span>{new Date(evt.schedule.start).toLocaleDateString()}</span>
-                  </div>
-                  <h3 className="text-[16px] font-bold text-white leading-tight mb-2 group-hover:text-[var(--color-lime)] transition-colors">
-                    {evt.basic.title}
-                  </h3>
-                  <p className="text-[12px] text-white/50 line-clamp-2 leading-relaxed">
-                    {evt.basic.shortDescription}
+                  <p className="text-[13px] text-[var(--ink-3)]">
+                    {new Date(evt.schedule.start).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", timeZone: "Asia/Kolkata" })}
+                    {" · "}
+                    {evt.basic.category}
                   </p>
+                  <h3 className="text-[16px] font-semibold text-white leading-snug mt-1 line-clamp-2">{evt.basic.title}</h3>
                 </div>
-
-                <div className="mt-5 pt-4 border-t border-white/5 flex justify-between items-center text-[12px]">
-                  <div>
-                    <p className="text-[10px] text-white/30 leading-none">REGISTRATION FEE</p>
-                    <p className="text-[13px] font-bold text-white mt-1">
-                      {evt.pricing.isFree ? "Free" : `₹${evt.pricing.fee}`}
-                    </p>
+                <div className="mt-auto">
+                  <div className="flex items-baseline justify-between text-[13px]">
+                    <span className="flex items-center gap-1.5 text-[var(--ink-2)]">
+                      <Users className="w-3.5 h-3.5 text-[var(--ink-3)]" />
+                      <span className="font-semibold text-white tabular-nums">{evt.stats.currentRegistrations}</span> / {evt.capacity} registered
+                    </span>
                   </div>
-                  <div className="text-right">
-                    <p className="text-[10px] text-white/30 leading-none">TOTAL SIGNUPS</p>
-                    <p className="text-[13px] font-bold text-white mt-1 flex items-center gap-1 justify-end">
-                      <Users className="w-3.5 h-3.5 text-white/40" />
-                      {evt.stats.currentRegistrations}
-                    </p>
+                  <div className="mt-2 h-1.5 rounded-full bg-[var(--desk-inset)] overflow-hidden">
+                    <div className="h-full rounded-full bg-[var(--color-lime)]" style={{ width: `${Math.min(100, (evt.stats.currentRegistrations / Math.max(1, evt.capacity)) * 100)}%` }} />
                   </div>
                 </div>
               </div>
@@ -367,13 +348,13 @@ export default function AdminEventsPage() {
                   href={`/events/${evt.basic.slug}`}
                   className="flex-1 py-2 px-3 rounded-lg border border-white/10 hover:border-white/20 text-center font-bold text-[12px] text-white flex items-center justify-center gap-1.5 transition-colors"
                 >
-                  <Eye className="w-3.5 h-3.5 text-white/40" /> Live Page
+                  <Eye className="w-3.5 h-3.5 text-white/40" /> View page
                 </Link>
                 <Link 
                   href={`/admin/events/edit/${evt.id}`}
                   className="flex-grow py-2 px-3 rounded-lg bg-white/5 hover:bg-white/10 text-center font-bold text-[12px] text-white flex items-center justify-center gap-1.5 transition-colors"
                 >
-                  <Edit3 className="w-3.5 h-3.5 text-white/40" /> Configure
+                  <Edit3 className="w-3.5 h-3.5 text-white/40" /> Edit
                 </Link>
               </div>
             </div>

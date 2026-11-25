@@ -1,10 +1,10 @@
-import { EventWizard } from "@/components/admin/EventWizard";
+import { QuickEventForm, type EventFormInitial } from "@/components/admin/QuickEventForm";
 import { prisma } from "@/lib/prisma";
 import { getAdminCategories } from "@/actions/admin";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
-import type { AdminEvent } from "@/types/admin";
+import type { FormField } from "@/types/admin/registration";
 
 interface PageProps {
   params: Promise<{
@@ -18,7 +18,7 @@ export default async function EditEventPage({ params }: PageProps) {
   const [event, categories] = await Promise.all([
     prisma.event.findUnique({
       where: { id },
-      include: { category: true, images: true },
+      include: { images: { where: { isHero: true }, take: 1 } },
       omit: { details: false },
     }),
     getAdminCategories().catch(() => redirect("/login")),
@@ -29,46 +29,32 @@ export default async function EditEventPage({ params }: PageProps) {
     notFound();
   }
 
-  const hero = event.images.find((i) => i.isHero)?.url || "";
-  const gallery = event.images.filter((i) => !i.isHero).map((i) => i.url);
-  const saved = (event.details as Partial<AdminEvent> | null) ?? null;
+  // Legacy rows may store questions as a JSON string
+  let questions: unknown = event.additionalQuestions;
+  if (typeof questions === "string") {
+    try {
+      questions = JSON.parse(questions);
+    } catch {
+      questions = [];
+    }
+  }
 
-  // Events saved by the wizard carry their full payload in `details`;
-  // older events only have the core columns, so rebuild the minimum the wizard reads.
-  const initialData = {
-    ...(saved ?? {
-      basic: { tags: [], seoKeywords: [] },
-      schedule: {},
-      venue: {},
-      registration: {},
-      pricing: { isFree: true },
-      media: {},
-      rules: {},
-      contact: {},
-      certificates: {},
-      createdAt: event.createdAt.toISOString(),
-    }),
+  const initial: EventFormInitial = {
     id: event.id,
     status: event.status,
-    updatedAt: event.updatedAt.toISOString(),
-    basic: {
-      ...(saved?.basic ?? { tags: [], seoKeywords: [] }),
-      title: event.title,
-      slug: event.slug,
-      category: event.categoryId,
-      description: event.description,
-    },
-    schedule: { ...(saved?.schedule ?? {}), start: event.date.toISOString() },
-    venue: { ...(saved?.venue ?? {}), venueLocation: event.location },
-    registration: {
-      ...(saved?.registration ?? {}),
-      maxRegistrations: event.capacity,
-      isTeam: event.eventType === "TEAM",
-      minTeamSize: event.teamMinSize,
-      maxTeamSize: event.teamMaxSize,
-    },
-    media: { ...(saved?.media ?? {}), banner: hero, gallery },
-  } as unknown as AdminEvent;
+    title: event.title,
+    categoryId: event.categoryId,
+    description: event.description,
+    date: event.date.toISOString(),
+    location: event.location,
+    capacity: event.capacity,
+    eventType: event.eventType === "TEAM" ? "TEAM" : "INDIVIDUAL",
+    teamMinSize: event.teamMinSize,
+    teamMaxSize: event.teamMaxSize,
+    banner: event.images[0]?.url ?? "",
+    additionalQuestions: Array.isArray(questions) ? (questions as FormField[]) : [],
+    details: (event.details as EventFormInitial["details"]) ?? null,
+  };
 
-  return <EventWizard initialData={initialData} categories={categories.filter((c) => !c.isArchived || c.id === event.categoryId)} />;
+  return <QuickEventForm initial={initial} categories={categories.filter((c) => !c.isArchived || c.id === event.categoryId)} />;
 }

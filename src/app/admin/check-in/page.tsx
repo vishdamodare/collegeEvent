@@ -52,12 +52,8 @@ export default async function CheckInPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold font-[family-name:var(--font-archivo)] text-text-main">
-          QR Event Check-In
-        </h1>
-        <p className="text-sm text-text-faint mt-1">
-          Scan QR codes, verify attendee signatures, and manage manual check-ins live.
-        </p>
+        <h1 className="font-anton text-[28px] font-bold tracking-tight leading-tight text-text-main">Check people in</h1>
+        <p className="text-[14px] text-text-faint mt-1">Point the camera at a student&apos;s ticket QR, or type their ticket code.</p>
       </div>
 
       <CheckInClient demoTickets={demoTickets} />

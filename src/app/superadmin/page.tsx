@@ -149,7 +149,8 @@ export default async function SuperAdminOverview() {
                     {inq.subject} <StatusBadge value={inq.status} />
                   </p>
                   <p className="text-[13px] text-white/50 truncate">
-                    {inq.name} · {inq.email}
+                    {inq.name} · {inq.email} ·{" "}
+                    {inq.createdAt.toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" })}
                   </p>
                   <p className="text-[13px] text-white/75 line-clamp-2">{inq.message}</p>
                 </div>

@@ -93,8 +93,8 @@ export default function SettingsPage() {
     <div className="space-y-8 font-archivo">
       {/* Header */}
       <div>
-        <h1 className="text-[28px] font-anton uppercase tracking-wider text-white">System Settings</h1>
-        <p className="text-[13px] text-white/40">Manage security credentials, configure email notifications, and invite team members.</p>
+        <h1 className="text-[28px] font-anton uppercase tracking-wider text-white">Settings</h1>
+        <p className="text-[13px] text-white/40">Notifications, password and your team.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

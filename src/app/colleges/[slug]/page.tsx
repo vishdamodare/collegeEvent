@@ -7,6 +7,9 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { campusBySlug, campusFor } from "@/lib/campuses";
+import type { Metadata } from "next";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { absoluteUrl, breadcrumbLd } from "@/lib/seo";
 
 const Instagram = ({ className }: { className?: string }) => (
   <svg
@@ -51,6 +54,21 @@ interface CollegePageProps {
 }
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: CollegePageProps): Promise<Metadata> {
+  const campus = campusBySlug((await params).slug);
+  if (!campus) return { title: "College not found — CollegeEvents", robots: { index: false, follow: true } };
+  const title = `${campus.name} Events, Fests & Competitions | CollegeEvents`;
+  const description = `Upcoming fests, hackathons and competitions at ${campus.name}, ${campus.area}. See event dates and venues, and register free on CollegeEvents.`;
+  const path = `/colleges/${campus.slug}`;
+  return {
+    title,
+    description,
+    alternates: { canonical: path },
+    openGraph: { title, description, url: path, type: "website", ...(campus.img ? { images: [{ url: campus.img, alt: campus.name }] } : {}) },
+    twitter: { card: "summary_large_image", title, description },
+  };
+}
 
 export default async function CollegeDetailPage({ params }: CollegePageProps) {
   const { slug } = await params;
@@ -97,8 +115,31 @@ export default async function CollegeDetailPage({ params }: CollegePageProps) {
 
   const { city, state } = campus;
 
+  const ld = [
+    {
+      "@context": "https://schema.org",
+      "@type": "CollegeOrUniversity",
+      name: campus.name,
+      url: absoluteUrl(`/colleges/${campus.slug}`),
+      address: { "@type": "PostalAddress", addressLocality: campus.city, addressRegion: campus.state, addressCountry: "IN" },
+      ...(campus.img ? { image: absoluteUrl(campus.img) } : {}),
+      // Only the events actually listed on this page
+      event: upcomingEvents.slice(0, 20).map((e) => ({
+        "@type": "Event",
+        name: e.title,
+        startDate: e.date.toISOString(),
+        url: absoluteUrl(`/events/${e.slug}`),
+        location: { "@type": "Place", name: e.location, address: { "@type": "PostalAddress", streetAddress: e.location, addressLocality: campus.city, addressRegion: campus.state, addressCountry: "IN" } },
+        eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+        eventStatus: "https://schema.org/EventScheduled",
+      })),
+    },
+    breadcrumbLd([["Home", "/"], ["Colleges", "/colleges"], [campus.name, `/colleges/${campus.slug}`]]),
+  ];
+
   return (
     <div className="min-h-screen bg-background text-text-main font-archivo pb-16">
+      <JsonLd data={ld} />
       
       {/* Back button */}
       <div className="max-w-7xl mx-auto px-4 md:px-8 pt-6">

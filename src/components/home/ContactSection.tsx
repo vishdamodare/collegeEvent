@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { submitInquiry } from "@/actions/inquiries";
 
 export function ContactSection() {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{ name: string; email: string; subject: string; message: string; website?: string }>({
     name: "",
     email: "",
     subject: "",
@@ -176,6 +176,16 @@ export function ContactSection() {
             className="p-8 sm:p-10 rounded-2xl bg-[var(--color-card)] border border-[var(--color-border)] backdrop-blur-[10px] w-full"
           >
             <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+              {/* Honeypot: off-screen and skipped by keyboard/screen readers; bots that fill it are dropped server-side */}
+              <input
+                type="text"
+                name="website"
+                tabIndex={-1}
+                autoComplete="off"
+                aria-hidden="true"
+                className="absolute -left-[9999px] w-px h-px opacity-0"
+                onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+              />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="flex flex-col gap-2">
                   <label htmlFor="name" className="text-[14px] font-semibold text-[var(--color-text-main)]">

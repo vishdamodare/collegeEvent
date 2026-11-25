@@ -81,8 +81,8 @@ export default function ParticipantsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-[28px] font-anton uppercase tracking-wider text-white">Registrants & Attendees</h1>
-          <p className="font-archivo text-[13px] text-white/40 font-archivo">Review participant information, track checks, and issue certificates.</p>
+          <h1 className="text-[28px] font-anton uppercase tracking-wider text-white">Participants</h1>
+          <p className="font-archivo text-[13px] text-white/40 font-archivo">Everyone who registered for your events. Check people in or email them from here.</p>
         </div>
         <button 
           onClick={handleExportCSV}

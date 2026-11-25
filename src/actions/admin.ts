@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getAdminUser } from "@/lib/admin-auth";
+import { notifySearchEngines } from "@/lib/indexnow";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { EventStatus, UserRole, RegistrationStatus, Prisma } from "@prisma/client";
@@ -30,51 +31,70 @@ async function getAuthenticatedAdmin() {
 
 export async function getAdminDashboardStats() {
   const user = await getAuthenticatedAdmin();
-
   const now = new Date();
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
+  const mine = { event: { organizerId: user.id } };
+  const active = { status: { not: RegistrationStatus.CANCELLED } };
 
-  const [
-    totalEvents,
-    totalRegistrations,
-    pendingCheckIns,
-    recentRegistrationsRaw,
-  ] = await Promise.all([
-    // Total events for this organizer
+  const [totalEvents, upcomingEvents, draftEvents, totalRegistrations, checkedInTotal, nextEventRaw, recentRegistrationsRaw] = await Promise.all([
     prisma.event.count({ where: { organizerId: user.id } }),
-    // Total signups/registrations
-    prisma.registration.count({ where: { event: { organizerId: user.id } } }),
-    // Pending check-ins (registered, not checked in)
-    prisma.registration.count({ where: { event: { organizerId: user.id }, checkedIn: false } }),
-    // Recent 5 registrations
+    prisma.event.count({ where: { organizerId: user.id, status: EventStatus.PUBLISHED, date: { gte: now } } }),
+    prisma.event.count({ where: { organizerId: user.id, status: EventStatus.DRAFT } }),
+    prisma.registration.count({ where: { ...mine, ...active } }),
+    prisma.registration.count({ where: { ...mine, checkedIn: true } }),
+    // The event the organizer should be thinking about right now
+    prisma.event.findFirst({
+      where: { organizerId: user.id, status: EventStatus.PUBLISHED, date: { gte: now } },
+      orderBy: { date: "asc" },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        date: true,
+        location: true,
+        capacity: true,
+        _count: { select: { registrations: { where: active } } },
+      },
+    }),
     prisma.registration.findMany({
-      where: { event: { organizerId: user.id } },
-      include: {
-        student: { include: { user: true } },
-        event: true,
+      where: mine,
+      select: {
+        id: true,
+        registeredAt: true,
+        status: true,
+        checkedIn: true,
+        student: { select: { college: true, user: { select: { name: true } } } },
+        event: { select: { title: true } },
       },
       orderBy: { registeredAt: "desc" },
-      take: 5,
+      take: 6,
     }),
   ]);
 
+  const nextEventCheckedIn = nextEventRaw
+    ? await prisma.registration.count({ where: { eventId: nextEventRaw.id, checkedIn: true } })
+    : 0;
+
   return {
-    quickStats: {
-      totalEvents,
-      totalRegistrations,
-      revenue: 0, // Always 0 for free events
-      certificates: 0,
-      pendingCheckIns,
+    quickStats: { totalEvents, upcomingEvents, draftEvents, totalRegistrations, checkedInTotal, pendingCheckIns: Math.max(0, totalRegistrations - checkedInTotal) },
+    nextEvent: nextEventRaw && {
+      id: nextEventRaw.id,
+      title: nextEventRaw.title,
+      slug: nextEventRaw.slug,
+      date: nextEventRaw.date.toISOString(),
+      location: nextEventRaw.location,
+      capacity: nextEventRaw.capacity,
+      registered: nextEventRaw._count.registrations,
+      checkedIn: nextEventCheckedIn,
     },
     recentRegistrations: recentRegistrationsRaw.map((reg) => ({
       id: reg.id,
       participantName: reg.student.user.name || "Student",
       college: reg.student.college,
       eventName: reg.event.title,
+      registeredAt: reg.registeredAt.toISOString(),
+      checkedIn: reg.checkedIn,
+      cancelled: reg.status === RegistrationStatus.CANCELLED,
     })),
-    recentPayments: [] as { id: string; participantName: string; eventName: string; amount: number; status: string }[], // No payments for free events
-    pendingTasks: [] as { id: string; title: string; type: string }[], // Start completely clean
   };
 }
 
@@ -203,6 +223,7 @@ export async function createEvent(data: EventFormData) {
 
     revalidatePath("/admin/events");
     revalidatePath("/");
+    if (event.status === EventStatus.PUBLISHED) notifySearchEngines([`/events/${event.slug}`, "/events"]);
     return { success: true, event };
   } catch (err) {
     console.error("Failed to create event:", err);
@@ -289,6 +310,11 @@ export async function updateEvent(id: string, data: EventFormData) {
     revalidatePath(`/events/${slug}`);
     revalidatePath("/admin/events");
     revalidatePath("/");
+    // Public before or after the edit: engines should recrawl (and drop the old URL if the slug changed)
+    const isPublic = (s: EventStatus) => s === EventStatus.PUBLISHED || s === EventStatus.COMPLETED;
+    if (isPublic(parsed.data.status) || isPublic(existingEvent.status)) {
+      notifySearchEngines([`/events/${slug}`, `/events/${existingEvent.slug}`, "/events"]);
+    }
     return { success: true };
   } catch (err) {
     console.error("Failed to update event:", err);
@@ -355,9 +381,10 @@ export async function deleteEvent(id: string) {
   }
 
   try {
-    await prisma.event.delete({ where: { id } });
+    const removed = await prisma.event.delete({ where: { id } });
     revalidatePath("/admin/events");
     revalidatePath("/");
+    notifySearchEngines([`/events/${removed.slug}`, "/events"]); // now a 404: lets engines drop it quickly
     return { success: true };
   } catch (err) {
     console.error("Failed to delete event:", err);
@@ -384,6 +411,7 @@ export async function archiveEvent(id: string) {
     revalidatePath("/admin/events");
     revalidatePath(`/events/${event.slug}`);
     revalidatePath("/");
+    notifySearchEngines([`/events/${event.slug}`, "/events"]);
     return { success: true };
   } catch (err) {
     console.error("Failed to archive event:", err);

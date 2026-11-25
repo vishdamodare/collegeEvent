@@ -57,32 +57,33 @@ export default async function AdminEventDetailPage({ params }: PageProps) {
   return (
     <div className="space-y-8">
       {/* Top navbar bar */}
-      <div className="flex items-center justify-between">
+      {/* Stacks on phones: back link on its own line, then three equal actions that always fit */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <Link
           href="/admin/events"
           className="text-xs text-text-faint hover:text-lime transition-colors flex items-center gap-1 font-semibold"
         >
-          <ArrowLeft className="w-3.5 h-3.5" /> Back to Console
+          <ArrowLeft className="w-3.5 h-3.5" /> All events
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-3 sm:flex sm:items-center gap-2">
           <Link
             href={`/admin/registrations?eventId=${event.id}`}
-            className="btn btn-glass px-3.5 py-2 text-xs flex items-center gap-1.5"
+            className="btn btn-glass px-3 py-2.5 text-xs flex items-center justify-center gap-1.5 whitespace-nowrap"
           >
-            <Users className="w-3.5 h-3.5 text-lime" /> View Registrations
+            <Users className="hidden sm:block w-3.5 h-3.5 text-lime shrink-0" /> Registrations
           </Link>
           <Link
             href={`/events/${event.slug}`}
             target="_blank"
-            className="btn btn-glass px-3.5 py-2 text-xs flex items-center gap-1.5"
+            className="btn btn-glass px-3 py-2.5 text-xs flex items-center justify-center gap-1.5 whitespace-nowrap"
           >
-            Public Page
+            View page
           </Link>
           <Link
             href={`/admin/events/${event.id}/edit`}
-            className="btn btn-primary px-3.5 py-2 text-xs flex items-center gap-1.5"
+            className="btn btn-primary px-3 py-2.5 text-xs flex items-center justify-center gap-1.5 whitespace-nowrap"
           >
-            <Edit className="w-3.5 h-3.5" /> Edit Details
+            <Edit className="hidden min-[380px]:block w-3.5 h-3.5 shrink-0" /> Edit
           </Link>
         </div>
       </div>
