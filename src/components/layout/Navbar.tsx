@@ -124,7 +124,7 @@ export function Navbar({ isAuthenticated: propIsAuthenticated, onLogout: propOnL
                       Dashboard
                     </Link>
                   )}
-                  <div className="flex items-center gap-3 px-3 py-1.5 rounded-full bg-[var(--color-card)] border border-[var(--color-border)]">
+                  <Link href={isOrganizer ? (role === "SUPER_ADMIN" ? "/superadmin" : "/admin") : "/dashboard"} aria-label="Open your dashboard" className="flex items-center gap-3 px-3 py-1.5 rounded-full bg-[var(--color-card)] border border-[var(--color-border)] hover:border-[var(--color-lime)]/50 transition-colors">
                     {avatar ? (
                       <img src={avatar} alt={name} className="w-7 h-7 rounded-full object-cover" />
                     ) : (
@@ -133,7 +133,7 @@ export function Navbar({ isAuthenticated: propIsAuthenticated, onLogout: propOnL
                       </div>
                     )}
                     <span className="text-[13px] font-medium mr-2">{name}</span>
-                  </div>
+                  </Link>
                   <button 
                     onClick={handleLogout}
                     className="text-[13.5px] font-medium text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors duration-300 cursor-pointer"
@@ -252,7 +252,7 @@ export function Navbar({ isAuthenticated: propIsAuthenticated, onLogout: propOnL
                 Dashboard
               </Link>
             )}
-            <div className="flex items-center gap-3 px-3 py-2 rounded-full bg-[var(--color-card)] border border-[var(--color-border)] w-fit">
+            <Link href={isOrganizer ? (role === "SUPER_ADMIN" ? "/superadmin" : "/admin") : "/dashboard"} onClick={closeMenu} aria-label="Open your dashboard" className="flex items-center gap-3 px-3 py-2 rounded-full bg-[var(--color-card)] border border-[var(--color-border)] w-fit">
               {avatar ? (
                 <img src={avatar} alt={name} className="w-7 h-7 rounded-full object-cover" />
               ) : (
@@ -261,7 +261,7 @@ export function Navbar({ isAuthenticated: propIsAuthenticated, onLogout: propOnL
                 </div>
               )}
               <span className="text-[14px] font-medium text-[var(--color-text-main)]">{name}</span>
-            </div>
+            </Link>
             <button 
               onClick={() => { closeMenu(); handleLogout(); }}
               className="w-full flex items-center justify-center gap-2 px-[28px] py-[15px] rounded-full font-semibold text-[15px] bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-text-main)] transition-all duration-350 cursor-pointer"
