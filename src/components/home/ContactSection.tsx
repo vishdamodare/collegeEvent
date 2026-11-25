@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useState } from "react";
+import { toast } from "sonner";
 import { submitInquiry } from "@/actions/inquiries";
 
 export function ContactSection() {
@@ -24,14 +25,18 @@ export function ContactSection() {
       if (res.error) {
         setStatus("error");
         setErrorMsg(res.error);
+        toast.error(res.error);
         return;
       }
       setStatus("success");
       setFormData({ name: "", email: "", subject: "", message: "" });
+      toast.success("Message sent! We'll get back to you soon.");
       setTimeout(() => setStatus("idle"), 4000);
     } catch {
+      const msg = "Could not send your inquiry right now. Please try again.";
       setStatus("error");
-      setErrorMsg("Could not send your inquiry right now. Please try again.");
+      setErrorMsg(msg);
+      toast.error(msg);
     }
   };
 
@@ -186,7 +191,7 @@ export function ContactSection() {
                     value={formData.name}
                     onChange={handleChange}
                     placeholder="Your name"
-                    className="w-full rounded-xl px-5 py-4 bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-text-main)] placeholder-white/20 focus:border-[var(--color-lime)] focus:outline-none transition-colors"
+                    className="w-full rounded-xl px-5 py-4 bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-text-main)] placeholder:text-[var(--color-text-faint)] focus:border-[var(--color-lime)] focus:outline-none transition-colors"
                   />
                 </div>
                 <div className="flex flex-col gap-2">
@@ -203,7 +208,7 @@ export function ContactSection() {
                     value={formData.email}
                     onChange={handleChange}
                     placeholder="name@gmail.com"
-                    className="w-full rounded-xl px-5 py-4 bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-text-main)] placeholder-white/20 focus:border-[var(--color-lime)] focus:outline-none transition-colors"
+                    className="w-full rounded-xl px-5 py-4 bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-text-main)] placeholder:text-[var(--color-text-faint)] focus:border-[var(--color-lime)] focus:outline-none transition-colors"
                   />
                 </div>
               </div>
@@ -221,7 +226,7 @@ export function ContactSection() {
                   value={formData.subject}
                   onChange={handleChange}
                   placeholder="Inquiry about Event Listing / Partnership"
-                  className="w-full rounded-xl px-5 py-4 bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-text-main)] placeholder-white/20 focus:border-[var(--color-lime)] focus:outline-none transition-colors"
+                  className="w-full rounded-xl px-5 py-4 bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-text-main)] placeholder:text-[var(--color-text-faint)] focus:border-[var(--color-lime)] focus:outline-none transition-colors"
                 />
               </div>
 
@@ -238,7 +243,7 @@ export function ContactSection() {
                   value={formData.message}
                   onChange={handleChange}
                   placeholder="Tell us how we can help you..."
-                  className="w-full rounded-xl px-5 py-4 bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-text-main)] placeholder-white/20 focus:border-[var(--color-lime)] focus:outline-none transition-colors resize-none"
+                  className="w-full rounded-xl px-5 py-4 bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-text-main)] placeholder:text-[var(--color-text-faint)] focus:border-[var(--color-lime)] focus:outline-none transition-colors resize-none"
                 />
               </div>
 

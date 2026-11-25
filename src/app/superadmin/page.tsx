@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireSuperAdmin } from "@/lib/superadmin";
-import { OrganizerActions, StatusBadge } from "@/components/superadmin/Controls";
+import { InquiryActions, OrganizerActions, StatusBadge } from "@/components/superadmin/Controls";
 import { AreaChart, BarList, Donut } from "@/components/superadmin/Charts";
 
 export const dynamic = "force-dynamic";
@@ -43,7 +43,7 @@ export default async function SuperAdminOverview() {
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const since = new Date(now.getTime() - DAYS * 24 * 60 * 60 * 1000);
 
-  const [roles, orgStatus, eventStatus, regs, checkedIn, newUsers, upcoming, pendingOrganizers, newInquiries, recentRegs, recentUsers, categories, topEvents] = await Promise.all([
+  const [roles, orgStatus, eventStatus, regs, checkedIn, newUsers, upcoming, pendingOrganizers, recentInquiries, recentRegs, recentUsers, categories, topEvents] = await Promise.all([
     prisma.user.groupBy({ by: ["role"], _count: true }),
     prisma.organizerProfile.groupBy({ by: ["verificationStatus"], _count: true }),
     prisma.event.groupBy({ by: ["status"], _count: true }),
@@ -57,7 +57,11 @@ export default async function SuperAdminOverview() {
       take: 5,
       include: { user: { select: { id: true, name: true, email: true } } },
     }),
-    prisma.inquiry.count({ where: { status: "NEW" } }),
+    prisma.inquiry.findMany({
+      where: { status: "NEW" },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+    }),
     prisma.registration.findMany({ where: { createdAt: { gte: since } }, select: { createdAt: true } }),
     prisma.user.findMany({ where: { createdAt: { gte: since } }, select: { createdAt: true } }),
     prisma.category.findMany({ select: { name: true, _count: { select: { events: true } } }, orderBy: { events: { _count: "desc" } }, take: 6 }),
@@ -129,17 +133,32 @@ export default async function SuperAdminOverview() {
         </section>
       )}
 
-      {newInquiries > 0 && (
-        <section aria-label="New inquiries" className="rounded-2xl border border-amber-400/30 bg-amber-400/[0.04] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <p className="font-semibold text-[15px]">
-              {newInquiries} unread contact {newInquiries === 1 ? "inquiry" : "inquiries"}
-            </p>
-            <p className="text-[13px] text-white/50">Submitted from the homepage contact form.</p>
+      {recentInquiries.length > 0 && (
+        <section aria-label="New inquiries" className="rounded-2xl border border-amber-400/30 bg-amber-400/[0.04] p-5 sm:p-6">
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <h2 className="font-anton text-[20px] uppercase tracking-wide">Unread inquiries</h2>
+            <Link href="/superadmin/inquiries" className="text-[13px] text-white/60 hover:text-white underline underline-offset-4">
+              See all
+            </Link>
           </div>
-          <Link href="/superadmin/inquiries?status=NEW" className="px-4 py-2 rounded-lg bg-amber-400 text-black text-[13px] font-bold hover:bg-amber-300 transition w-fit">
-            Review inquiries
-          </Link>
+          <ul className="divide-y divide-white/5">
+            {recentInquiries.map((inq) => (
+              <li key={inq.id} className="py-4 flex flex-col lg:flex-row lg:items-start gap-3 justify-between">
+                <div className="min-w-0 space-y-1">
+                  <p className="font-semibold flex items-center gap-2 flex-wrap">
+                    {inq.subject} <StatusBadge value={inq.status} />
+                  </p>
+                  <p className="text-[13px] text-white/50 truncate">
+                    {inq.name} · {inq.email}
+                  </p>
+                  <p className="text-[13px] text-white/75 line-clamp-2">{inq.message}</p>
+                </div>
+                <div className="shrink-0">
+                  <InquiryActions id={inq.id} status={inq.status} email={inq.email} subject={inq.subject} />
+                </div>
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 
