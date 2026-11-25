@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useTransition, useEffect, useRef, useSyncExternalStore } from "react";
+import { useState, useTransition, useEffect, useRef, useCallback, useSyncExternalStore } from "react";
 import { 
   QrCode, Search, Upload, Camera, CheckCircle, 
-  XCircle, Loader2, Smartphone, ShieldCheck, UserCheck 
+  XCircle, Loader2, UserCheck, AlertTriangle 
 } from "lucide-react";
 import jsQR from "jsqr";
-import { verifyCheckInTicket, confirmCheckInAction } from "@/actions/registrations";
+import { verifyCheckInTicket, confirmCheckInAction, scanCheckIn, type ScanResult } from "@/actions/registrations";
 import { RegistrationStatusBadge } from "@/components/shared/RegistrationStatusBadge";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -109,35 +109,89 @@ function decodeQRFromImage(img: HTMLImageElement): { identifier: string; token: 
   return null;
 }
 
+type ScanState =
+  | { phase: "idle" }
+  | { phase: "verifying" }
+  | { phase: ScanResult["state"]; result: ScanResult };
+
+// How long the colour result stays up before the scanner re-arms itself for the next ticket
+const RESULT_MS = { valid: 1400, used: 2200, invalid: 2200 } as const;
+// The same QR still sitting in front of the camera must not be submitted again
+const SAME_CODE_COOLDOWN_MS = 5000;
+
+const PHASE_STYLE = {
+  verifying: { bg: "bg-amber-400", text: "text-black", title: "Verifying…" },
+  valid: { bg: "bg-emerald-500", text: "text-white", title: "Valid — Entry Approved" },
+  used: { bg: "bg-red-600", text: "text-white", title: "Already Used" },
+  invalid: { bg: "bg-red-600", text: "text-white", title: "Invalid Ticket" },
+} as const;
+
+function PhaseIcon({ phase, className }: { phase: keyof typeof PHASE_STYLE; className?: string }) {
+  if (phase === "verifying") return <Loader2 className={cn(className, "animate-spin")} />;
+  if (phase === "valid") return <CheckCircle className={className} />;
+  if (phase === "used") return <AlertTriangle className={className} />;
+  return <XCircle className={className} />;
+}
+
 export function CheckInClient({ demoTickets }: CheckInClientProps) {
   const mounted = useSyncExternalStore(subscribeNoop, () => true, () => false);
   const [activeTab, setActiveTab] = useState<"camera" | "upload" | "manual">("camera");
   const [ticketSearch, setTicketSearch] = useState("");
   const [tokenSearch, setTokenSearch] = useState("");
-  
-  // Scanned verification details state
+
+  // Manual flow (verify, then approve)
   const [scannedDetails, setScannedDetails] = useState<Extract<Awaited<ReturnType<typeof verifyCheckInTicket>>, { success: boolean }> | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [isDecodingImage, setIsDecodingImage] = useState(false);
-
-  // Transitions
   const [isVerifying, setIsVerifying] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  // Camera canvas references
+  // Instant scan flow (camera + upload): yellow -> green/red -> back to idle on its own
+  const [scan, setScan] = useState<ScanState>({ phase: "idle" });
+  const [lastScan, setLastScan] = useState<Exclude<ScanState, { phase: "idle" | "verifying" }> | null>(null);
+  const busyRef = useRef(false); // one ticket in flight / on screen at a time
+  const lastCodeRef = useRef({ key: "", at: 0 });
+  const resetTimer = useRef<number | undefined>(undefined);
+
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
-  const lastScannedCode = useRef<string>("");
 
+  // Stable (only touches refs, setters and an imported action) so the camera loop never holds a stale copy
+  const runScan = useCallback(async (payload: { identifier: string; token: string }) => {
+    const key = `${payload.identifier}:${payload.token}`;
+    const now = Date.now();
+    if (busyRef.current) return;
+    if (lastCodeRef.current.key === key && now - lastCodeRef.current.at < SAME_CODE_COOLDOWN_MS) return;
+    busyRef.current = true;
+    lastCodeRef.current = { key, at: now };
 
+    setScannedDetails(null);
+    setErrorMsg(null);
+    setScan({ phase: "verifying" });
+    try { navigator.vibrate?.(30); } catch {}
 
-  // Robust QR data extractor supporting JSON, URLs, Colons, and raw ticket codes
+    const device = navigator.userAgent.includes("Mobile") ? "Mobile Scanner" : "Desktop Terminal";
+    const result = await scanCheckIn(payload.identifier, payload.token, device);
+    const next = { phase: result.state, result } as const;
+    setScan(next);
+    setLastScan(next);
+    lastCodeRef.current.at = Date.now();
+    try { navigator.vibrate?.(result.state === "valid" ? 80 : [120, 60, 120]); } catch {}
 
-  // Multi-scale image decoder for high-resolution phone screenshots and dark themes
+    // Auto-prepare for the next ticket
+    window.clearTimeout(resetTimer.current);
+    resetTimer.current = window.setTimeout(() => {
+      setScan({ phase: "idle" });
+      busyRef.current = false;
+    }, RESULT_MS[result.state]);
+  }, []);
 
+  useEffect(() => () => window.clearTimeout(resetTimer.current), []);
+
+  // Manual lookup: shows the attendee first, staff approve explicitly
   const handleVerify = async (ticketNum: string, token?: string) => {
     if (!ticketNum.trim()) {
       toast.error("Please provide a valid ticket number or QR pass.");
@@ -147,6 +201,7 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
     setIsVerifying(true);
     setErrorMsg(null);
     setScannedDetails(null);
+    setLastScan(null);
 
     try {
       const res = await verifyCheckInTicket(ticketNum, token);
@@ -158,7 +213,6 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
         toast.error(msg);
       } else {
         setScannedDetails(res);
-        toast.success("Ticket scanned and signature verified!");
       }
     } catch (err) {
       setIsVerifying(false);
@@ -173,8 +227,8 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
     startTransition(async () => {
       try {
         const res = await confirmCheckInAction(
-          scannedDetails.ticket.id, 
-          activeTab === "camera" ? "QR" : activeTab === "upload" ? "QR" : "MANUAL",
+          scannedDetails.ticket.id,
+          "MANUAL",
           navigator.userAgent.includes("Mobile") ? "Mobile Scanner" : "Desktop Terminal"
         );
 
@@ -188,7 +242,6 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
             setScannedDetails(null);
             setTicketSearch("");
             setTokenSearch("");
-            lastScannedCode.current = "";
           }, 2500);
         }
       } catch (err) {
@@ -214,9 +267,9 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
         const payload = decodeQRFromImage(img);
 
         if (payload) {
-          setTicketSearch(payload.identifier);
-          setTokenSearch(payload.token);
-          handleVerify(payload.identifier, payload.token);
+          // A deliberate upload should always run, even for a code scanned moments ago
+          lastCodeRef.current = { key: "", at: 0 };
+          runScan(payload);
         } else {
           toast.error("No valid QR code could be detected in this image. Please ensure the QR code is clearly visible.");
         }
@@ -254,134 +307,111 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
     handleVerify(ticketNum, token);
   };
 
-  // Camera Scan Loop
+  // Continuous camera scan loop (rear camera, continuous autofocus, runs until the tab changes)
   useEffect(() => {
-    if (!mounted) return;
+    if (!mounted || activeTab !== "camera") return;
 
     let stream: MediaStream | null = null;
-    let animationFrameId: number;
-    let isCancelled = false;
+    let raf = 0;
+    let cancelled = false;
+    let decoding = false;
+    let lastJsQr = 0;
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas) return;
+
+    // Native detector (Chrome/Android, hardware accelerated) when available, else jsQR
+    type Detector = { detect: (src: CanvasImageSource) => Promise<{ rawValue: string }[]> };
+    const NativeDetector = (globalThis as unknown as { BarcodeDetector?: new (o: { formats: string[] }) => Detector }).BarcodeDetector;
+    let detector: Detector | null = null;
+    try { detector = NativeDetector ? new NativeDetector({ formats: ["qr_code"] }) : null; } catch { detector = null; }
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    const SCAN_SIZE = 640; // jsQR works on a downscaled centre square: far fewer pixels than a full frame
+
+    const decodeFrame = async (now: number): Promise<string | null> => {
+      if (detector) {
+        try {
+          const [hit] = await detector.detect(video);
+          if (hit?.rawValue) return hit.rawValue;
+        } catch {
+          detector = null; // unsupported for this source: jsQR only from now on
+        }
+      }
+      // Some devices' native detectors miss codes jsQR reads fine, so jsQR also runs (throttled) on native misses
+      if (!ctx || now - lastJsQr < 80) return null;
+      lastJsQr = now;
+      const side = Math.min(video.videoWidth, video.videoHeight);
+      if (!side) return null;
+      const size = Math.min(SCAN_SIZE, side);
+      canvas.width = size;
+      canvas.height = size;
+      ctx.drawImage(video, (video.videoWidth - side) / 2, (video.videoHeight - side) / 2, side, side, 0, 0, size, size);
+      const { data, width, height } = ctx.getImageData(0, 0, size, size);
+      return jsQR(data, width, height, { inversionAttempts: "dontInvert" })?.data ?? null;
+    };
+
+    const tick = async (now: number) => {
+      if (cancelled) return;
+      raf = requestAnimationFrame(tick);
+      // Don't decode while a ticket is being verified/shown or a previous frame is still decoding
+      if (decoding || busyRef.current || video.readyState < video.HAVE_ENOUGH_DATA) return;
+      decoding = true;
+      try {
+        const raw = await decodeFrame(now);
+        const payload = raw ? extractTicketPayload(raw) : null;
+        if (payload) runScan(payload);
+      } finally {
+        decoding = false;
+      }
+    };
 
     const startCamera = async () => {
       try {
+        const base = { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } };
         let mediaStream: MediaStream;
         try {
-          mediaStream = await navigator.mediaDevices.getUserMedia({
-            // 720p is plenty for a QR and much cheaper to process than the 1080p+ default on phones
-            video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } }
-          });
+          // Rear camera by default; desktops without one fall through to the next attempt
+          mediaStream = await navigator.mediaDevices.getUserMedia({ video: { ...base, facingMode: { ideal: "environment" } } });
         } catch {
-          mediaStream = await navigator.mediaDevices.getUserMedia({
-            video: true
-          });
+          mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
         }
-
-        if (isCancelled) {
-          mediaStream.getTracks().forEach(t => t.stop());
+        if (cancelled) {
+          mediaStream.getTracks().forEach((t) => t.stop());
           return;
         }
-
         stream = mediaStream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = mediaStream;
-          videoRef.current.setAttribute("playsinline", "true");
-          
-          try {
-            const playPromise = videoRef.current.play();
-            if (playPromise !== undefined) {
-              await playPromise.catch((err) => {
-                if (err.name !== "AbortError") {
-                  console.warn("Video play error:", err);
-                }
-              });
-            }
-          } catch (e) {
-            // Ignore interruption errors
-          }
 
-          if (!isCancelled) {
-            setCameraActive(true);
-            scanFrame();
-          }
+        // Continuous autofocus where the browser exposes it (Chrome/Android); silently ignored elsewhere
+        const track = mediaStream.getVideoTracks()[0];
+        const caps = track?.getCapabilities?.() as { focusMode?: string[] } | undefined;
+        if (caps?.focusMode?.includes("continuous")) {
+          await track.applyConstraints({ advanced: [{ focusMode: "continuous" } as MediaTrackConstraintSet] }).catch(() => {});
         }
+
+        video.srcObject = mediaStream;
+        video.setAttribute("playsinline", "true");
+        await video.play().catch((err) => {
+          if (err?.name !== "AbortError") console.warn("Video play error:", err);
+        });
+        if (cancelled) return;
+        setCameraActive(true);
+        raf = requestAnimationFrame(tick);
       } catch (err) {
-        if ((err as Error)?.name !== "AbortError" && !isCancelled) {
-          console.warn("Camera access failed or unavailable:", err);
-        }
+        if ((err as Error)?.name !== "AbortError" && !cancelled) console.warn("Camera access failed or unavailable:", err);
         setCameraActive(false);
       }
     };
 
-    // Native detector (Chrome/Android, hardware accelerated) when available, else jsQR fallback
-    type Detector = { detect: (src: CanvasImageSource) => Promise<{ rawValue: string }[]> };
-    const NativeDetector = (globalThis as unknown as { BarcodeDetector?: new (o: { formats: string[] }) => Detector }).BarcodeDetector;
-    const detector = NativeDetector ? new NativeDetector({ formats: ["qr_code"] }) : null;
-    const SCAN_SIZE = 480; // jsQR works on a downscaled centre square: ~10x fewer pixels than a full frame
-
-    const onCode = (data: string) => {
-      if (!data || data === lastScannedCode.current) return;
-      lastScannedCode.current = data;
-      const parsed = extractTicketPayload(data);
-      if (parsed) {
-        if (navigator.vibrate) {
-          try { navigator.vibrate(200); } catch {}
-        }
-        setTicketSearch(parsed.identifier);
-        setTokenSearch(parsed.token);
-        handleVerify(parsed.identifier, parsed.token);
-      }
-    };
-
-    const decodeFrame = async (video: HTMLVideoElement, canvas: HTMLCanvasElement) => {
-      if (detector) {
-        try {
-          const [hit] = await detector.detect(video);
-          if (hit) return onCode(hit.rawValue);
-        } catch {
-          // detector unsupported for this source: fall through to jsQR
-        }
-        // No native hit: still try jsQR below, some devices' native detectors miss codes jsQR reads fine
-      }
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      if (!ctx) return;
-      const side = Math.min(video.videoWidth, video.videoHeight);
-      const sx = (video.videoWidth - side) / 2;
-      const sy = (video.videoHeight - side) / 2;
-      const size = Math.min(SCAN_SIZE, side);
-      canvas.width = size;
-      canvas.height = size;
-      ctx.drawImage(video, sx, sy, side, side, 0, 0, size, size);
-      const { data, width, height } = ctx.getImageData(0, 0, size, size);
-      // Tickets are black-on-white; skipping the inverted pass halves the work per frame
-      const code = jsQR(data, width, height, { inversionAttempts: "dontInvert" });
-      if (code?.data) onCode(code.data);
-    };
-
-    const scanFrame = async () => {
-      if (isCancelled) return;
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      if (video && canvas && activeTab === "camera" && video.readyState === video.HAVE_ENOUGH_DATA) {
-        await decodeFrame(video, canvas);
-      }
-      // ~10 scans/sec keeps the UI smooth on low-end phones; a QR is in view for far longer than 100ms
-      if (!isCancelled) animationFrameId = window.setTimeout(scanFrame, 100);
-    };
-
-    if (activeTab === "camera") {
-      startCamera();
-    }
+    startCamera();
 
     return () => {
-      isCancelled = true;
-      // Camera stops whenever the tab changes or the page unmounts
+      cancelled = true;
+      cancelAnimationFrame(raf);
       setCameraActive(false);
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
-      clearTimeout(animationFrameId);
+      stream?.getTracks().forEach((track) => track.stop());
+      video.srcObject = null;
     };
-  }, [activeTab, mounted]);
+  }, [activeTab, mounted, runScan]);
 
   if (!mounted) return null;
 
@@ -434,10 +464,32 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
 
               {/* Viewfinder Target Graphic */}
               <div className="absolute inset-0 pointer-events-none flex items-center justify-center p-8">
-                <div className="w-48 h-48 border-2 border-dashed border-lime/60 rounded-2xl relative animate-pulse flex items-center justify-center">
+                <div className="w-[68%] aspect-square border-2 border-white/80 rounded-3xl relative flex items-center justify-center">
                   <div className="w-full h-0.5 bg-lime shadow-[0_0_12px_var(--color-lime)] animate-bounce" />
                 </div>
               </div>
+
+              {/* Instant result: yellow = verifying, green = valid, red = invalid / already used */}
+              {scan.phase !== "idle" && (
+                <div
+                  role="status"
+                  aria-live="assertive"
+                  className={cn(
+                    "absolute inset-0 flex flex-col items-center justify-center gap-2 p-6 text-center animate-in fade-in duration-100",
+                    PHASE_STYLE[scan.phase].bg,
+                    PHASE_STYLE[scan.phase].text
+                  )}
+                >
+                  <PhaseIcon phase={scan.phase} className="w-20 h-20 stroke-[2.5]" />
+                  <p className="text-2xl font-anton uppercase tracking-wide">{PHASE_STYLE[scan.phase].title}</p>
+                  {scan.phase !== "verifying" && (
+                    <>
+                      {scan.result.studentName && <p className="text-lg font-bold">{scan.result.studentName}</p>}
+                      <p className="text-sm font-medium opacity-90">{scan.result.message}</p>
+                    </>
+                  )}
+                </div>
+              )}
 
               {!cameraActive && (
                 <div className="absolute inset-0 bg-bg-elevated/90 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center">
@@ -636,6 +688,29 @@ export function CheckInClient({ demoTickets }: CheckInClientProps) {
             <h3 className="text-lg font-bold text-white">Verification Failed</h3>
             <p className="text-sm text-red-300/80 max-w-sm mx-auto">{errorMsg}</p>
           </div>
+        ) : (scan.phase !== "idle" ? scan : lastScan) ? (
+          (() => {
+            const s = (scan.phase !== "idle" ? scan : lastScan)!;
+            const st = PHASE_STYLE[s.phase];
+            const r = s.phase === "verifying" ? null : s.result;
+            return (
+              <div className={cn("p-8 rounded-3xl text-center space-y-3 shadow-2xl", st.bg, st.text)} role="status" aria-live="polite">
+                <PhaseIcon phase={s.phase} className="w-14 h-14 mx-auto stroke-[2.5]" />
+                <h3 className="text-2xl font-anton uppercase tracking-wide">{st.title}</h3>
+                {r && (
+                  <>
+                    <p className="text-sm font-medium opacity-90">{r.message}</p>
+                    <div className="mt-2 rounded-2xl bg-black/15 p-4 text-left text-sm space-y-1">
+                      {r.studentName && <p className="font-bold text-base">{r.studentName}</p>}
+                      {r.college && <p className="opacity-90">{r.college}</p>}
+                      {r.eventTitle && <p className="opacity-90">{r.eventTitle}{r.teamName ? ` · Team ${r.teamName}` : ""}</p>}
+                      {r.ticketNumber && <p className="font-mono font-bold">{r.ticketNumber}</p>}
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })()
         ) : (
           <div className="p-12 rounded-3xl bg-card border border-border border-dashed text-center flex flex-col items-center justify-center min-h-[350px]">
             <div className="w-16 h-16 rounded-2xl bg-bg-elevated border border-border flex items-center justify-center mb-4 text-text-faint">

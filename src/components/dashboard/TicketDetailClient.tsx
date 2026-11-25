@@ -217,10 +217,10 @@ export function TicketDetailClient({ ticket, moreEvents = [] }: TicketDetailClie
                 <img
                   src={ticket.qrCode}
                   alt="Entry QR Code"
-                  className="w-52 h-52 bg-white p-2 rounded-xl"
+                  className="w-64 h-64 sm:w-72 sm:h-72 bg-white p-2 rounded-xl"
                 />
               ) : (
-                <div className="w-52 h-52 bg-card-hover flex items-center justify-center rounded-xl">
+                <div className="w-64 h-64 sm:w-72 sm:h-72 bg-card-hover flex items-center justify-center rounded-xl">
                   <span className="text-[10px] text-text-faint">No QR Available</span>
                 </div>
               )}

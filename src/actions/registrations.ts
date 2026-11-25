@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { RegistrationStatus } from "@prisma/client";
+import { RegistrationStatus, type Prisma } from "@prisma/client";
 import {
   generateTicketNumber,
   generateVerificationToken,
@@ -705,7 +705,8 @@ export async function getTicket(ticketId: string) {
       return null;
     }
 
-    return ticket;
+    // Re-render from the signed payload: tickets issued with the old low-res QR get the high-res one, no DB write
+    return { ...ticket, qrCode: await generateQRCodeDataUrl(ticket.id, ticket.verificationToken) };
   } catch (error) {
     console.error("Error fetching ticket:", error);
     return null;
@@ -866,7 +867,59 @@ export async function verifyCheckInTicket(ticketIdentifier: string, verification
 }
 
 /**
- * Confirms participant check-in, updating ticket and timeline records.
+ * Atomically claims a check-in. Returns true only for the single caller that flips the ticket ACTIVE -> USED.
+ * Both updates run in one DB transaction and each is guarded by its own WHERE, so two scanners hitting the same
+ * ticket at once can never both win: the loser's row is re-checked after the winner commits and matches nothing.
+ */
+async function claimCheckIn(
+  t: { id: string; registrationId: string; studentUserId: string; eventTitle: string; eventSlug: string; timeline: unknown },
+  userId: string,
+  method: "QR" | "MANUAL",
+  device: string
+): Promise<{ claimed: boolean; checkedInAt: Date }> {
+  let timeline: Prisma.InputJsonValue[] = [];
+  try {
+    const v = typeof t.timeline === "string" ? JSON.parse(t.timeline) : t.timeline;
+    if (Array.isArray(v)) timeline = v;
+  } catch {}
+  const checkedInAt = new Date();
+  timeline.push({ status: "CHECKED_IN", time: checkedInAt.toISOString(), label: `Checked In via ${method} (${device})` });
+
+  const notCancelled = { not: RegistrationStatus.CANCELLED };
+  const [gate] = await prisma.$transaction([
+    prisma.ticket.updateMany({
+      where: { id: t.id, status: "ACTIVE", registration: { checkedIn: false, status: notCancelled } },
+      data: { status: "USED" },
+    }),
+    prisma.registration.updateMany({
+      where: { id: t.registrationId, checkedIn: false, status: notCancelled },
+      data: {
+        checkedIn: true,
+        checkedInAt,
+        checkedInBy: userId,
+        checkInDevice: device,
+        checkInMethod: method,
+        checkInStatus: "CHECKED_IN",
+        status: RegistrationStatus.CHECKED_IN,
+        timeline,
+      },
+    }),
+  ]);
+  if (gate.count !== 1) return { claimed: false, checkedInAt };
+
+  // Best effort: the check-in is already committed, so a failed notification must not fail the scan
+  await prisma.notification
+    .create({ data: { userId: t.studentUserId, message: `Check-in successful for ${t.eventTitle}! Welcome to the event.` } })
+    .catch((e) => console.error("Check-in notification failed:", e));
+  revalidatePath(`/events/${t.eventSlug}`);
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/events");
+  revalidatePath("/dashboard/notifications");
+  return { claimed: true, checkedInAt };
+}
+
+/**
+ * Confirms participant check-in (manual flow: verify first, then approve).
  */
 export async function confirmCheckInAction(
   ticketId: string,
@@ -900,65 +953,117 @@ export async function confirmCheckInAction(
       return { error: `This ticket is ${ticket.status === "ACTIVE" ? "cancelled" : ticket.status.toLowerCase()} and can't be checked in.` };
     }
 
-    // Append to registration timeline log
-    let timeline = [];
-    if (ticket.registration.timeline) {
-      try {
-        timeline = typeof ticket.registration.timeline === "string"
-          ? JSON.parse(ticket.registration.timeline)
-          : ticket.registration.timeline;
-      } catch (e) {
-        timeline = [];
-      }
-    }
-    timeline.push({
-      status: "CHECKED_IN",
-      time: new Date().toISOString(),
-      label: `Checked In via ${method} (${device})`,
-    });
-
-    await prisma.$transaction(async (tx) => {
-      // 1. Update Registration check-in states
-      await tx.registration.update({
-        where: { id: ticket.registrationId },
-        data: {
-          checkedIn: true,
-          checkedInAt: new Date(),
-          checkedInBy: user.id,
-          checkInDevice: device,
-          checkInMethod: method,
-          checkInStatus: "CHECKED_IN",
-          status: RegistrationStatus.CHECKED_IN,
-          timeline,
-        },
-      });
-
-      // 2. Update Ticket status
-      await tx.ticket.update({
-        where: { id: ticketId },
-        data: {
-          status: "USED",
-        },
-      });
-
-      // 3. Create check-in notification
-      await tx.notification.create({
-        data: {
-          userId: ticket.student.userId,
-          message: `Check-in successful for ${ticket.event.title}! Welcome to the event.`,
-        },
-      });
-    });
-
-    revalidatePath(`/events/${ticket.event.slug}`);
-    revalidatePath("/dashboard");
-    revalidatePath("/dashboard/events");
-    revalidatePath("/dashboard/notifications");
+    const { claimed } = await claimCheckIn(
+      {
+        id: ticket.id,
+        registrationId: ticket.registrationId,
+        studentUserId: ticket.student.userId,
+        eventTitle: ticket.event.title,
+        eventSlug: ticket.event.slug,
+        timeline: ticket.registration.timeline,
+      },
+      user.id,
+      method,
+      device
+    );
+    if (!claimed) return { error: "Participant has already checked in." };
 
     return { success: true };
   } catch (error) {
     console.error("Error confirming check-in:", error);
     return { error: "Failed to confirm check-in." };
+  }
+}
+
+export type ScanResult = {
+  /** valid = just checked in (green), used = already checked in (red), invalid = bad/foreign/cancelled (red) */
+  state: "valid" | "used" | "invalid";
+  message: string;
+  studentName?: string;
+  college?: string;
+  ticketNumber?: string;
+  eventTitle?: string;
+  teamName?: string | null;
+  checkedInAt?: string | null;
+};
+
+/**
+ * One-call scan: validates the QR payload and checks the attendee in atomically, so the scanner can show
+ * green/red immediately without a separate "approve" step. The token is mandatory (it is the QR's signature).
+ */
+export async function scanCheckIn(
+  ticketIdentifier: string,
+  verificationToken: string,
+  device: string = "Scanner"
+): Promise<ScanResult> {
+  try {
+    const user = await getCurrentUser();
+    if (!user) return { state: "invalid", message: "Session expired. Please log in again." };
+    if (user.role !== "ORGANIZER" && user.role !== "SUPER_ADMIN") {
+      return { state: "invalid", message: "Organizer access required." };
+    }
+
+    const id = ticketIdentifier?.trim();
+    const token = verificationToken?.trim();
+    if (!id || !token) return { state: "invalid", message: "Not a valid ticket QR code." };
+
+    const ticket = await prisma.ticket.findFirst({
+      where: { OR: [{ id }, { ticketNumber: id }], verificationToken: token },
+      select: {
+        id: true,
+        ticketNumber: true,
+        status: true,
+        registrationId: true,
+        event: { select: { title: true, slug: true, organizerId: true } },
+        registration: { select: { status: true, checkedIn: true, checkedInAt: true, teamName: true, timeline: true } },
+        student: { select: { userId: true, college: true, user: { select: { name: true } } } },
+      },
+    });
+    if (!ticket) return { state: "invalid", message: "Ticket not found or QR code was tampered with." };
+
+    const info = {
+      studentName: ticket.student.user.name,
+      college: ticket.student.college,
+      ticketNumber: ticket.ticketNumber,
+      eventTitle: ticket.event.title,
+      teamName: ticket.registration.teamName,
+    };
+
+    if (user.role !== "SUPER_ADMIN" && ticket.event.organizerId !== user.id) {
+      return { state: "invalid", message: "This ticket is for another organizer's event.", ...info };
+    }
+    if (ticket.registration.status === RegistrationStatus.CANCELLED || ticket.status === "CANCELLED") {
+      return { state: "invalid", message: "Registration was cancelled.", ...info };
+    }
+    const alreadyUsed = (at: Date | null) => ({
+      state: "used" as const,
+      message: `Already checked in${at ? ` at ${at.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })}` : ""}.`,
+      checkedInAt: at?.toISOString() ?? null,
+      ...info,
+    });
+    if (ticket.registration.checkedIn || ticket.status === "USED") return alreadyUsed(ticket.registration.checkedInAt);
+    if (ticket.status !== "ACTIVE") return { state: "invalid", message: "Ticket is not active.", ...info };
+
+    const { claimed, checkedInAt } = await claimCheckIn(
+      {
+        id: ticket.id,
+        registrationId: ticket.registrationId,
+        studentUserId: ticket.student.userId,
+        eventTitle: ticket.event.title,
+        eventSlug: ticket.event.slug,
+        timeline: ticket.registration.timeline,
+      },
+      user.id,
+      "QR",
+      device
+    );
+    // Lost the race to another scanner: report the winner's check-in, never a second acceptance
+    if (!claimed) return alreadyUsed(null);
+
+    return { state: "valid", message: "Entry approved.", checkedInAt: checkedInAt.toISOString(), ...info };
+  } catch (error) {
+    console.error("Error scanning ticket:", error);
+    return { state: "invalid", message: "Could not verify ticket. Try again." };
   }
 }
 

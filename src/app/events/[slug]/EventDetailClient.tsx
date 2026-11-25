@@ -66,7 +66,7 @@ import { Footer } from "@/components/layout/Footer";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { SaveButton } from "@/components/shared/SaveButton";
 import { EventGridCard } from "@/components/events/EventGridCard";
-import { authClient } from "@/lib/auth-client";
+import { authClient, signInWithGoogle } from "@/lib/auth-client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { cancelRegistration } from "@/actions/registrations";
 import { RegistrationWizard, type WizardProfile } from "@/components/shared/RegistrationWizard";
@@ -188,7 +188,10 @@ export function EventDetailClient({
 
   const handleRegister = () => {
     if (!session) {
-      router.push(`/login?callbackUrl=${encodeURIComponent(`/events/${event.slug}?register=true`)}`);
+      // Straight to Google; /auth-callback brings them back here with ?register=true so the wizard opens
+      signInWithGoogle(`/events/${event.slug}?register=true`).then(({ error }) => {
+        if (error) toast.error(error.message || "Couldn't reach Google sign-in. Please try again.");
+      });
       return;
     }
     setIsWizardOpen(true);
@@ -499,12 +502,12 @@ export function EventDetailClient({
                 {/* Registration button block */}
                 <div className="pt-2">
                   {!session ? (
-                    <Link
-                      href={`/login?callbackUrl=${encodeURIComponent(`/events/${event.slug}?register=true`)}`}
-                      className="w-full btn btn-primary text-center block py-2.5 rounded-xl font-semibold text-sm"
+                    <button
+                      onClick={handleRegister}
+                      className="w-full btn btn-primary text-center block py-2.5 rounded-xl font-semibold text-sm cursor-pointer"
                     >
-                      Login to Register
-                    </Link>
+                      Register Now
+                    </button>
                   ) : (session.user as { role?: string }).role !== "STUDENT" ? (
                     <button
                       disabled
@@ -534,7 +537,7 @@ export function EventDetailClient({
                               <img
                                 src={regDetails.ticket.qrCode}
                                 alt="Ticket QR Code"
-                                className="w-44 h-44 bg-white p-1.5 rounded-lg"
+                                className="w-56 h-56 bg-white p-1.5 rounded-lg"
                               />
                               <p className="text-[10px] text-text-faint mt-1.5">Scan at venue for check-in</p>
                             </div>

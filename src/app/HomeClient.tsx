@@ -17,7 +17,8 @@ import { AboutSection } from "@/components/home/AboutSection";
 import { ContactSection } from "@/components/home/ContactSection";
 import { Event, Category } from "@/types";
 import { useRouter } from "next/navigation";
-import { authClient } from "@/lib/auth-client";
+import { toast } from "sonner";
+import { authClient, signInWithGoogle } from "@/lib/auth-client";
 import { COLLEGES, COLLEGE_INFO, TESTIMONIALS } from "@/constants/events";
 
 interface HomeClientProps {
@@ -47,8 +48,15 @@ export function HomeClient({ events, categories, colleges, stats }: HomeClientPr
 
   const handleRegisterClick = (id: string) => {
     const event = events.find((e) => e.id === id);
-    if (event) {
-      router.push(`/events/${event.slug}?register=true`);
+    if (!event) return;
+    const target = `/events/${event.slug}?register=true`;
+    if (isAuthenticated) {
+      router.push(target);
+    } else {
+      // Logged out: Google first, then straight back to this event's registration
+      signInWithGoogle(target).then(({ error }) => {
+        if (error) toast.error(error.message || "Couldn't reach Google sign-in. Please try again.");
+      });
     }
   };
 

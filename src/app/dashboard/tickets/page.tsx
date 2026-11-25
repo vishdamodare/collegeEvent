@@ -3,10 +3,18 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Ticket, CalendarDays, MapPin, QrCode, ArrowRight, CheckCircle2, Clock } from "lucide-react";
+import Image from "next/image";
+import { Ticket, CalendarDays, Clock, MapPin, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
+import { generateQRCodeDataUrl } from "@/lib/ticket-generator";
 
 export const dynamic = "force-dynamic";
+
+const STATUS: Record<string, { label: string; className: string }> = {
+  ACTIVE: { label: "Valid", className: "bg-emerald-500 text-white" },
+  USED: { label: "Checked in", className: "bg-blue-600 text-white" },
+  CANCELLED: { label: "Cancelled", className: "bg-red-600 text-white" },
+};
 
 export default async function StudentTicketsPage() {
   const session = await auth.api.getSession({
@@ -25,127 +33,115 @@ export default async function StudentTicketsPage() {
     redirect("/dashboard/profile");
   }
 
-  const tickets = await prisma.ticket.findMany({
+  const rows = await prisma.ticket.findMany({
     where: { studentId: studentProfile.id },
-    include: {
+    select: {
+      id: true,
+      ticketNumber: true,
+      status: true,
+      verificationToken: true,
       event: {
-        include: {
-          images: { where: { isHero: true }, take: 1 },
-          category: { select: { name: true } },
+        select: {
+          title: true,
+          date: true,
+          location: true,
+          // hero first, otherwise whatever poster the organizer uploaded
+          images: { orderBy: { isHero: "desc" }, take: 1, select: { url: true } },
         },
       },
-      registration: { select: { status: true, teamName: true, checkedIn: true, checkedInAt: true } },
     },
     orderBy: { createdAt: "desc" },
   });
 
+  // Rendered from the signed payload (not the stored image) so every ticket gets the large, high-res QR
+  const tickets = await Promise.all(
+    rows.map(async (t) => ({ ...t, qr: await generateQRCodeDataUrl(t.id, t.verificationToken) }))
+  );
+
   return (
     <div className="space-y-6 font-archivo">
-      <div>
-        <h1 className="text-[28px] font-anton uppercase tracking-wider text-white flex items-center gap-3">
-          <Ticket className="w-7 h-7 text-[var(--color-lime)]" />
-          My Event Passes & Tickets
-        </h1>
-        <p className="text-[13px] text-white/40 mt-1">
-          Access your digital entry QR passes, ticket numbers, and venue check-in tokens.
-        </p>
-      </div>
+      <h1 className="text-[28px] font-anton uppercase tracking-wider text-text-main">My Tickets</h1>
 
       {tickets.length === 0 ? (
-        <div className="py-20 text-center text-white/30 space-y-4 rounded-3xl border border-white/10 bg-[#121212]/40">
-          <Ticket className="w-12 h-12 mx-auto text-white/20" />
-          <p className="text-base font-bold uppercase tracking-wider">No event tickets found</p>
-          <p className="text-sm text-white/30">You haven&apos;t registered for any events yet.</p>
-          <Link
-            href="/events"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--color-lime)] text-black font-bold text-xs uppercase tracking-wider hover:bg-[var(--color-lime)]/90 transition-colors"
-          >
-            Browse Live Fests
+        <div className="py-16 px-6 text-center space-y-4 rounded-3xl border border-dashed border-border bg-card">
+          <Ticket className="w-12 h-12 mx-auto text-text-faint" />
+          <div>
+            <p className="text-lg font-bold text-text-main">No tickets yet</p>
+            <p className="text-sm text-text-muted mt-1">Register for an event and your ticket will show up here.</p>
+          </div>
+          <Link href="/events" className="btn btn-primary inline-flex items-center gap-2">
+            Browse events <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {tickets.map((t) => (
-            <div
-              key={t.id}
-              className="rounded-3xl border border-white/10 bg-[#121212]/60 p-6 space-y-5 backdrop-blur-xl relative overflow-hidden group hover:border-[var(--color-lime)]/40 transition-all"
-            >
-              {/* Event Header */}
-              <div className="flex justify-between items-start gap-4">
-                <div>
-                  <span className="text-[10px] uppercase font-bold tracking-widest text-[var(--color-lime)] bg-[var(--color-lime)]/10 border border-[var(--color-lime)]/20 px-2.5 py-0.5 rounded-full">
-                    {t.event.category?.name || "Event Pass"}
-                  </span>
-                  <h3 className="text-xl font-bold text-white mt-2 leading-tight group-hover:text-[var(--color-lime)] transition-colors">
-                    {t.event.title}
-                  </h3>
-                </div>
-
-                <span
-                  className={`px-3 py-1 rounded-full text-[11px] font-bold border uppercase ${
-                    t.status === "ACTIVE"
-                      ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-                      : t.status === "USED"
-                      ? "bg-blue-500/10 border-blue-500/20 text-blue-400"
-                      : "bg-red-500/10 border-red-500/20 text-red-400"
-                  }`}
-                >
-                  {t.status}
-                </span>
-              </div>
-
-              {/* Event Details */}
-              <div className="space-y-2 text-xs text-white/60">
-                <div className="flex items-center gap-2">
-                  <CalendarDays className="w-4 h-4 text-white/40 shrink-0" />
-                  <span>{format(new Date(t.event.date), "EEEE, MMMM dd, yyyy · hh:mm a")}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-white/40 shrink-0" />
-                  <span>{t.event.location}</span>
-                </div>
-                {t.registration.teamName && (
-                  <div className="flex items-center gap-2 text-[var(--color-lime)]">
-                    <span className="font-bold">Team:</span> {t.registration.teamName}
-                  </div>
-                )}
-              </div>
-
-              {/* Ticket Identifier Box */}
-              <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between">
-                <div>
-                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider">Ticket Number</p>
-                  <p className="font-mono font-bold text-sm text-[var(--color-lime)]">{t.ticketNumber}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider">Security Token</p>
-                  <p className="font-mono text-xs text-white/80">{t.verificationToken}</p>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="pt-2 flex items-center justify-between border-t border-white/5">
-                <div className="text-xs text-white/40">
-                  {t.registration.checkedIn ? (
-                    <span className="text-emerald-400 flex items-center gap-1 font-bold">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Checked In
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5" /> Not Checked In
-                    </span>
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          {tickets.map((t) => {
+            const date = new Date(t.event.date);
+            const status = STATUS[t.status] ?? { label: t.status, className: "bg-card-hover text-text-main" };
+            const poster = t.event.images[0]?.url;
+            return (
+              <article key={t.id} className="rounded-3xl border border-border bg-card overflow-hidden flex flex-col">
+                <div className="relative aspect-[16/9] bg-gradient-to-br from-cobalt/20 to-card-hover">
+                  {poster && (
+                    <Image
+                      src={poster}
+                      alt={`${t.event.title} poster`}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 1280px) 100vw, 50vw"
+                    />
                   )}
+                  <span
+                    className={`absolute top-3 right-3 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider shadow ${status.className}`}
+                  >
+                    {status.label}
+                  </span>
                 </div>
 
-                <Link
-                  href={`/dashboard/tickets/${t.id}`}
-                  className="px-4 py-2 rounded-xl bg-[var(--color-lime)] hover:bg-[var(--color-lime)]/90 text-black font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
-                >
-                  <QrCode className="w-4 h-4" /> View Digital Pass
-                </Link>
-              </div>
-            </div>
-          ))}
+                <div className="p-5 sm:p-6 flex flex-col gap-5 flex-1">
+                  <h2 className="text-xl font-bold text-text-main leading-tight">{t.event.title}</h2>
+
+                  <div className="flex flex-col sm:flex-row gap-5 sm:items-center">
+                    <ul className="flex-1 space-y-2 text-sm text-text-muted min-w-0">
+                      <li className="flex items-center gap-2.5">
+                        <CalendarDays className="w-4 h-4 text-text-faint shrink-0" />
+                        {format(date, "EEE, d MMM yyyy")}
+                      </li>
+                      <li className="flex items-center gap-2.5">
+                        <Clock className="w-4 h-4 text-text-faint shrink-0" />
+                        {format(date, "h:mm a")}
+                      </li>
+                      <li className="flex items-start gap-2.5">
+                        <MapPin className="w-4 h-4 text-text-faint shrink-0 mt-0.5" />
+                        <span className="min-w-0 break-words">{t.event.location}</span>
+                      </li>
+                      <li className="pt-2">
+                        <span className="block text-[10px] font-bold uppercase tracking-wider text-text-faint">Ticket ID</span>
+                        <span className="font-mono font-bold text-text-main break-all">{t.ticketNumber}</span>
+                      </li>
+                    </ul>
+
+                    {/* Large white tile with its own quiet zone: scans reliably off a phone screen */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={t.qr}
+                      alt={`QR code for ticket ${t.ticketNumber}`}
+                      width={176}
+                      height={176}
+                      className="w-44 h-44 shrink-0 self-center rounded-2xl bg-white p-1"
+                    />
+                  </div>
+
+                  <Link
+                    href={`/dashboard/tickets/${t.id}`}
+                    className="btn btn-primary w-full text-center mt-auto"
+                  >
+                    View Ticket
+                  </Link>
+                </div>
+              </article>
+            );
+          })}
         </div>
       )}
     </div>

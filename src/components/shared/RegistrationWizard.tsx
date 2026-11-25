@@ -889,7 +889,7 @@ export function RegistrationWizard({ isOpen, onClose, event, initialProfile }: R
                 </div>
 
                 {generatedTicket.qrCode && (
-                  <div className="bg-white p-3 rounded-2xl w-40 h-40 mx-auto border border-zinc-200 flex flex-col items-center justify-center shrink-0">
+                  <div className="bg-white p-3 rounded-2xl w-56 h-56 mx-auto border border-zinc-200 flex flex-col items-center justify-center shrink-0">
                     <img src={generatedTicket.qrCode} alt="Ticket QR code" className="w-full h-full" />
                   </div>
                 )}

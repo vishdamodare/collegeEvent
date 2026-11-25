@@ -32,14 +32,14 @@ export function generateVerificationToken(length: number = 12): string {
 /**
  * Generates the entry QR as a base64 Data URL.
  * Payload is just "ticketId:verificationToken" (~50 chars) at medium error correction, so the code is
- * small and low-density and scans instantly. The old JSON payload at level H was ~80x80 modules and slow to read.
+ * low-density and scans instantly. The old JSON payload at level H was ~80x80 modules and slow to read.
  */
 export async function generateQRCodeDataUrl(ticketId: string, verificationToken: string): Promise<string> {
   try {
     return await QRCode.toDataURL(`${ticketId}:${verificationToken}`, {
       errorCorrectionLevel: "M",
-      margin: 2,
-      width: 400,
+      margin: 4, // 4-module quiet zone is the QR spec minimum; phone cameras read it faster
+      width: 1024, // high-res so it stays crisp when shown large or printed
       color: {
         dark: "#000000",
         light: "#ffffff",
