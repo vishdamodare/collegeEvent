@@ -10,7 +10,7 @@ import { RegistrationFormBuilder } from "@/components/admin/RegistrationFormBuil
 import type { FormField } from "@/types/admin/registration";
 
 type Category = { id: string; name: string };
-type Errors = Partial<Record<"title" | "categoryId" | "description" | "date" | "location" | "capacity" | "team" | "banner" | "end" | "closes", string>>;
+type Errors = Partial<Record<"title" | "categoryId" | "otherCategory" | "description" | "date" | "location" | "capacity" | "team" | "banner" | "end" | "closes", string>>;
 type Prize = { title: string; cashPrize?: number; goodies?: string };
 type Faq = { question: string; answer: string };
 // Event.details is the JSON blob the public event page reads; we only touch the keys this form manages
@@ -32,6 +32,10 @@ export interface EventFormInitial {
   additionalQuestions: FormField[];
   details: Details | null;
 }
+
+const OTHER = "__other";
+const NO_LIMIT = 1_000_000; // stored as a huge capacity; shown as "No limit"
+const PLACES = ["1st Prize", "2nd Prize", "3rd Prize"];
 
 const input =
   "w-full px-4 py-3 rounded-xl bg-[#181818] border border-white/10 text-white text-[14px] placeholder:text-white/30 outline-none focus:border-[var(--color-lime)] focus:ring-2 focus:ring-[var(--color-lime)]/30 transition";
@@ -209,9 +213,11 @@ export function QuickEventForm({ categories, initial }: { categories: Category[]
 
   const [title, setTitle] = useState(initial?.title ?? "");
   const [categoryId, setCategoryId] = useState(initial?.categoryId ?? "");
+  const [otherCategory, setOtherCategory] = useState("");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [date, setDate] = useState(toLocalInput(initial?.date));
   const [location, setLocation] = useState(initial?.location ?? "");
+  const [mapsLink, setMapsLink] = useState(str(d.venue?.googleMapsLink));
   const [capacity, setCapacity] = useState(String(initial?.capacity ?? 100));
   const [eventType, setEventType] = useState<"INDIVIDUAL" | "TEAM">(initial?.eventType ?? "INDIVIDUAL");
   const [teamMin, setTeamMin] = useState(String(initial?.eventType === "TEAM" ? initial.teamMinSize : 2));
@@ -224,7 +230,11 @@ export function QuickEventForm({ categories, initial }: { categories: Category[]
   const [eligibility, setEligibility] = useState(str(savedRules.eligibility));
   const [rulesText, setRulesText] = useState(str(savedRules.instructions));
   const [judging, setJudging] = useState(str(savedRules.judgingCriteria));
-  const [prizes, setPrizes] = useState<Prize[]>(Array.isArray(savedRules.prizes) ? (savedRules.prizes as Prize[]) : []);
+  const [prizes, setPrizes] = useState<Prize[]>(() => {
+    const saved = Array.isArray(savedRules.prizes) ? (savedRules.prizes as Prize[]) : [];
+    // Always offer 1st/2nd/3rd rows; empty rows are dropped on save
+    return [...PLACES.map((t, i) => saved[i] ?? { title: t }), ...saved.slice(3)];
+  });
   const [faqs, setFaqs] = useState<Faq[]>(Array.isArray(savedRules.faqs) ? (savedRules.faqs as Faq[]) : []);
   const [contactName, setContactName] = useState(str(savedContact.coordinatorName));
   const [contactEmail, setContactEmail] = useState(str(savedContact.coordinatorEmail));
@@ -241,12 +251,13 @@ export function QuickEventForm({ categories, initial }: { categories: Category[]
     const e: Errors = {};
     if (title.trim().length < 3) e.title = "Give your event a name (at least 3 characters).";
     if (!categoryId) e.categoryId = "Pick a category.";
+    else if (categoryId === OTHER && otherCategory.trim().length < 2) e.otherCategory = "Type the category name.";
     if (description.trim().length < 10) e.description = "Add a short description (at least 10 characters).";
     if (!date) e.date = "Choose a date and start time.";
     // Editing a past event is fine as long as the date isn't being moved into the past
     else if (new Date(date).getTime() < Date.now() && (!editing || date !== toLocalInput(initial?.date))) e.date = "The start time must be in the future.";
-    if (location.trim().length < 3) e.location = "Where is it happening?";
-    if (!(Number(capacity) >= 1)) e.capacity = "Enter how many people can attend.";
+    if (location.trim().length < 3 && !mapsLink.trim()) e.location = "Add the address or a Google Maps link.";
+    if (capacity !== String(NO_LIMIT) && !(Number(capacity) >= 1)) e.capacity = "Enter how many people can attend.";
     if (eventType === "TEAM" && !(Number(teamMin) >= 1 && Number(teamMax) >= Number(teamMin))) e.team = "Max team size must be at least the minimum.";
     if (banner && !isImageUrl(banner)) e.banner = "That doesn't look like a direct image link (https…jpg/png/webp).";
     if (end && date && new Date(end) <= new Date(date)) e.end = "The end time must be after the start time.";
@@ -268,13 +279,16 @@ export function QuickEventForm({ categories, initial }: { categories: Category[]
     }
   };
 
+  const venueText = location.trim() || "See Google Maps link";
+  const catValue = categoryId === OTHER ? otherCategory.trim() : categoryId; // server creates new categories from a name
+
   const buildDetails = () => {
     const isTeam = eventType === "TEAM";
     return {
       ...d, // keep anything this form doesn't manage (sponsors, map link, links…)
-      basic: { tags: [], visibility: "PUBLIC", ...d.basic, title: title.trim(), category: categoryId, description: description.trim() },
+      basic: { tags: [], visibility: "PUBLIC", ...d.basic, title: title.trim(), category: catValue, description: description.trim() },
       schedule: { timezone: "Asia/Kolkata", ...d.schedule, start: toIso(date), end: toIso(end), registrationCloses: toIso(closes) },
-      venue: { venueType: "OFFLINE", ...d.venue, venueLocation: location.trim() },
+      venue: { venueType: "OFFLINE", ...d.venue, venueLocation: venueText, address: location.trim(), googleMapsLink: mapsLink.trim() },
       registration: {
         ...d.registration,
         isTeam,
@@ -311,10 +325,10 @@ export function QuickEventForm({ categories, initial }: { categories: Category[]
       const payload = {
         title: title.trim(),
         description: description.trim(),
-        categoryId,
+        categoryId: catValue,
         // datetime-local is the organizer's local time; send an absolute instant so the server (UTC) doesn't shift it
         date: new Date(date),
-        location: location.trim(),
+        location: venueText,
         capacity: Number(capacity),
         status,
         imageUrl: banner || "",
@@ -375,7 +389,14 @@ export function QuickEventForm({ categories, initial }: { categories: Category[]
                 {c.name}
               </option>
             ))}
+            <option value={OTHER}>Other (specify)…</option>
           </select>
+          {categoryId === OTHER && (
+            <>
+              <input aria-label="Other category" className={`${input} mt-2`} placeholder="Type your category, e.g. Quiz" maxLength={40} value={otherCategory} onChange={(e) => { setOtherCategory(e.target.value); clear("otherCategory"); }} />
+              {errors.otherCategory && <p role="alert" className="text-[12px] text-red-400 mt-1.5">{errors.otherCategory}</p>}
+            </>
+          )}
         </Field>
         <Field id="ev-desc" label="What's it about?" hint="Tell students what to expect, who it's for and what they'll get out of it." error={errors.description}>
           <textarea id="ev-desc" rows={4} className={input} value={description} maxLength={5000} onChange={(e) => { setDescription(e.target.value); clear("description"); }} />
@@ -393,17 +414,23 @@ export function QuickEventForm({ categories, initial }: { categories: Category[]
                 {n}
               </button>
             ))}
+            <button type="button" className={chip(capacity === String(NO_LIMIT))} onClick={() => { setCapacity(String(NO_LIMIT)); clear("capacity"); }}>
+              No limit
+            </button>
             <div className="relative w-36">
               <Users className="w-4 h-4 text-white/30 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input id="ev-cap" type="number" min={1} inputMode="numeric" aria-label="Custom number of attendees" className={`${input} pl-10 py-2`} value={capacity} onChange={(e) => { setCapacity(e.target.value); clear("capacity"); }} />
+              <input id="ev-cap" type="number" min={1} inputMode="numeric" aria-label="Custom number of attendees" className={`${input} pl-10 py-2`} value={capacity === String(NO_LIMIT) ? "" : capacity} placeholder={capacity === String(NO_LIMIT) ? "No limit" : ""} onChange={(e) => { setCapacity(e.target.value); clear("capacity"); }} />
             </div>
           </div>
         </Field>
-        <Field id="ev-loc" label="Venue" error={errors.location}>
+        <Field id="ev-loc" label="Venue address" error={errors.location}>
           <div className="relative">
             <MapPin className="w-4 h-4 text-white/30 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input id="ev-loc" className={`${input} pl-10`} placeholder="e.g. Main Auditorium, IIT Bombay" value={location} onChange={(e) => { setLocation(e.target.value); clear("location"); }} />
+            <input id="ev-loc" className={`${input} pl-10`} placeholder="Type the address, e.g. Main Auditorium, IIT Bombay" value={location} onChange={(e) => { setLocation(e.target.value); clear("location"); }} />
           </div>
+        </Field>
+        <Field id="ev-map" label="Google Maps link" hint="Optional. Paste a link instead of (or along with) the address.">
+          <input id="ev-map" type="url" className={input} placeholder="https://maps.google.com/…" value={mapsLink} onChange={(e) => { setMapsLink(e.target.value); clear("location"); }} />
         </Field>
       </Section>
 
@@ -502,10 +529,10 @@ export function QuickEventForm({ categories, initial }: { categories: Category[]
           </Field>
         </Extra>
 
-        <Extra title="Prizes" hint="Cash prizes, trophies or goodies" defaultOpen={prizes.length > 0}>
+        <Extra title="Prizes" hint="Cash prizes, trophies or goodies" defaultOpen={prizes.some((p) => p.cashPrize || p.goodies)}>
           {prizes.map((p, i) => (
             <div key={i} className="grid grid-cols-[1fr_auto] sm:grid-cols-[1.4fr_1fr_1.2fr_auto] gap-2 items-start">
-              <input aria-label={`Prize ${i + 1} title`} className={`${input} col-span-2 sm:col-span-1`} placeholder="e.g. Winner" value={p.title} onChange={(e) => setPrizes(prizes.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))} />
+              <input aria-label={`Prize ${i + 1} title`} className={`${input} col-span-2 sm:col-span-1`} placeholder="e.g. 1st Prize" value={p.title} onChange={(e) => setPrizes(prizes.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))} />
               <input aria-label={`Prize ${i + 1} cash amount in rupees`} type="number" min={0} inputMode="numeric" className={input} placeholder="₹ amount" value={p.cashPrize ?? ""} onChange={(e) => setPrizes(prizes.map((x, j) => (j === i ? { ...x, cashPrize: e.target.value ? Number(e.target.value) : undefined } : x)))} />
               <input aria-label={`Prize ${i + 1} goodies`} className={`${input} hidden sm:block`} placeholder="Goodies (optional)" value={p.goodies ?? ""} onChange={(e) => setPrizes(prizes.map((x, j) => (j === i ? { ...x, goodies: e.target.value } : x)))} />
               <button type="button" aria-label={`Remove prize ${i + 1}`} className={delBtn} onClick={() => setPrizes(prizes.filter((_, j) => j !== i))}>
@@ -514,7 +541,7 @@ export function QuickEventForm({ categories, initial }: { categories: Category[]
             </div>
           ))}
           <button type="button" className={addBtn} onClick={() => setPrizes([...prizes, { title: "" }])}>
-            <Plus className="w-4 h-4" /> Add prize
+            <Plus className="w-4 h-4" /> Add more prizes
           </button>
         </Extra>
 

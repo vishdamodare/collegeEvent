@@ -68,6 +68,7 @@ export function EventExtraDetails({ details: d }: { details: PublicEventDetails 
               <p className="text-text-main">{fmt(d.registrationCloses)}</p>
             </div>
           )}
+          {d.venueType !== "OFFLINE" && (
           <div className={card}>
             <p className="text-text-faint text-xs uppercase tracking-wider mb-1">Mode</p>
             <p className="text-text-main capitalize">
@@ -75,6 +76,7 @@ export function EventExtraDetails({ details: d }: { details: PublicEventDetails 
               {d.platform && ` · ${d.platform}`}
             </p>
           </div>
+          )}
           {(d.address || d.googleMapsLink) && (
             <div className={card}>
               <p className="text-text-faint text-xs uppercase tracking-wider mb-1">Address</p>

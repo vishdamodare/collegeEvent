@@ -333,7 +333,7 @@ export default function AdminEventsPage() {
                   <div className="flex items-baseline justify-between text-[13px]">
                     <span className="flex items-center gap-1.5 text-[var(--ink-2)]">
                       <Users className="w-3.5 h-3.5 text-[var(--ink-3)]" />
-                      <span className="font-semibold text-white tabular-nums">{evt.stats.currentRegistrations}</span> / {evt.capacity} registered
+                      <span className="font-semibold text-white tabular-nums">{evt.stats.currentRegistrations}</span> / {evt.capacity >= 1_000_000 ? "∞" : evt.capacity} registered
                     </span>
                   </div>
                   <div className="mt-2 h-1.5 rounded-full bg-[var(--desk-inset)] overflow-hidden">

@@ -274,7 +274,7 @@ export function EventDetailClient({
               <InfoRow icon={Calendar} label="Date" value={format(new Date(event.date), "MMM d, yyyy")} />
               <InfoRow icon={Clock} label="Time" value={format(new Date(event.date), "h:mm a")} />
               <InfoRow icon={MapPin} label="Venue" value={event.location} />
-              <InfoRow icon={Users} label="Capacity" value={`${event.capacity.toLocaleString()} seats`} />
+              <InfoRow icon={Users} label="Capacity" value={event.capacity >= 1_000_000 ? "No limit" : `${event.capacity.toLocaleString()} seats`} />
             </div>
 
             {/* Description */}
@@ -617,7 +617,7 @@ export function EventDetailClient({
                 <InfoRow icon={Clock} label="Time" value={format(new Date(event.date), "h:mm a")} />
                 <InfoRow icon={MapPin} label="Venue" value={event.location} />
                 <InfoRow icon={Tag} label="Category" value={event.category.name} />
-                <InfoRow icon={Users} label="Capacity" value={event.capacity.toLocaleString()} />
+                <InfoRow icon={Users} label="Capacity" value={event.capacity >= 1_000_000 ? "No limit" : event.capacity.toLocaleString()} />
               </div>
             </motion.div>
           </div>

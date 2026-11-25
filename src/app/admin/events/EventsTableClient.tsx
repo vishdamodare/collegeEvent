@@ -230,7 +230,7 @@ export function EventsTableClient({
                     </td>
                     <td className="block md:table-cell py-2 md:py-4 px-0 md:px-4 text-text-muted truncate max-w-[150px]">{ev.location}</td>
                     <td className="block md:table-cell py-2 md:py-4 px-0 md:px-4 text-text-muted">
-                      {ev._count.registrations} / {ev.capacity}
+                      {ev._count.registrations} / {ev.capacity >= 1_000_000 ? "∞" : ev.capacity}
                     </td>
                     <td className="block md:table-cell py-2 md:py-4 px-0 md:px-4 md:text-center">
                       <StatusBadge status={ev.status} />
