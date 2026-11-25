@@ -63,6 +63,16 @@ export default function RootLayout({
     // data-palette="spidey" is the Spider-Man trial; delete it to restore the lime theme
     <html lang="en-IN" data-palette="spidey" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
+        <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-KJFFZVSS" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+            `,
+          }}
+        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
