@@ -1,8 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { Building2, MapPin, CalendarDays, ArrowRight, GraduationCap } from "lucide-react";
+import { Building2, MapPin, ArrowRight, GraduationCap } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { CAMPUSES, campusFor } from "@/lib/campuses";
 
 export const dynamic = "force-dynamic";
 
@@ -23,38 +24,21 @@ export default async function CollegesDirectoryPage() {
     },
   });
 
-  // Group by college name
-  const collegeMap = new Map<string, {
-    name: string;
-    slug: string;
-    departments: Set<string>;
-    eventsCount: number;
-    address: string | null;
-    website: string | null;
-    organizersCount: number;
-  }>();
+  // One card per listed campus; several organizer accounts (or spellings) of the same campus merge into it
+  const collegeMap = new Map(
+    CAMPUSES.map((c) => [
+      c.slug,
+      { name: c.name, slug: c.slug, departments: new Set<string>(), eventsCount: 0, address: c.area as string | null, organizersCount: 0 },
+    ])
+  );
 
   for (const org of organizerProfiles) {
-    if (!org.college) continue;
-    const collegeName = org.college.trim();
-    const slug = collegeName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-
-    if (!collegeMap.has(slug)) {
-      collegeMap.set(slug, {
-        name: collegeName,
-        slug,
-        departments: new Set(org.department ? [org.department] : []),
-        eventsCount: org.user.events.length,
-        address: org.address || null,
-        website: org.website || null,
-        organizersCount: 1,
-      });
-    } else {
-      const existing = collegeMap.get(slug)!;
-      if (org.department) existing.departments.add(org.department);
-      existing.eventsCount += org.user.events.length;
-      existing.organizersCount += 1;
-    }
+    const campus = campusFor(org.college);
+    if (!campus) continue; // demo/test organizers and unlisted colleges are not shown
+    const entry = collegeMap.get(campus.slug)!;
+    if (org.department) entry.departments.add(org.department.trim());
+    entry.eventsCount += org.user.events.length;
+    entry.organizersCount += 1;
   }
 
   const collegesList = Array.from(collegeMap.values());

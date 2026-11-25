@@ -10,16 +10,14 @@ import { FeaturedEvents } from "@/components/home/FeaturedEvents";
 import { EventTimeline } from "@/components/home/EventTimeline";
 import { CategoryGrid } from "@/components/home/CategoryGrid";
 import { TrendingColleges } from "@/components/home/TrendingColleges";
-import { Testimonials } from "@/components/home/Testimonials";
 import { StatsSection } from "@/components/home/StatsSection";
 import { EventDetailModal } from "@/components/shared/EventDetailModal";
 import { AboutSection } from "@/components/home/AboutSection";
 import { ContactSection } from "@/components/home/ContactSection";
-import { Event, Category } from "@/types";
+import { Event } from "@/types";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { authClient, signInWithGoogle } from "@/lib/auth-client";
-import { COLLEGES, COLLEGE_INFO, TESTIMONIALS } from "@/constants/events";
 
 interface HomeClientProps {
   events: Event[];
@@ -42,7 +40,6 @@ export function HomeClient({ events, categories, colleges, stats }: HomeClientPr
   const isAuthenticated = !!session;
 
   const detailEvent = detailEventId ? events.find((e) => e.id === detailEventId) || null : null;
-  const collegeInfo = detailEvent ? COLLEGE_INFO[detailEvent.college] : undefined;
 
   const openDetails = (id: string) => setDetailEventId(id);
 
@@ -92,8 +89,6 @@ export function HomeClient({ events, categories, colleges, stats }: HomeClientPr
 
       <TrendingColleges colleges={colleges} />
 
-      <Testimonials testimonials={TESTIMONIALS} />
-
       <StatsSection stats={stats} />
 
       <AboutSection stats={stats} />
@@ -106,7 +101,6 @@ export function HomeClient({ events, categories, colleges, stats }: HomeClientPr
         isOpen={!!detailEventId}
         onClose={() => setDetailEventId(null)}
         event={detailEvent}
-        collegeInfo={collegeInfo}
         onRegister={() => {
           if (detailEventId) handleRegisterClick(detailEventId);
         }}

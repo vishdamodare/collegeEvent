@@ -266,7 +266,6 @@ export async function registerForFreeEvent(
       // 1. Create Captain Registration
       const initialTimeline = [
         { status: "SUBMITTED", time: new Date().toISOString(), label: "Registration Submitted" },
-        { status: "OTP_VERIFIED", time: new Date().toISOString(), label: "Captain OTP Verified" },
         { status: "CONFIRMED", time: new Date().toISOString(), label: "Registration Confirmed" },
         { status: "TICKET_GENERATED", time: new Date().toISOString(), label: "Ticket Issued" }
       ];
@@ -377,7 +376,6 @@ export async function registerForFreeEvent(
           // Create separate member Registration
           const memberTimeline = [
             { status: "SUBMITTED", time: new Date().toISOString(), label: "Registration Submitted (Invited by Captain)" },
-            { status: "OTP_VERIFIED", time: new Date().toISOString(), label: "OTP Verified" },
             { status: "CONFIRMED", time: new Date().toISOString(), label: "Registration Confirmed" },
             { status: "TICKET_GENERATED", time: new Date().toISOString(), label: "Ticket Issued" }
           ];

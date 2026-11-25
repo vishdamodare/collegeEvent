@@ -3,19 +3,18 @@
 import { useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { CheckCircle2, Star } from "lucide-react";
+import { CheckCircle2, GraduationCap, Star } from "lucide-react";
 
 interface College {
   name: string;
   loc: string;
   events: string;
-  students: string;
-  img: string;
+  registrations: string;
+  img?: string;
+  credit?: { text: string; url: string };
+  rating?: string;
   slug: string;
   verified?: boolean;
-  followers?: string;
-  upcomingEvents?: string;
-  rating?: string;
   categories?: string;
 }
 
@@ -79,13 +78,25 @@ export function TrendingColleges({ colleges }: TrendingCollegesProps) {
                       Verified
                     </div>
                   )}
-                  <Image
-                    src={college.img}
-                    alt={college.name}
-                    fill
-                    className="object-cover transition-transform duration-800 ease-[var(--ease-custom)] group-hover:scale-105"
-                    sizes="(max-width: 768px) 100vw, 350px"
-                  />
+                  {college.img ? (
+                    <Image
+                      src={college.img}
+                      alt={college.name}
+                      fill
+                      className="object-cover transition-transform duration-800 ease-[var(--ease-custom)] group-hover:scale-105"
+                      sizes="(max-width: 768px) 100vw, 350px"
+                    />
+                  ) : (
+                    // No photo yet: a neutral placeholder rather than a stock image of some other campus
+                    <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-cobalt)]/35 via-[var(--color-card-hover)] to-[var(--color-card)] flex items-center justify-center">
+                      <GraduationCap className="w-14 h-14 text-[var(--color-text-faint)] opacity-60" aria-hidden />
+                    </div>
+                  )}
+                  {college.credit && (
+                    <span className="absolute bottom-2 left-3 z-[2] text-[9px] text-white/80 [text-shadow:0_1px_2px_rgba(0,0,0,.8)] pointer-events-none">
+                      {college.credit.text}
+                    </span>
+                  )}
                 </div>
                 <div className="p-[22px] px-[24px]">
                   <div className="flex items-start justify-between gap-3 mb-[6px]">
@@ -93,9 +104,9 @@ export function TrendingColleges({ colleges }: TrendingCollegesProps) {
                       {college.name}
                     </h4>
                     {college.rating && (
-                      <span className="flex items-center gap-0.5 text-xs font-bold text-orange-400 shrink-0 mt-0.5">
-                        <Star className="w-3.5 h-3.5 fill-orange-400 text-orange-400" />
-                        {college.rating.split(" ")[0]}
+                      <span className="flex items-center gap-1 text-xs font-bold text-amber-400 shrink-0 mt-1" aria-label={`Rated ${college.rating} out of 5`}>
+                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" aria-hidden />
+                        {college.rating}
                       </span>
                     )}
                   </div>
@@ -113,18 +124,12 @@ export function TrendingColleges({ colleges }: TrendingCollegesProps) {
                 <div className="flex gap-[18px] pt-4">
                   <div className="text-[12px] text-[var(--color-text-muted)] flex flex-col gap-[3px]">
                     <span className="text-[var(--color-text-main)] text-[14px] font-bold leading-none">{college.events}</span>
-                    <span>events active</span>
+                    <span>{college.events === "1" ? "live event" : "live events"}</span>
                   </div>
                   <div className="text-[12px] text-[var(--color-text-muted)] flex flex-col gap-[3px]">
-                    <span className="text-[var(--color-text-main)] text-[14px] font-bold leading-none">{college.students}</span>
-                    <span>students registered</span>
+                    <span className="text-[var(--color-text-main)] text-[14px] font-bold leading-none">{college.registrations}</span>
+                    <span>registrations</span>
                   </div>
-                  {college.followers && (
-                    <div className="text-[12px] text-[var(--color-text-muted)] flex flex-col gap-[3px]">
-                      <span className="text-[var(--color-text-main)] text-[14px] font-bold leading-none">{college.followers}</span>
-                      <span>followers</span>
-                    </div>
-                  )}
                 </div>
               </div>
             </Link>

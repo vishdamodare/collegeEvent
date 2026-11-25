@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { EventStatus } from "@prisma/client";
 import { auth } from "@/lib/auth";
+import { CAMPUSES, campusFor } from "@/lib/campuses";
 import { headers } from "next/headers";
 
 /**
@@ -168,10 +169,12 @@ export async function getHomepageStats() {
     prisma.category.count({ where: { isArchived: false } }),
     prisma.user.count({ where: { role: { in: ["ORGANIZER", "SUPER_ADMIN"] } } }),
     prisma.user.count({ where: { role: "STUDENT" } }),
-    prisma.organizerProfile.findMany({ distinct: ["college"], select: { college: true } }),
+    prisma.organizerProfile.findMany({ select: { college: true } }),
   ]);
 
-  return { totalEvents, totalCategories, totalOrganizers, totalStudents, totalColleges: colleges.length };
+  // Distinct listed campuses, not raw college strings (typos / demo rows would inflate it)
+  const totalColleges = new Set(colleges.map((c) => campusFor(c.college)?.slug).filter(Boolean)).size;
+  return { totalEvents, totalCategories, totalOrganizers, totalStudents, totalColleges };
 }
 
 function getCityFromLocation(location: string): string {
@@ -363,122 +366,58 @@ export async function getCategoryRecommendations() {
   return list;
 }
 
+/**
+ * Trending Campuses: the listed campuses (src/lib/campuses.ts) with real counts from published events and
+ * non-cancelled registrations. Every listed campus always appears, even before its first event.
+ */
 export async function getDynamicColleges() {
   const organizers = await prisma.organizerProfile.findMany({
-    include: {
+    select: {
+      college: true,
+      verificationStatus: true,
       user: {
-        include: {
+        select: {
           events: {
             where: { status: EventStatus.PUBLISHED },
-            include: {
-              category: true,
-              registrations: { where: { status: { not: "CANCELLED" } }, select: { id: true } },
-            }
-          }
-        }
-      }
-    }
+            select: {
+              category: { select: { name: true } },
+              _count: { select: { registrations: { where: { status: { not: "CANCELLED" } } } } },
+            },
+          },
+        },
+      },
+    },
   });
 
-  type CollegeAgg = {
-    name: string; city: string; state: string; verified: boolean; activeEvents: number;
-    totalRegistrations: number; categories: Set<string>; slug: string; img: string;
-  };
-  const collegeMap: Record<string, CollegeAgg> = {};
-
+  const agg = new Map(CAMPUSES.map((c) => [c.slug, { events: 0, registrations: 0, verified: false, categories: new Set<string>() }]));
   for (const org of organizers) {
-    const name = org.college;
-    if (!name) continue;
-
-    let city = "Mumbai";
-    let state = "Maharashtra";
-    if (org.address) {
-      const parts = org.address.split(",");
-      if (parts.length >= 2) {
-        city = parts[parts.length - 2].trim();
-        state = parts[parts.length - 1].trim();
-      }
-    } else {
-      const upperName = name.toUpperCase();
-      if (upperName.includes("PUNE")) {
-        city = "Pune";
-      } else if (upperName.includes("DELHI")) {
-        city = "Delhi";
-        state = "Delhi";
-      } else if (upperName.includes("PILANI")) {
-        city = "Pilani";
-        state = "Rajasthan";
-      } else if (upperName.includes("IIT BOMBAY") || upperName.includes("MUMBAI")) {
-        city = "Mumbai";
-      }
+    const campus = campusFor(org.college);
+    if (!campus) continue; // test/demo organizers and unlisted colleges stay off the public site
+    const a = agg.get(campus.slug)!;
+    if (org.verificationStatus === "APPROVED") a.verified = true;
+    for (const ev of org.user.events) {
+      a.events += 1;
+      a.registrations += ev._count.registrations;
+      a.categories.add(ev.category.name);
     }
-
-    const events = org.user.events;
-    const activeEventsCount = events.length;
-
-    let totalRegistrations = 0;
-    const categoryNames = new Set<string>();
-
-    events.forEach(ev => {
-      totalRegistrations += ev.registrations.length;
-      categoryNames.add(ev.category.name);
-    });
-
-    if (!collegeMap[name]) {
-      collegeMap[name] = {
-        name,
-        city,
-        state,
-        verified: org.verificationStatus === "APPROVED",
-        activeEvents: 0,
-        totalRegistrations: 0,
-        categories: new Set<string>(),
-        slug: name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
-        img: getCollegeBanner(name),
-      };
-    }
-
-    collegeMap[name].activeEvents += activeEventsCount;
-    collegeMap[name].totalRegistrations += totalRegistrations;
-    events.forEach(ev => collegeMap[name].categories.add(ev.category.name));
   }
 
-  const collegesList = Object.values(collegeMap).map((col) => {
-    const hash = col.name.split("").reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
-    const followersCount = (col.totalRegistrations * 3 + (hash % 100) * 12 + 150);
-    const ratingVal = (4.5 + (hash % 5) * 0.1).toFixed(1);
-
+  return CAMPUSES.map((c) => {
+    const a = agg.get(c.slug)!;
     return {
-      name: col.name,
-      loc: `${col.city}, ${col.state}`,
-      city: col.city,
-      state: col.state,
-      events: col.activeEvents.toString(),
-      students: (col.totalRegistrations * 2.5 + (hash % 200) + 120).toFixed(0),
-      img: col.img,
-      slug: col.slug,
-      verified: col.verified,
-      followers: followersCount.toLocaleString(),
-      upcomingEvents: col.activeEvents.toString(),
-      rating: `${ratingVal} ★`,
-      categories: Array.from(col.categories).slice(0, 3).join(", ") || "Technical, Cultural",
+      name: c.name,
+      loc: c.area,
+      slug: c.slug,
+      img: c.img,
+      credit: c.credit,
+      rating: c.rating?.toFixed(1),
+      events: String(a.events),
+      registrations: String(a.registrations),
+      verified: a.verified,
+      categories: Array.from(a.categories).slice(0, 3).join(", ") || undefined,
     };
-  });
-
-  collegesList.sort((a, b) => parseInt(b.students) - parseInt(a.students));
-  return collegesList;
-}
-
-function getCollegeBanner(name: string): string {
-  const upper = name.toUpperCase();
-  if (upper.includes("ATHARVA")) {
-    return "https://images.unsplash.com/photo-1562774053-701939374585?q=80&w=1000&auto=format&fit=crop";
-  }
-  if (upper.includes("IIT BOMBAY") || upper.includes("IITB")) {
-    return "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?q=80&w=1000&auto=format&fit=crop";
-  }
-  if (upper.includes("BITS PILANI")) {
-    return "https://images.unsplash.com/photo-1562774053-701939374585?q=80&w=1000&auto=format&fit=crop";
-  }
-  return "https://images.unsplash.com/photo-1562774053-701939374585?q=80&w=1000&auto=format&fit=crop";
+  }).sort(
+    // Rated campuses lead (Atharva, 5.0), then by activity
+    (x, y) => Number(y.rating ?? 0) - Number(x.rating ?? 0) || Number(y.events) - Number(x.events) || Number(y.registrations) - Number(x.registrations)
+  );
 }

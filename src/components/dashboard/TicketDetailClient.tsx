@@ -309,7 +309,7 @@ export function TicketDetailClient({ ticket, moreEvents = [] }: TicketDetailClie
               </h4>
               <div className="relative flex flex-col sm:flex-row justify-between gap-4 py-2">
                 {/* Horizontal line for desktop stepper */}
-                <div className="absolute top-4 left-6 right-6 h-0.5 bg-border/40 hidden sm:block z-0" />
+                <div className="absolute top-4 left-6 right-6 h-0.5 bg-border hidden sm:block z-0" />
                 
                 {(() => {
                   let timeline: { label: string; time: string }[] = [];
@@ -322,14 +322,18 @@ export function TicketDetailClient({ ticket, moreEvents = [] }: TicketDetailClie
                   }
                   
                   if (!Array.isArray(timeline)) timeline = [];
-                  
+                  // No OTP step exists in registration; older rows still carry a fake "OTP Verified" entry, so hide it
+                  timeline = timeline.filter((t) => !/otp/i.test(`${(t as { status?: string }).status ?? ""} ${t.label}`));
+                  // "Checked In via QR (Mobile Scanner)" is device noise for attendees
+                  const clean = (label: string) => label.replace(/^(Checked In) via .*$/, "$1").replace(/ \(Invited by Captain\)$/, "");
+
                   return timeline.map((item, idx: number) => (
                     <div key={idx} className="flex sm:flex-col items-center text-center gap-3 relative z-10 flex-1">
-                      <div className="w-8 h-8 rounded-full bg-lime text-black font-bold flex items-center justify-center text-xs shrink-0 shadow-lg shadow-lime/20">
+                      <div className="w-8 h-8 rounded-full bg-lime text-[#0B0B08] font-bold flex items-center justify-center text-xs shrink-0 ring-4 ring-card">
                         {idx + 1}
                       </div>
                       <div className="text-left sm:text-center">
-                        <p className="text-xs font-bold text-white leading-tight">{item.label}</p>
+                        <p className="text-xs font-bold text-text-main print:text-black leading-tight">{clean(item.label)}</p>
                         <p className="text-[10px] text-text-faint mt-0.5 font-medium">
                           {format(new Date(item.time), "MMM d, h:mm a")}
                         </p>

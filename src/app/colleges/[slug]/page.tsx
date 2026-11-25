@@ -3,9 +3,10 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { 
   MapPin, Globe, Calendar, Users, Award, 
-  CheckCircle2, Mail, Phone, BookOpen, Clock, Star, ArrowLeft, Image as ImageIcon 
+  CheckCircle2, Mail, BookOpen, Star, ArrowLeft, Image as ImageIcon 
 } from "lucide-react";
 import Image from "next/image";
+import { campusBySlug, campusFor } from "@/lib/campuses";
 
 const Instagram = ({ className }: { className?: string }) => (
   <svg
@@ -68,26 +69,25 @@ export default async function CollegeDetailPage({ params }: CollegePageProps) {
     }
   });
 
-  const organizer = organizers.find(org => 
-    org.college.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") === slug
-  );
+  const campus = campusBySlug(slug);
+  if (!campus) notFound();
 
-  if (!organizer) {
-    notFound();
-  }
+  // All organizer accounts of this campus; the one with the most events supplies the contact/social details
+  const campusOrgs = organizers.filter((org) => campusFor(org.college)?.slug === slug);
+  const organizer = [...campusOrgs].sort((x, y) => y.user.events.length - x.user.events.length)[0];
+  if (!organizer) notFound();
 
-  const collegeName = organizer.college;
-  const events = organizer.user.events;
+  const collegeName = campus.name;
+  const events = campusOrgs.flatMap((org) => org.user.events);
   const now = new Date();
   const upcomingEvents = events.filter(e => new Date(e.date) >= now);
   const pastEvents = events.filter(e => new Date(e.date) < now);
-
-  // Aggregate stats
   const totalRegistrations = events.reduce((sum, e) => sum + e.registrations.length, 0);
-  const hash = collegeName.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const followersCount = Math.round(totalRegistrations * 2.8 + (hash % 100) * 8 + 140);
-  const averageRating = (4.5 + (hash % 5) * 0.1).toFixed(1);
-  const responseTime = hash % 2 === 0 ? "Within 2 hours" : "Within 24 hours";
+
+  // Only organizers who actually run events are listed as the team (no demo/placeholder accounts)
+  const team = campusOrgs
+    .filter((org) => org.user.events.length > 0)
+    .map((org) => ({ name: org.user.name, role: org.position, img: org.user.image }));
 
   // Gallery images from events
   const gallery = events
@@ -95,39 +95,7 @@ export default async function CollegeDetailPage({ params }: CollegePageProps) {
     .filter(Boolean)
     .slice(0, 6);
 
-  // Fallback banner
-  const bannerUrl = hash % 3 === 0 
-    ? "https://images.unsplash.com/photo-1562774053-701939374585?q=80&w=1200&auto=format&fit=crop"
-    : hash % 3 === 1
-      ? "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?q=80&w=1200&auto=format&fit=crop"
-      : "https://images.unsplash.com/photo-1562774053-701939374585?q=80&w=1200&auto=format&fit=crop";
-
-  // Mock team members
-  const team = [
-    { name: organizer.user.name, role: `${organizer.position} (Lead Coordinator)`, img: organizer.user.image },
-    { name: "Aditya Verma", role: "Co-Lead (Student Affairs)", img: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=200&auto=format&fit=crop" },
-    { name: "Shruti Hegde", role: "Treasurer (Logistics)", img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&auto=format&fit=crop" }
-  ];
-
-  // Determine city & state
-  let city = "Mumbai";
-  let state = "Maharashtra";
-  if (organizer.address) {
-    const parts = organizer.address.split(",");
-    if (parts.length >= 2) {
-      city = parts[parts.length - 2].trim();
-      state = parts[parts.length - 1].trim();
-    }
-  } else {
-    const upperName = collegeName.toUpperCase();
-    if (upperName.includes("PUNE")) { city = "Pune"; }
-    else if (upperName.includes("DELHI")) { city = "Delhi"; state = "Delhi"; }
-    else if (upperName.includes("PILANI")) { city = "Pilani"; state = "Rajasthan"; }
-  }
-
-  // Get dynamic categories
-  const categoryNames = Array.from(new Set(events.map(e => e.category.name))).slice(0, 3);
-  const popularCategories = categoryNames.length > 0 ? categoryNames.join(", ") : "Cultural, Technical";
+  const { city, state } = campus;
 
   return (
     <div className="min-h-screen bg-background text-text-main font-archivo pb-16">
@@ -145,14 +113,28 @@ export default async function CollegeDetailPage({ params }: CollegePageProps) {
       {/* College Hero Area */}
       <div className="max-w-7xl mx-auto px-4 md:px-8 mt-6">
         <div className="rounded-3xl border border-border bg-card relative overflow-hidden h-[300px] md:h-[400px]">
-          <Image 
-            src={bannerUrl} 
-            alt={collegeName}
-            fill
-            className="object-cover opacity-40 blur-xs"
-            priority
-            sizes="100vw"
-          />
+          {campus.img ? (
+            <Image
+              src={campus.img}
+              alt={collegeName}
+              fill
+              className="object-cover opacity-60"
+              priority
+              sizes="100vw"
+            />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-cobalt)]/40 via-card-hover to-card" />
+          )}
+          {campus.credit && (
+            <a
+              href={campus.credit.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="absolute top-3 right-4 z-10 text-[10px] text-white/70 hover:text-white [text-shadow:0_1px_2px_rgba(0,0,0,.8)] underline-offset-2 hover:underline"
+            >
+              {campus.credit.text}
+            </a>
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-transparent" />
           
           {/* Hero details float */}
@@ -173,7 +155,7 @@ export default async function CollegeDetailPage({ params }: CollegePageProps) {
               </h1>
               <p className="flex items-center gap-1.5 text-xs md:text-sm text-white/80">
                 <MapPin className="w-4 h-4 text-[#7FA3FF] shrink-0" />
-                {city}, {state} {organizer.address ? `• ${organizer.address}` : ""}
+                {campus.area}, {state}
               </p>
             </div>
 
@@ -216,7 +198,7 @@ export default async function CollegeDetailPage({ params }: CollegePageProps) {
 
       {/* Stats Quickbar */}
       <div className="max-w-7xl mx-auto px-4 md:px-8 mt-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className={`grid gap-4 ${campus.rating ? "grid-cols-2 md:grid-cols-4" : "grid-cols-3"}`}>
           <div className="rounded-2xl border border-border bg-card p-5 text-center">
             <Calendar className="w-5 h-5 text-[var(--color-lime)] mx-auto mb-2" />
             <p className="text-[20px] font-anton text-text-main leading-none">{upcomingEvents.length}</p>
@@ -229,14 +211,16 @@ export default async function CollegeDetailPage({ params }: CollegePageProps) {
           </div>
           <div className="rounded-2xl border border-border bg-card p-5 text-center">
             <Award className="w-5 h-5 text-purple-400 mx-auto mb-2" />
-            <p className="text-[20px] font-anton text-text-main leading-none">{followersCount}</p>
-            <p className="text-[10px] text-text-faint uppercase tracking-widest font-bold mt-1.5">Followers</p>
+            <p className="text-[20px] font-anton text-text-main leading-none">{pastEvents.length}</p>
+            <p className="text-[10px] text-text-faint uppercase tracking-widest font-bold mt-1.5">Past Events</p>
           </div>
-          <div className="rounded-2xl border border-border bg-card p-5 text-center">
-            <Star className="w-5 h-5 text-orange-400 mx-auto mb-2" />
-            <p className="text-[20px] font-anton text-text-main leading-none">{averageRating} ★</p>
-            <p className="text-[10px] text-text-faint uppercase tracking-widest font-bold mt-1.5">Avg Rating</p>
-          </div>
+          {campus.rating && (
+            <div className="rounded-2xl border border-border bg-card p-5 text-center">
+              <Star className="w-5 h-5 text-amber-400 fill-amber-400 mx-auto mb-2" />
+              <p className="text-[20px] font-anton text-text-main leading-none">{campus.rating.toFixed(1)}</p>
+              <p className="text-[10px] text-text-faint uppercase tracking-widest font-bold mt-1.5">Rating</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -250,7 +234,7 @@ export default async function CollegeDetailPage({ params }: CollegePageProps) {
           <div className="space-y-4">
             <h2 className="text-xl font-anton uppercase tracking-wider text-text-main">About the Campus Organizer</h2>
             <p className="text-text-muted text-sm leading-relaxed font-archivo">
-              {organizer.description || `${collegeName} Event Organizing Team orchestrates campus activities, manages dynamic student fests, and builds high-quality inter-collegiate events. Our team collaborates with different branches like ${organizer.department || "Engineering"} to bring students together across technical, sports, and cultural milestones.`}
+              {organizer.description || `Events hosted by ${collegeName} on CollegeEvents.`}
             </p>
           </div>
 
@@ -362,6 +346,7 @@ export default async function CollegeDetailPage({ params }: CollegePageProps) {
         <div className="space-y-8">
           
           {/* Team section */}
+          {team.length > 0 && (
           <div className="rounded-2xl border border-border bg-card p-6 space-y-6">
             <h3 className="text-base font-anton uppercase tracking-wider text-text-main border-b border-border pb-2">Organizer Team</h3>
             <div className="space-y-4">
@@ -384,6 +369,7 @@ export default async function CollegeDetailPage({ params }: CollegePageProps) {
               ))}
             </div>
           </div>
+          )}
 
           {/* Contact Details */}
           <div className="rounded-2xl border border-border bg-card p-6 space-y-5">
@@ -401,20 +387,6 @@ export default async function CollegeDetailPage({ params }: CollegePageProps) {
                 <div>
                   <span className="text-[10px] text-text-faint block uppercase font-bold tracking-wider leading-none mb-1">Academic Department</span>
                   <span className="text-text-main font-semibold">{organizer.department}</span>
-                </div>
-              </div>
-              <div className="flex items-start gap-2.5">
-                <Clock className="w-4.5 h-4.5 text-[var(--color-lime)] shrink-0 mt-0.5" />
-                <div>
-                  <span className="text-[10px] text-text-faint block uppercase font-bold tracking-wider leading-none mb-1">Average Response</span>
-                  <span className="text-text-main font-semibold">{responseTime}</span>
-                </div>
-              </div>
-              <div className="flex items-start gap-2.5">
-                <Phone className="w-4.5 h-4.5 text-[var(--color-lime)] shrink-0 mt-0.5" />
-                <div>
-                  <span className="text-[10px] text-text-faint block uppercase font-bold tracking-wider leading-none mb-1">Support Helpline</span>
-                  <span className="text-text-main font-semibold">+91 90000 12345 (Public)</span>
                 </div>
               </div>
             </div>
@@ -438,28 +410,9 @@ export default async function CollegeDetailPage({ params }: CollegePageProps) {
                 </div>
                 <h4 className="text-xs font-bold text-text-main">{city} Campus</h4>
                 <p className="text-[10px] text-text-faint font-medium max-w-[200px] leading-relaxed mx-auto">
-                  {organizer.address || `Located in ${city}, ${state}`}
+                  {campus.area}, {state}
                 </p>
               </div>
-            </div>
-          </div>
-
-          {/* Reviews section */}
-          <div className="space-y-4">
-            <h3 className="text-base font-anton uppercase tracking-wider text-text-main">Student Reviews</h3>
-            <div className="space-y-3">
-              {[
-                { name: "Rahul S.", rating: 5, text: "Excellent fests! The technical seminars organized by this college are outstanding." },
-                { name: "Neha D.", rating: 4, text: "Very smooth registrations and great coordination during cultural events." }
-              ].map((rev, idx) => (
-                <div key={idx} className="rounded-xl border border-border bg-card p-4 space-y-2 text-xs">
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-text-main">{rev.name}</span>
-                    <span className="text-orange-400 font-bold">{rev.rating} ★</span>
-                  </div>
-                  <p className="text-text-muted leading-relaxed font-archivo">{rev.text}</p>
-                </div>
-              ))}
             </div>
           </div>
 

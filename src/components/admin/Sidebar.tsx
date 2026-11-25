@@ -76,7 +76,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         {/* Brand Logo & Toggle */}
         <div className="h-20 flex items-center justify-between px-6 border-b border-white/5">
           <Link href="/admin" className="flex items-center gap-2.5">
-            <Image src="/logo-mark.png" alt="CollegeEvents logo" width={32} height={32} className="w-8 h-8 shrink-0" priority />
+            <Image src="/logo-mark.png" alt="CollegeEvents logo" width={32} height={32} className="logo-mark-on-dark w-8 h-8 shrink-0" priority />
             {!isCollapsed && (
               <span className="font-anton text-lg tracking-wider text-white">
                 COLLEGE<span className="text-[var(--color-lime)]">EVENTS</span>
