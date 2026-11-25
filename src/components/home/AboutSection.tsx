@@ -32,7 +32,7 @@ export function AboutSection({ stats }: { stats: { totalColleges: number; totalE
         </svg>
       ),
       title: "Discover Events",
-      desc: "Find cultural, technical, sports, and literary events from colleges across Mumbai and Pune.",
+      desc: "Find cultural, technical, sports, and literary events from colleges across Mumbai.",
     },
     {
       icon: (

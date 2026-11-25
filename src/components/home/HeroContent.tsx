@@ -23,7 +23,7 @@ export function HeroContent({ event, onRegisterClick, onDetailsClick }: HeroCont
         >
           <div className="flex gap-[10px] flex-wrap mb-[26px]">
             <span className="eyebrow">
-              <span className="dot"></span> Live across 120+ campuses
+              <span className="dot"></span> Live on campus now
             </span>
           </div>
 

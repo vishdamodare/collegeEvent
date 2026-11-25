@@ -28,8 +28,11 @@ export const dynamic = "force-dynamic";
 
 // Same for every visitor, and getDynamicColleges scans all organizers/events/registrations:
 // cache for 5 min so most refreshes skip those DB round trips
-const getCachedStats = unstable_cache(getHomepageStats, ["home-stats"], { revalidate: 300 });
-const getCachedColleges = unstable_cache(getDynamicColleges, ["home-colleges"], { revalidate: 300 });
+// Keyed by commit: Vercel's data cache survives deployments, so without this a deploy keeps serving the previous
+// deploy's cached (possibly differently shaped) data until the 5 minutes lapse.
+const cacheKey = process.env.VERCEL_GIT_COMMIT_SHA ?? "dev";
+const getCachedStats = unstable_cache(getHomepageStats, ["home-stats", cacheKey], { revalidate: 300 });
+const getCachedColleges = unstable_cache(getDynamicColleges, ["home-colleges", cacheKey], { revalidate: 300 });
 
 // Badge color map based on category
 const badgeMap: Record<string, string> = {

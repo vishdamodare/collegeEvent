@@ -40,7 +40,8 @@ export const CAMPUSES: Campus[] = [
     area: "Malad West, Mumbai",
     city: "Mumbai",
     state: "Maharashtra",
-    // No freely licensed photo of Atharva exists; add one as /public/campuses/atharva.jpg and set img + credit here.
+    img: "/campuses/atharva.jpg",
+    credit: { text: "Photo: Atharva College of Engineering", url: "https://atharvacoe.ac.in" },
     rating: 5,
     match: /atharva/i,
   },
