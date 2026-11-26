@@ -1,9 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { CheckCircle2 } from "lucide-react";
-import { motion, useMotionValue, useSpring, useTransform, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useMotionValue, useSpring, useTransform, useReducedMotion } from "framer-motion";
 import { Event } from "@/types";
 import { TicketWelcome } from "./TicketWelcome";
 
@@ -32,6 +33,14 @@ function joinNames(names: string[]) {
 export function HeroSection({ events, campuses, qr, onOpenDetails, onOpenRegister }: HeroSectionProps) {
   const event = events[0];
   const reduce = useReducedMotion();
+
+  // Phone notifications take turns at the top of the screen: registered, then checked in at the gate
+  const [note, setNote] = useState<"registered" | "checkedIn">("registered");
+  useEffect(() => {
+    if (reduce) return;
+    const t = setTimeout(() => setNote((n) => (n === "registered" ? "checkedIn" : "registered")), note === "registered" ? 3400 : 4200);
+    return () => clearTimeout(t);
+  }, [note, reduce]);
 
   // The phone leans slightly toward the cursor (desktop only; springs keep it calm)
   const px = useMotionValue(0);
@@ -126,6 +135,37 @@ export function HeroSection({ events, campuses, qr, onOpenDetails, onOpenRegiste
                           className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-br from-white/30 via-transparent to-transparent opacity-50"
                         />
 
+                        {/* Notification banner, inside the screen like a real phone alert */}
+                        {(() => {
+                          const registered = note === "registered";
+                          return (
+                            <div className="absolute inset-x-2.5 top-[44px] z-20">
+                              <AnimatePresence mode="wait" initial>
+                                <motion.button
+                                  key={note}
+                                  type="button"
+                                  onClick={() => (registered ? onOpenRegister(event.id) : onOpenDetails(event.id))}
+                                  initial={reduce ? false : { opacity: 0, y: -18, scale: 0.97 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                                  exit={{ opacity: 0, y: -14 }}
+                                  transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1], delay: reduce ? 0 : 0.5 }}
+                                  className="w-full flex items-center gap-2.5 rounded-2xl bg-[var(--color-ticket)] text-[var(--color-ticket-ink)] pl-2.5 pr-3 py-2.5 text-left shadow-[0_14px_30px_-14px_rgba(10,16,36,.55)] border border-[var(--color-border)] cursor-pointer"
+                                >
+                                  <span className={`${registered ? "" : "check-pop "}grid place-items-center w-8 h-8 shrink-0 rounded-full bg-emerald-500/15 text-emerald-600`}>
+                                    <CheckCircle2 className="w-[18px] h-[18px]" aria-hidden />
+                                  </span>
+                                  <span className="min-w-0">
+                                    <span className="block text-[13px] font-bold leading-tight">{registered ? "You\u2019re registered" : "Checked in"}</span>
+                                    <span className="block text-[11.5px] leading-tight text-[var(--color-ticket-muted)] mt-0.5">
+                                      {registered ? "Ticket saved to your account" : "Scanned at the gate"}
+                                    </span>
+                                  </span>
+                                </motion.button>
+                              </AnimatePresence>
+                            </div>
+                          );
+                        })()}
+
                         {/* iOS status bar + Dynamic Island */}
                         <div className="relative z-20 px-5 pt-2.5 pb-1 flex items-center justify-between select-none" aria-hidden>
                           <span className="w-[42px] text-[11px] font-semibold tracking-[-0.02em] text-[#0A1024] tabular-nums">
@@ -215,41 +255,6 @@ export function HeroSection({ events, campuses, qr, onOpenDetails, onOpenRegiste
                 </div>
               </div>
 
-              {/* The outcome of registering */}
-              <div className="float-slow absolute left-2 sm:left-0 -bottom-5 lg:-bottom-0 lg:-left-[205px] lg:bottom-4" style={{ ["--fd" as string]: "-2s" }}>
-                <button
-                  type="button"
-                  onClick={() => onOpenRegister(event.id)}
-                  className="chip-in flex items-center gap-3 rounded-2xl bg-[var(--color-ticket)] text-[var(--color-ticket-ink)] pl-3 pr-4 py-3 text-left shadow-[0_18px_40px_-16px_rgba(0,0,0,.7)] border border-[var(--color-border)] hover:-translate-y-0.5 transition-transform cursor-pointer"
-                  style={{ animationDelay: "0.9s" }}
-                >
-                  <span className="grid place-items-center w-9 h-9 rounded-full bg-emerald-500/15 text-emerald-600">
-                    <CheckCircle2 className="w-5 h-5" aria-hidden />
-                  </span>
-                  <span>
-                    <span className="block text-[14px] font-bold leading-tight">You&apos;re registered</span>
-                    <span className="block text-[12px] text-[var(--color-ticket-muted)]">Ticket saved to your account</span>
-                  </span>
-                </button>
-              </div>
-
-              {/* Answers the scan line: appears once the first scan has landed, then pulses on every scan */}
-              <div className="float-slow absolute right-0 sm:-right-2 lg:right-0 top-20" style={{ ["--fd" as string]: "-4s" }}>
-                <button
-                  type="button"
-                  onClick={() => onOpenDetails(event.id)}
-                  className="chip-in flex items-center gap-3 rounded-2xl bg-[var(--color-ticket)] text-[var(--color-ticket-ink)] pl-3 pr-4 py-3 text-left shadow-[0_18px_40px_-16px_rgba(0,0,0,.7)] border border-[var(--color-border)] hover:-translate-y-0.5 transition-transform cursor-pointer"
-                  style={{ animationDelay: "3.9s" }}
-                >
-                  <span className="check-pop grid place-items-center w-9 h-9 rounded-full bg-emerald-500/15 text-emerald-600">
-                    <CheckCircle2 className="w-5 h-5" aria-hidden />
-                  </span>
-                  <span>
-                    <span className="block text-[14px] font-bold leading-tight">Checked in</span>
-                    <span className="block text-[12px] text-[var(--color-ticket-muted)]">Scanned at the gate</span>
-                  </span>
-                </button>
-              </div>
             </motion.div>
           </div>
         )}
