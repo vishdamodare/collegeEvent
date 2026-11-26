@@ -12,6 +12,7 @@ interface AdminShellProps {
     college: string;
     department: string;
     position: string;
+    logo?: string | null;
   };
 }
 

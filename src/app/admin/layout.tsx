@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getAdminUser } from "@/lib/admin-auth";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { campusFor } from "@/lib/campuses";
 
 export const metadata = {
   title: "Admin Dashboard — CollegeEvents",
@@ -35,6 +36,8 @@ export default async function AdminLayout({
     college: user.organizerProfile?.college || "Your College",
     department: user.organizerProfile?.department || "General",
     position: user.organizerProfile?.position || (user.role === "SUPER_ADMIN" ? "Super Admin" : "Coordinator"),
+    // Logo shown in the sidebar: the one set on the public page, else the campus default
+    logo: user.organizerProfile?.pageLogo || campusFor(user.organizerProfile?.college)?.logo || null,
   };
 
   return (
