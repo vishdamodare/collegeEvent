@@ -55,7 +55,7 @@ export function EventExtraDetails({ details: d }: { details: PublicEventDetails 
       {/* Schedule & Venue */}
       <section className="space-y-4">
         <h2 className={heading}>Schedule & Venue</h2>
-        <div className="grid sm:grid-cols-2 gap-3 text-[14px]">
+        <div className="grid grid-cols-2 gap-3 text-[14px] [&>*:last-child:nth-child(odd)]:col-span-2">
           {d.end && (
             <div className={card}>
               <p className="text-text-faint text-xs uppercase tracking-wider mb-1">Ends</p>
@@ -78,7 +78,7 @@ export function EventExtraDetails({ details: d }: { details: PublicEventDetails 
           </div>
           )}
           {(d.address || d.googleMapsLink) && (
-            <div className={card}>
+            <div className={`${card} col-span-2`}>
               <p className="text-text-faint text-xs uppercase tracking-wider mb-1">Address</p>
               {d.address && <p className="text-text-main">{d.address}</p>}
               {safeUrl(d.googleMapsLink) && (
@@ -89,7 +89,7 @@ export function EventExtraDetails({ details: d }: { details: PublicEventDetails 
             </div>
           )}
           {safeUrl(d.meetingLink) && (
-            <div className={card}>
+            <div className={`${card} col-span-2`}>
               <p className="text-text-faint text-xs uppercase tracking-wider mb-1">Join online</p>
               <a href={safeUrl(d.meetingLink)} target="_blank" rel="noopener noreferrer" className="text-lime break-all hover:underline">
                 {d.meetingLink}
@@ -104,7 +104,7 @@ export function EventExtraDetails({ details: d }: { details: PublicEventDetails 
       {d.tickets.length > 0 && (
         <section className="space-y-4">
           <h2 className={heading}>Tickets</h2>
-          <div className="grid sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 [&>*:last-child:nth-child(odd)]:col-span-2">
             {d.tickets.map((t, i) => (
               <div key={i} className={card}>
                 <div className="flex justify-between gap-3">
@@ -123,7 +123,7 @@ export function EventExtraDetails({ details: d }: { details: PublicEventDetails 
       {d.prizes.length > 0 && (
         <section className="space-y-4">
           <h2 className={heading}>Prizes</h2>
-          <div className="grid sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 [&>*:last-child:nth-child(odd)]:col-span-2">
             {d.prizes.map((p, i) => (
               <div key={i} className={card}>
                 <p className="font-bold text-text-main">{p.title}</p>

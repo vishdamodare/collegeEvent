@@ -5,7 +5,7 @@ import { EventExtraDetails, priceLabel, type PublicEventDetails } from "@/compon
 import Image from "next/image";
 import Link from "next/link";
 import { campusFor } from "@/lib/campuses";
-import { motion } from "framer-motion";
+import { motion, MotionConfig } from "framer-motion";
 import { format } from "date-fns";
 import {
   Calendar,
@@ -16,7 +16,6 @@ import {
   Share2,
   Globe,
   User,
-  Tag,
   Info,
   CheckCircle,
   Loader2,
@@ -216,67 +215,197 @@ export function EventDetailClient({
   };
 
   return (
+    <MotionConfig reducedMotion="user">
     <main className="min-h-screen bg-background text-text-main">
       <Navbar isAuthenticated={!!session} onLogout={handleLogout} />
 
-      {/* Hero photo: a crisp framed image below the navbar. Fading it into the page
-          background washed it out in light mode, so nothing overlaps it now. */}
-      <div className="max-w-6xl mx-auto px-5 pt-[92px] sm:pt-28">
-        <div className="relative w-full aspect-[16/10] sm:aspect-[21/9] max-h-[460px] rounded-[22px] sm:rounded-[28px] overflow-hidden border border-border bg-card">
+      {/* Mobile / tablet: photo up top, then title, host and key facts as an icon list */}
+      <div className="lg:hidden pt-[72px]">
+        <div className="relative aspect-[4/3] sm:aspect-[16/9] w-full overflow-hidden rounded-b-[28px] bg-card">
           {heroImage && !heroFailed ? (
             <Image
               onError={() => setHeroFailed(true)}
               src={heroImage}
-              alt={event.title}
+              alt=""
+              fill
+              className="object-cover"
+              priority
+              sizes="100vw"
+            />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-cobalt/30 to-card" />
+          )}
+          <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/50 to-transparent" aria-hidden />
+          <Link
+            href="/events"
+            aria-label="Back to events"
+            className="absolute top-3 left-4 w-10 h-10 rounded-full bg-black/45 backdrop-blur flex items-center justify-center text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          >
+            <ArrowLeft className="w-5 h-5" aria-hidden="true" />
+          </Link>
+          <button
+            type="button"
+            onClick={handleShare}
+            aria-label="Share this event"
+            className="absolute top-3 right-4 w-10 h-10 rounded-full bg-black/45 backdrop-blur flex items-center justify-center text-white cursor-pointer touch-manipulation focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          >
+            <Share2 className="w-[18px] h-[18px]" aria-hidden="true" />
+          </button>
+        </div>
+
+        <div className="px-5 pt-5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold border border-border bg-card text-text-main">
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: event.category.color || "var(--color-lime)" }} />
+              {event.category.name}
+            </span>
+            <StatusBadge status={event.status} />
+          </div>
+          <h1 className="mt-3 text-[28px] leading-[1.12] font-anton tracking-tight text-text-main text-balance">{event.title}</h1>
+
+          {(() => {
+            const campus = campusFor(event.organizer.organizerProfile?.college);
+            const hostName = campus?.name ?? event.organizer.organizerProfile?.college ?? event.organizer.name;
+            const inner = (
+              <>
+                <span className="relative w-9 h-9 rounded-lg bg-white overflow-hidden shrink-0 flex items-center justify-center text-black font-bold text-sm">
+                  {campus?.logo ? <Image src={campus.logo} alt="" fill className="object-contain p-1" sizes="36px" /> : hostName.charAt(0)}
+                </span>
+                <span className="min-w-0 text-sm leading-tight">
+                  <span className="block text-text-faint">Hosted by</span>
+                  <span className="block font-semibold text-text-main truncate">{hostName}</span>
+                </span>
+              </>
+            );
+            return campus ? (
+              <Link href={`/colleges/${campus.slug}`} className="mt-4 flex items-center gap-3 min-w-0">{inner}</Link>
+            ) : (
+              <div className="mt-4 flex items-center gap-3 min-w-0">{inner}</div>
+            );
+          })()}
+
+          <ul className="mt-6 space-y-5">
+            {[
+              {
+                icon: Calendar,
+                title: format(new Date(event.date), "EEE, MMM d, yyyy"),
+                sub: `Starts ${format(new Date(event.date), "h:mm a")}`,
+              },
+              {
+                icon: MapPin,
+                title: event.location,
+                sub: (
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-lime font-medium"
+                  >
+                    Open in Google Maps
+                  </a>
+                ),
+              },
+              {
+                icon: Users,
+                title: `${priceLabel(details)} entry`,
+                sub: (
+                  <>
+                    <span>{isSoldOut ? "Sold out" : `${seatsLeft.toLocaleString()} of ${event.capacity.toLocaleString()} seats left`}</span>
+                    <span className="mt-2 block h-1.5 rounded-full bg-card-hover overflow-hidden" aria-hidden="true">
+                      <span
+                        className="block h-full rounded-full bg-lime"
+                        style={{ width: `${Math.min(100, (event._count.registrations / event.capacity) * 100)}%` }}
+                      />
+                    </span>
+                  </>
+                ),
+              },
+            ].map(({ icon: Icon, title, sub }, i) => (
+              <li key={i} className="flex items-start gap-3.5">
+                <span className="w-11 h-11 rounded-xl shrink-0 flex items-center justify-center text-lime bg-[color-mix(in_srgb,var(--color-lime)_14%,transparent)]">
+                  <Icon className="w-5 h-5" aria-hidden="true" />
+                </span>
+                <span className="min-w-0 flex-1 pt-0.5">
+                  <span className="block font-semibold text-text-main leading-snug">{title}</span>
+                  <span className="block text-sm text-text-muted mt-0.5">{sub}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      {/* Desktop hero: photo with the title on a dark scrim (works in light and dark), then a ticket-stub fact bar */}
+      <div className="hidden lg:block max-w-6xl mx-auto px-5 pt-28">
+        <div className="relative w-full min-h-[320px] sm:min-h-[400px] rounded-[22px] sm:rounded-[28px] overflow-hidden border border-border bg-card">
+          {heroImage && !heroFailed ? (
+            <Image
+              onError={() => setHeroFailed(true)}
+              src={heroImage}
+              alt=""
               fill
               className="object-cover"
               priority
               sizes="(max-width: 1152px) 100vw, 1152px"
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-cobalt/20 to-card" />
+            <div className="absolute inset-0 bg-gradient-to-br from-cobalt/30 to-card" />
           )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" aria-hidden />
+
+          <Link
+            href="/events"
+            className="absolute top-4 left-4 inline-flex items-center gap-1.5 rounded-full bg-black/45 backdrop-blur px-3.5 py-1.5 text-sm text-white/90 hover:bg-black/65 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          >
+            <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+            All events
+          </Link>
+
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="absolute bottom-0 inset-x-0 p-5 sm:p-9 pb-12 sm:pb-14"
+          >
+            <div className="flex flex-wrap items-center gap-2.5 mb-4">
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold bg-white/15 backdrop-blur text-white">
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: event.category.color || "var(--color-lime)" }} />
+                {event.category.name}
+              </span>
+              <StatusBadge status={event.status} />
+            </div>
+            <h1 className="text-3xl sm:text-5xl font-anton tracking-tight text-white leading-[1.05] max-w-3xl text-balance">
+              {event.title}
+            </h1>
+          </motion.div>
         </div>
+
+        {/* Fact bar: the four things a student checks first. It overlaps the hero like a ticket stub. */}
+        <dl className="relative z-10 -mt-7 mx-3 sm:mx-8 grid grid-cols-2 lg:grid-cols-4 rounded-2xl border border-border bg-[color-mix(in_srgb,var(--color-text-main)_6%,var(--color-background))] shadow-[0_18px_40px_-20px_rgba(0,0,0,.5)] overflow-hidden">
+          {[
+            { icon: Calendar, label: "Date", value: format(new Date(event.date), "EEE, MMM d, yyyy"), cls: "" },
+            { icon: Clock, label: "Starts", value: format(new Date(event.date), "h:mm a"), cls: "border-l" },
+            { icon: MapPin, label: "Venue", value: event.location, cls: "col-span-2 border-t lg:col-span-1 lg:border-t-0 lg:border-l" },
+            {
+              icon: Users,
+              label: "Entry",
+              value: `${priceLabel(details)} · ${isSoldOut ? "sold out" : `${seatsLeft.toLocaleString()} seats left`}`,
+              cls: "col-span-2 border-t lg:col-span-1 lg:border-t-0 lg:border-l",
+            },
+          ].map(({ icon: Icon, label, value, cls }) => (
+            <div key={label} className={cn("p-4 sm:p-5 border-dashed border-border", cls)}>
+              <dt className="flex items-center gap-1.5 text-xs text-text-faint">
+                <Icon className="w-3.5 h-3.5" aria-hidden="true" /> {label}
+              </dt>
+              <dd className="mt-1 text-sm sm:text-[15px] font-semibold text-text-main leading-snug lg:line-clamp-2">{value}</dd>
+            </div>
+          ))}
+        </dl>
       </div>
 
-      <div className="max-w-6xl mx-auto px-5 pt-6 sm:pt-8 relative z-10 pb-20">
-        {/* Back link */}
-        <Link
-          href="/events"
-          className="inline-flex items-center gap-2 text-sm text-text-faint hover:text-lime transition-colors mb-6"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Events
-        </Link>
-
+      <div className="max-w-6xl mx-auto px-5 pt-8 lg:pt-10 relative z-10 pb-20">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           {/* Main content */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Title section */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border border-border bg-card text-text-main">
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: event.category.color || "var(--color-lime)" }} />
-                  {event.category.name}
-                </span>
-                <StatusBadge status={event.status} />
-              </div>
-              <h1 className="text-4xl md:text-5xl font-anton tracking-wider text-text-main uppercase leading-tight">
-                {event.title}
-              </h1>
-            </motion.div>
-
-            {/* Event Meta for Mobile */}
-            <div className="block lg:hidden bg-card border border-border p-5 rounded-2xl space-y-3">
-              <InfoRow icon={Calendar} label="Date" value={format(new Date(event.date), "MMM d, yyyy")} />
-              <InfoRow icon={Clock} label="Time" value={format(new Date(event.date), "h:mm a")} />
-              <InfoRow icon={MapPin} label="Venue" value={event.location} />
-              <InfoRow icon={Users} label="Capacity" value={event.capacity >= 1_000_000 ? "No limit" : `${event.capacity.toLocaleString()} seats`} />
-            </div>
-
+          <div className="lg:col-span-2 space-y-8 order-2 lg:order-1">
             {/* Description */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -339,20 +468,28 @@ export function EventDetailClient({
               
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  {/* College Logo initials avatar */}
-                  <div className="w-12 h-12 rounded-xl bg-[var(--color-cobalt)]/10 border border-[var(--color-cobalt)]/20 flex items-center justify-center font-bold text-[var(--color-cobalt)] text-[15px] shrink-0">
-                    {(() => {
-                      const college = event.organizer.organizerProfile?.college || "College";
-                      const cleanName = college
-                        .replace(/\b(of|and|the|engineering|technology|college|institute|university)\b/gi, "")
-                        .trim();
-                      const words = cleanName.split(/\s+/);
-                      if (words.length >= 2) {
-                        return (words[0][0] + words[1][0]).toUpperCase();
-                      }
-                      return cleanName.substring(0, 3).toUpperCase();
-                    })()}
-                  </div>
+                  {/* College logo when we have it, otherwise initials */}
+                  {(() => {
+                    const logo = campusFor(event.organizer.organizerProfile?.college)?.logo;
+                    if (logo) {
+                      return (
+                        <div className="relative w-14 h-14 rounded-xl bg-white shrink-0 overflow-hidden">
+                          <Image src={logo} alt="" fill className="object-contain p-1.5" sizes="56px" />
+                        </div>
+                      );
+                    }
+                    const college = event.organizer.organizerProfile?.college || "College";
+                    const words = college
+                      .replace(/\b(of|and|the|engineering|technology|college|institute|university)\b/gi, "")
+                      .trim()
+                      .split(/\s+/);
+                    const initials = words.length >= 2 ? words[0][0] + words[1][0] : words[0].substring(0, 3);
+                    return (
+                      <div className="w-12 h-12 rounded-xl bg-[var(--color-cobalt)]/10 border border-[var(--color-cobalt)]/20 flex items-center justify-center font-bold text-[var(--color-cobalt)] text-[15px] shrink-0">
+                        {initials.toUpperCase()}
+                      </div>
+                    );
+                  })()}
 
                   <div>
                     <span className="text-[10px] text-text-faint block uppercase font-bold tracking-wider leading-none mb-1">Hosted by</span>
@@ -457,8 +594,8 @@ export function EventDetailClient({
             </motion.div>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
+          {/* Sidebar: right under the fact bar on mobile, beside the content on desktop */}
+          <div className={cn("space-y-6 lg:order-2", registered ? "order-1" : "order-3")}>
             {/* Registration card */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
@@ -466,13 +603,13 @@ export function EventDetailClient({
               id="register-card" className="rounded-2xl border border-border bg-card p-6 sticky top-28 scroll-mt-24"
             >
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="hidden lg:flex items-center justify-between">
                   <span className="text-sm text-text-faint">Entry fee</span>
                   <span className="text-lg font-bold text-text-main">{priceLabel(details)}</span>
                 </div>
 
                 {/* Seats info */}
-                <div className="flex items-center justify-between">
+                <div className="hidden lg:flex items-center justify-between">
                   <span className="text-sm text-text-faint">Seats remaining</span>
                   <span className={`text-lg font-bold ${isSoldOut ? "text-red-400" : "text-lime"}`}>
                     {isSoldOut ? "Sold Out" : seatsLeft.toLocaleString()}
@@ -611,14 +748,6 @@ export function EventDetailClient({
                 </div>
               </div>
 
-              {/* Event info */}
-              <div className="hidden lg:block mt-6 pt-6 border-t border-border space-y-3">
-                <InfoRow icon={Calendar} label="Date" value={format(new Date(event.date), "MMM d, yyyy")} />
-                <InfoRow icon={Clock} label="Time" value={format(new Date(event.date), "h:mm a")} />
-                <InfoRow icon={MapPin} label="Venue" value={event.location} />
-                <InfoRow icon={Tag} label="Category" value={event.category.name} />
-                <InfoRow icon={Users} label="Capacity" value={event.capacity >= 1_000_000 ? "No limit" : event.capacity.toLocaleString()} />
-              </div>
             </motion.div>
           </div>
         </div>
@@ -634,10 +763,10 @@ export function EventDetailClient({
             <h2 className="text-2xl font-bold mb-6 font-[family-name:var(--font-archivo)] normal-case">
               More by {event.organizer.name}
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-px-5 -mx-5 px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:px-0 sm:pb-0 sm:overflow-visible sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-5">
               {relatedEvents.map((re, i) => (
+                <div key={re.id} className="snap-start shrink-0 w-[78%] sm:w-auto">
                 <EventGridCard
-                  key={re.id}
                   id={re.id}
                   slug={re.slug}
                   title={re.title}
@@ -654,6 +783,7 @@ export function EventDetailClient({
                   savedCount={0}
                   index={i}
                 />
+                </div>
               ))}
             </div>
           </motion.div>
@@ -673,42 +803,36 @@ export function EventDetailClient({
 
       <Footer />
 
-      {/* Mobile: the registration card sits far down the page, so keep a shortcut pinned */}
-      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 px-5 pt-3 pb-[max(14px,env(safe-area-inset-bottom))] bg-[color-mix(in_srgb,var(--color-background)_92%,transparent)] backdrop-blur-md border-t border-border flex items-center gap-4">
-        <div className="min-w-0">
-          <div className="text-[11px] uppercase tracking-wider text-text-faint font-semibold">
-            {format(new Date(event.date), "MMM d, yyyy")}
+      {/* Mobile: pinned bar with the price and the one action that matters */}
+      {(() => {
+        const role = (session?.user as { role?: string } | undefined)?.role;
+        const ended = event.isClosed || new Date(event.date) < new Date();
+        const free = priceLabel(details) === "Free";
+        const base = "ml-auto shrink-0 rounded-xl px-7 py-3.5 text-[15px] font-semibold touch-manipulation";
+        let action: React.ReactNode;
+        if (registered) {
+          action = <a href="#register-card" className={`btn btn-primary ${base}`}>My ticket</a>;
+        } else if (ended || isSoldOut || !free || (session && role !== "STUDENT")) {
+          const label = ended ? "Closed" : isSoldOut ? "Sold out" : !free ? "Payment soon" : "Students only";
+          action = <span className={`${base} bg-card-hover border border-border text-text-faint`}>{label}</span>;
+        } else {
+          action = <button type="button" onClick={handleRegister} className={`btn btn-primary cursor-pointer ${base}`}>Register</button>;
+        }
+        return (
+          <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 px-5 pt-3 pb-[max(14px,env(safe-area-inset-bottom))] bg-[color-mix(in_srgb,var(--color-background)_92%,transparent)] backdrop-blur-md border-t border-border flex items-center gap-4">
+            <div className="min-w-0">
+              <div className="text-lg font-bold leading-tight">{priceLabel(details)}</div>
+              <div className="text-xs text-text-faint">
+                {isSoldOut ? "Sold out" : `${seatsLeft.toLocaleString()} seats left`}
+              </div>
+            </div>
+            {action}
           </div>
-          <div className="text-[14px] font-bold truncate">
-            {isSoldOut ? "Sold out" : `${seatsLeft.toLocaleString()} seats left`}
-          </div>
-        </div>
-        <a href="#register-card" className="btn btn-primary ml-auto !py-3.5 !px-6 shrink-0">
-          {registered ? "My ticket" : "Register"}
-        </a>
-      </div>
+        );
+      })()}
       {/* Space so the pinned bar never covers the footer's last line */}
       <div className="h-20 lg:hidden" aria-hidden />
     </main>
-  );
-}
-
-function InfoRow({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="flex items-start gap-3">
-      <Icon className="w-4 h-4 text-text-faint mt-0.5 shrink-0" />
-      <div>
-        <p className="text-xs text-text-faint">{label}</p>
-        <p className="text-sm text-text-muted">{value}</p>
-      </div>
-    </div>
+    </MotionConfig>
   );
 }

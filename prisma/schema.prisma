@@ -153,6 +153,12 @@ model OrganizerProfile {
   instagram            String?
   linkedin             String?
   address              String?
+  // Public college page (/colleges/[slug]) content, edited in Admin > College Profile. Null = show the page defaults.
+  pageTagline          String?
+  pageCredentials      Json?     // [{ label, detail }]
+  pageLogo             String?
+  pageHero             String?
+  pageAccent           String?   // #RRGGBB
   verificationStatus   String    @default("PENDING") // PENDING | APPROVED | REJECTED | BLOCKED
   verificationDocument String?
   emailAlerts          Boolean   @default(true)

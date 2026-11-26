@@ -500,3 +500,21 @@ select.form-input option {
 [data-theme="light"] .admin-ui .divide-white\/5 > :not(:last-child) { border-color: var(--desk-line); }
 [data-theme="light"] .admin-ui :is(.placeholder\:text-white\/30, .placeholder\:text-white\/20)::placeholder { color: #9AA1B9; }
 [data-theme="light"] .admin-ui .shadow-xl, [data-theme="light"] .admin-ui .shadow-2xl { box-shadow: 0 0 0 1px rgba(10,16,36,.05), 0 8px 24px rgba(10,16,36,.08); }
+
+
+/* Dedicated college pages (/colleges/[slug]) follow the site's light/dark switch, with their own tokens.
+   --a / --d / --dl (brand accent, deep, light) are set inline per campus. */
+.college-theme {
+  --c-bg: #fff; --c-card: #fff; --c-fg: #23232B; --c-muted: #4A4A53; --c-faint: #6B6B73;
+  --c-line: #ECE6E2; --c-line2: #D9D2CD; --c-soft: #FAF8F6; --c-tint: #FFF3EE; --c-tintline: #F6DDD2;
+  --c-thumb: #F1ECE8; --c-hover: #FFF8F4; --c-footer: #23232B;
+  --dt: var(--d);
+  color-scheme: light;
+}
+html[data-theme="dark"] .college-theme {
+  --c-bg: #0E0E13; --c-card: #181821; --c-fg: #F3F1EE; --c-muted: #C9C6C1; --c-faint: #9C99A6;
+  --c-line: rgba(255,255,255,.10); --c-line2: rgba(255,255,255,.18); --c-soft: #13131A; --c-tint: #1D1512; --c-tintline: #3A2219;
+  --c-thumb: #23232D; --c-hover: #1E1D25; --c-footer: #08080B;
+  --dt: var(--dl);
+  color-scheme: dark;
+}

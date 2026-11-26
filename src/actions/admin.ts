@@ -569,6 +569,21 @@ const organizerProfileSchema = z.object({
   instagram: z.string().optional().nullable(),
   linkedin: z.string().optional().nullable(),
   address: z.string().optional().nullable(),
+  // Public college page. undefined leaves the stored value alone; "" / null / [] resets to the page default.
+  pageTagline: z.string().trim().max(160, "Tagline must be 160 characters or less").optional().nullable(),
+  pageCredentials: z
+    .array(
+      z.object({
+        label: z.string().trim().min(1, "Each badge needs a title").max(40, "Badge titles must be 40 characters or less"),
+        detail: z.string().trim().max(50, "Badge details must be 50 characters or less"),
+      }),
+    )
+    .max(6, "Up to 6 badges")
+    .optional()
+    .nullable(),
+  pageLogo: z.string().trim().refine(isImageUrl, "Logo must be a direct https link to an image").or(z.literal("")).optional().nullable(),
+  pageHero: z.string().trim().refine(isImageUrl, "Hero photo must be a direct https link to an image").or(z.literal("")).optional().nullable(),
+  pageAccent: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Colour must look like #F25E36").or(z.literal("")).optional().nullable(),
 });
 
 export type OrganizerProfileData = z.infer<typeof organizerProfileSchema>;
@@ -583,6 +598,21 @@ export async function updateOrganizerProfile(data: OrganizerProfileData) {
 
   const { name, college, department, position, phone, description, website, instagram, linkedin, address } = parsed.data;
 
+  // Public-page fields: only touched when the caller sent them
+  const page: {
+    pageTagline?: string | null;
+    pageLogo?: string | null;
+    pageHero?: string | null;
+    pageAccent?: string | null;
+    pageCredentials?: Prisma.InputJsonValue | typeof Prisma.JsonNull;
+  } = {};
+  const d = parsed.data;
+  if (d.pageTagline !== undefined) page.pageTagline = d.pageTagline || null;
+  if (d.pageLogo !== undefined) page.pageLogo = d.pageLogo || null;
+  if (d.pageHero !== undefined) page.pageHero = d.pageHero || null;
+  if (d.pageAccent !== undefined) page.pageAccent = d.pageAccent || null;
+  if (d.pageCredentials !== undefined) page.pageCredentials = d.pageCredentials === null ? Prisma.JsonNull : d.pageCredentials;
+
   try {
     await prisma.user.update({
       where: { id: user.id },
@@ -591,12 +621,13 @@ export async function updateOrganizerProfile(data: OrganizerProfileData) {
 
     await prisma.organizerProfile.upsert({
       where: { userId: user.id },
-      update: { college, department, position, phone, description, website, instagram, linkedin, address },
-      create: { userId: user.id, college, department, position, phone, description, website, instagram, linkedin, address },
+      update: { college, department, position, phone, description, website, instagram, linkedin, address, ...page },
+      create: { userId: user.id, college, department, position, phone, description, website, instagram, linkedin, address, ...page },
     });
 
     revalidatePath("/admin/profile");
     revalidatePath("/admin/college");
+    revalidatePath("/colleges", "layout");
     return { success: true };
   } catch (err) {
     return { error: "Failed to update organizer profile." };
@@ -616,6 +647,11 @@ export async function getOrganizerProfile() {
     instagram: profile?.instagram || "",
     linkedin: profile?.linkedin || "",
     address: profile?.address || "",
+    pageTagline: profile?.pageTagline || "",
+    pageCredentials: Array.isArray(profile?.pageCredentials) ? (profile.pageCredentials as { label: string; detail: string }[]) : null,
+    pageLogo: profile?.pageLogo || "",
+    pageHero: profile?.pageHero || "",
+    pageAccent: profile?.pageAccent || "",
     phone: profile?.phone || "",
     email: user.email,
     emailAlerts: profile?.emailAlerts ?? true,
