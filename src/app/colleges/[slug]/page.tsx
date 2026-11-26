@@ -254,13 +254,13 @@ export default async function CollegeDetailPage({ params }: CollegePageProps) {
               </dl>
             </div>
 
-            <div className="relative order-1 lg:order-2 lg:min-h-[620px]">
+            <div className="relative order-1 lg:order-2 lg:py-12 lg:pr-8">
               {/* Photo: its own box on mobile, fills the column on desktop */}
-              <div className="relative h-[240px] sm:h-[340px] lg:absolute lg:inset-0 lg:h-auto">
+              <div className="relative h-[240px] sm:h-[340px] lg:h-full lg:min-h-[560px] lg:rounded-[32px] overflow-hidden bg-[color:var(--c-thumb)]">
                 {heroImg ? (
-                  <Image src={heroImg} alt={`${collegeName} campus`} fill priority sizes="(min-width:1024px) 55vw, 100vw" className="object-cover lg:rounded-bl-[72px]" />
+                  <Image src={heroImg} alt={`${collegeName} campus`} fill priority sizes="(min-width:1024px) 55vw, 100vw" className="object-cover" />
                 ) : (
-                  <div className="absolute inset-0 bg-[var(--a)]/15 lg:rounded-bl-[72px]" />
+                  <div className="absolute inset-0 bg-[var(--a)]/15" />
                 )}
                 {!cms.pageHero && campus.credit && (
                   <a href={campus.credit.url} target="_blank" rel="noopener noreferrer" className="absolute top-3 right-4 text-[10px] text-white/80 hover:text-white [text-shadow:0_1px_2px_rgba(0,0,0,.8)]">
@@ -271,7 +271,7 @@ export default async function CollegeDetailPage({ params }: CollegePageProps) {
               {next && (
                 <Link
                   href={`/events/${next.slug}`}
-                  className="relative z-10 -mt-6 mx-4 sm:mx-8 lg:mx-0 lg:mt-0 lg:absolute lg:right-8 lg:bottom-8 lg:w-[340px] rounded-xl bg-[color:var(--c-card)] p-2.5 sm:p-4 shadow-[0_18px_50px_-12px_rgba(35,35,43,.45)] border border-[color:var(--c-line)] flex gap-3 sm:gap-4 items-center group"
+                  className="relative z-10 -mt-6 mx-4 sm:mx-8 lg:mx-0 lg:mt-0 lg:absolute lg:right-14 lg:bottom-[72px] lg:w-[340px] rounded-xl bg-[color:var(--c-card)] p-2.5 sm:p-4 shadow-[0_18px_50px_-12px_rgba(35,35,43,.45)] border border-[color:var(--c-line)] flex gap-3 sm:gap-4 items-center group"
                 >
                   <span className="shrink-0 w-12 sm:w-16 rounded-lg bg-[var(--a)] text-white text-center py-1.5 sm:py-2">
                     <span className="block text-xs font-medium">{fmt(next.date, { month: "short" })}</span>
