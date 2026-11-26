@@ -36,6 +36,8 @@ export const CAMPUSES: Campus[] = [
     city: "Mumbai",
     state: "Maharashtra",
     img: "/campuses/iit-bombay.jpg",
+    logo: "/campuses/iitb-logo.png",
+    site: "https://www.iitb.ac.in",
     credit: {
       text: "Photo: Shishirdasika, CC BY-SA 4.0",
       url: "https://commons.wikimedia.org/wiki/File:Main_building_in_IIT_Bombay.jpg",

@@ -4,7 +4,7 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import { campusFor } from "@/lib/campuses";
 
 export const metadata = {
-  title: "Admin Dashboard — CollegeEvents",
+  title: "Admin Dashboard — CollegeEvent",
   // Private organizer console: never index (access itself is enforced by auth, not by this)
   robots: { index: false, follow: false },
 };

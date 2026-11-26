@@ -75,7 +75,7 @@ export default function PaymentsPage() {
             <CreditCard className="w-4 h-4 text-[var(--color-cobalt)]" />
           </div>
           <span className="text-[28px] font-anton text-white">₹0</span>
-          <p className="text-[10px] text-white/30 block mt-1">CollegeEvents commission</p>
+          <p className="text-[10px] text-white/30 block mt-1">CollegeEvent commission</p>
         </div>
       </div>
 

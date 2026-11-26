@@ -53,7 +53,7 @@ export function Sidebar({ isOpen, setIsOpen, profile }: SidebarProps) {
           <Link href="/admin" className="flex items-center gap-2.5" onClick={() => setIsOpen(false)}>
             <Image src="/logo-mark.png" alt="" width={28} height={28} className="logo-mark-on-dark w-7 h-7 shrink-0" priority />
             <span className="font-anton text-[17px] font-bold tracking-tight text-[var(--ink)]">
-              College<span className="text-[var(--color-lime)]">Events</span>
+              College<span className="text-[var(--color-lime)]">Event</span>
             </span>
           </Link>
           <button onClick={() => setIsOpen(false)} aria-label="Close menu" className="lg:hidden p-2 -mr-2 rounded-lg text-[var(--ink-3)] hover:text-[var(--ink)] cursor-pointer">

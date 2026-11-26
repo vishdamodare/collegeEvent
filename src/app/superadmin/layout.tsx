@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireSuperAdmin } from "@/lib/superadmin";
 import { SuperNav } from "@/components/superadmin/Controls";
 
-export const metadata: Metadata = { title: "Super Admin — CollegeEvents", robots: { index: false } };
+export const metadata: Metadata = { title: "Super Admin — CollegeEvent", robots: { index: false } };
 
 export default async function SuperAdminLayout({ children }: { children: React.ReactNode }) {
   await requireSuperAdmin();

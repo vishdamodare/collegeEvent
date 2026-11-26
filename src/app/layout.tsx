@@ -8,7 +8,7 @@ import { SAME_AS, SITE_NAME, absoluteUrl } from "@/lib/seo";
 export const metadata: Metadata = {
   // Resolves relative og/canonical URLs to the real domain
   metadataBase: new URL(appUrl),
-  title: "CollegeEvents — Discover & Register for College Events in India",
+  title: "CollegeEvent — Discover & Register for College Events in India",
   description:
     "Find college fests, hackathons, technical events and cultural competitions across India. See dates and venues, and register free with an instant QR ticket.",
   applicationName: SITE_NAME,
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     siteName: SITE_NAME,
     type: "website",
     locale: "en_IN",
-    title: "CollegeEvents — Discover & Register for College Events in India",
+    title: "CollegeEvent — Discover & Register for College Events in India",
     description: "Find college fests, hackathons, technical events and cultural competitions across India, and register free.",
     // Image comes from app/opengraph-image.tsx (1200x630) unless a page sets its own
   },

@@ -24,7 +24,7 @@ export function AuthHero() {
 
       <Link href="/" className="inline-flex items-center gap-2.5 w-fit font-archivo font-bold text-[19px]">
         <Image src="/logo-mark.png" alt="" width={34} height={34} className="logo-mark-on-dark w-[34px] h-[34px]" priority />
-        CollegeEvents
+        CollegeEvent
       </Link>
 
       <div className="hidden lg:flex flex-1 flex-col justify-center max-w-[440px] py-16">

@@ -23,7 +23,7 @@ export function SuperNav({ pending, newInquiries = 0 }: { pending: number; newIn
     <header className="border-b border-white/10 bg-[#0A0A0A]/95 backdrop-blur sticky top-0 z-30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-wrap items-center gap-x-6 gap-y-2 py-3">
         <Link href="/superadmin" className="font-anton text-[20px] tracking-wide uppercase text-white">
-          College<span className="text-[#FF4B50]">Events</span> <span className="text-white/40 text-[13px] font-archivo normal-case tracking-normal ml-1">Super Admin</span>
+          College<span className="text-[#FF4B50]">Event</span> <span className="text-white/40 text-[13px] font-archivo normal-case tracking-normal ml-1">Super Admin</span>
         </Link>
         <nav aria-label="Super admin" className="flex gap-1 overflow-x-auto order-3 sm:order-none w-full sm:w-auto">
           {TABS.map((t) => {

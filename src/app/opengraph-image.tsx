@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 // Default 1200x630 share card for every page that doesn't set its own image (events use their banner)
-export const alt = "CollegeEvents — Discover and register for college events in India";
+export const alt = "CollegeEvent — Discover and register for college events in India";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -26,7 +26,7 @@ export default function OpengraphImage() {
             E
           </div>
           <span>
-            College<span style={{ color: "#DC2229" }}>Events</span>
+            College<span style={{ color: "#DC2229" }}>Event</span>
           </span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>

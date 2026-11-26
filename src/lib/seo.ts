@@ -1,6 +1,6 @@
 import { appUrl } from "@/lib/app-url";
 
-export const SITE_NAME = "CollegeEvents";
+export const SITE_NAME = "CollegeEvent";
 // The brand's real public profiles (same links as the footer)
 export const SAME_AS = ["https://www.instagram.com/College.events.in", "https://www.linkedin.com/in/collage-events-67b194452"];
 

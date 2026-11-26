@@ -540,7 +540,7 @@ export function EventDetailClient({
                 return (
                   <p className="text-sm text-text-muted border-y border-border/50 py-4">
                     <span className="font-bold text-text-main">{totalPublished}</span>{" "}
-                    {totalPublished === 1 ? "event" : "events"} hosted on CollegeEvents
+                    {totalPublished === 1 ? "event" : "events"} hosted on CollegeEvent
                   </p>
                 );
               })()}

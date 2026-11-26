@@ -5,6 +5,7 @@ import Image from "next/image";
 import { CheckCircle2 } from "lucide-react";
 import { motion, useMotionValue, useSpring, useTransform, useReducedMotion } from "framer-motion";
 import { Event } from "@/types";
+import { TicketWelcome } from "./TicketWelcome";
 
 interface HeroSectionProps {
   events: Event[];
@@ -167,7 +168,7 @@ export function HeroSection({ events, campuses, qr, onOpenDetails, onOpenRegiste
 
                         <div className="px-3">
                           <div className="relative h-[126px] rounded-2xl overflow-hidden bg-[#DDE2F0]">
-                            {event.img && <Image src={event.img} alt="" fill priority sizes="314px" className="object-cover" aria-hidden />}
+                            {event.img ? <Image src={event.img} alt="" fill priority sizes="314px" className="object-cover" aria-hidden /> : <TicketWelcome />}
                           </div>
                         </div>
 

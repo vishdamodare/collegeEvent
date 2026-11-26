@@ -56,7 +56,7 @@ export function DashboardShell({ user, children }: DashboardShellProps) {
           <Menu className="w-5 h-5" />
         </button>
         <Link href="/" className="font-[family-name:var(--font-archivo)] font-bold text-lg text-lime">
-          CollegeEvents
+          CollegeEvent
         </Link>
         <div className="w-9 h-9 rounded-full bg-card border border-border flex items-center justify-center text-sm font-semibold text-text-main">
           {user.name.charAt(0)}
@@ -83,7 +83,7 @@ export function DashboardShell({ user, children }: DashboardShellProps) {
             >
               <div className="flex items-center justify-between mb-8">
                 <Link href="/" className="font-[family-name:var(--font-archivo)] font-bold text-lg text-lime">
-                  CollegeEvents
+                  CollegeEvent
                 </Link>
                 <button onClick={() => setMobileOpen(false)} className="p-1 text-text-faint">
                   <X className="w-5 h-5" />
@@ -106,7 +106,7 @@ export function DashboardShell({ user, children }: DashboardShellProps) {
             Back to site
           </Link>
           <Link href="/" className="font-[family-name:var(--font-archivo)] font-bold text-xl text-lime">
-            CollegeEvents
+            CollegeEvent
           </Link>
         </div>
         <SidebarNav pathname={pathname} />

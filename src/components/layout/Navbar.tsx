@@ -88,8 +88,8 @@ export function Navbar({ isAuthenticated: propIsAuthenticated, onLogout: propOnL
         <div className="max-w-[1360px] mx-auto px-5 sm:px-10">
           <nav className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-[10px] font-archivo font-bold text-[19px]">
-              <Image src="/logo-mark.png" alt="CollegeEvents logo" width={34} height={34} className="logo-mark w-[34px] h-[34px]" priority />
-              CollegeEvents
+              <Image src="/logo-mark.png" alt="CollegeEvent logo" width={34} height={34} className="logo-mark w-[34px] h-[34px]" priority />
+              CollegeEvent
             </Link>
 
             <div className="hidden lg:flex items-center gap-[38px]">

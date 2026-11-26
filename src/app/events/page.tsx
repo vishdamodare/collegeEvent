@@ -3,7 +3,7 @@ import { getPublishedEvents, getCategories } from "@/actions/events";
 import { EventsClient } from "./EventsClient";
 
 export const metadata: Metadata = {
-  title: "Upcoming College Events — Fests, Hackathons & Competitions | CollegeEvents",
+  title: "Upcoming College Events — Fests, Hackathons & Competitions | CollegeEvent",
   description:
     "Browse upcoming college events in India: hackathons, technical fests, dance, music and cultural competitions. Filter by category and register free.",
   // Filtered/sorted/paged views (?q=, ?category=, ?page=) all canonicalise to the main listing

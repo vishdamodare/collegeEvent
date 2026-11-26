@@ -56,9 +56,9 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: CollegePageProps): Promise<Metadata> {
   const campus = campusBySlug((await params).slug);
-  if (!campus) return { title: "College not found — CollegeEvents", robots: { index: false, follow: true } };
-  const title = `${campus.name} Events, Fests & Competitions | CollegeEvents`;
-  const description = `Upcoming fests, hackathons and competitions at ${campus.name}, ${campus.area}. See event dates and venues, and register free on CollegeEvents.`;
+  if (!campus) return { title: "College not found — CollegeEvent", robots: { index: false, follow: true } };
+  const title = `${campus.name} Events, Fests & Competitions | CollegeEvent`;
+  const description = `Upcoming fests, hackathons and competitions at ${campus.name}, ${campus.area}. See event dates and venues, and register free on CollegeEvent.`;
   const path = `/colleges/${campus.slug}`;
   return {
     title,
@@ -157,7 +157,7 @@ export default async function CollegeDetailPage({ params }: CollegePageProps) {
   const heroImg = cms.pageHero || campus.img;
   const site = normalizeWebsite(cms.website) ?? campus.site;
   const tagline = cms.pageTagline || `Fests, hackathons and competitions from ${campus.area}. Find what is on, then register free.`;
-  const about = cms.description || `${collegeName} hosts its fests, technical events and competitions on CollegeEvents. Browse the schedule, pick an event and register in a minute.`;
+  const about = cms.description || `${collegeName} hosts its fests, technical events and competitions on CollegeEvent. Browse the schedule, pick an event and register in a minute.`;
   const upcoming = [...upcomingEvents].sort((a, b) => +new Date(a.date) - +new Date(b.date));
   const next = upcoming[0];
   const categoryCount = new Set(events.map((e) => e.category.name)).size;
@@ -189,9 +189,9 @@ export default async function CollegeDetailPage({ params }: CollegePageProps) {
             <ArrowLeft className="w-4 h-4" /> <span className="hidden sm:inline">Back</span>
           </Link>
           <a href="#top" className="flex items-center gap-3 min-w-0 flex-1 md:flex-none">
-            <span className="relative w-10 h-10 sm:w-12 sm:h-12 shrink-0">
+            <span className="relative w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-lg bg-white overflow-hidden">
               {logo ? (
-                <Image src={logo} alt={`${collegeName} logo`} fill className="object-contain" sizes="48px" priority />
+                <Image src={logo} alt={`${collegeName} logo`} fill className="object-contain p-0.5" sizes="48px" priority />
               ) : (
                 <span className="w-12 h-12 rounded-lg bg-[var(--a)] text-white flex items-center justify-center text-xl font-anton">{campus.short.charAt(0)}</span>
               )}
@@ -222,7 +222,7 @@ export default async function CollegeDetailPage({ params }: CollegePageProps) {
             <div className="px-4 md:px-8 pt-8 pb-8 lg:py-20 flex flex-col justify-center order-2 lg:order-1">
               {organizer.verificationStatus === "APPROVED" && (
                 <p className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--dt)] mb-5">
-                  <BadgeCheck className="w-4 h-4" /> Verified campus on CollegeEvents
+                  <BadgeCheck className="w-4 h-4" /> Verified campus on CollegeEvent
                 </p>
               )}
               <h1 className="font-anton text-[clamp(40px,6vw,84px)] leading-[0.95] tracking-tight">{collegeName}</h1>
@@ -432,9 +432,9 @@ export default async function CollegeDetailPage({ params }: CollegePageProps) {
               {logo ? <Image src={logo} alt={`${collegeName} logo`} fill className="object-contain p-1" sizes="44px" /> : campus.short.charAt(0)}
             </span>
             <span className="font-anton text-xl text-white/40 leading-none" aria-hidden="true">×</span>
-            <Link href="/" aria-label="CollegeEvents home" className="flex items-center gap-2 rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
+            <Link href="/" aria-label="CollegeEvent home" className="flex items-center gap-2 rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
               <Image src="/logo-mark.png" alt="" width={36} height={36} className="w-9 h-9" />
-              <span className="font-anton text-lg text-white tracking-tight">CollegeEvents</span>
+              <span className="font-anton text-lg text-white tracking-tight">CollegeEvent</span>
             </Link>
           </div>
         </div>

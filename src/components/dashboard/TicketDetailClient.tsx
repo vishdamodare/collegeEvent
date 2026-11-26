@@ -154,7 +154,7 @@ export function TicketDetailClient({ ticket, moreEvents = [] }: TicketDetailClie
       >
         {/* Print Only Title */}
         <div className="hidden print:block text-center py-4 border-b border-gray-200">
-          <h1 className="text-xl font-bold text-black uppercase">CollegeEvents Entry Ticket</h1>
+          <h1 className="text-xl font-bold text-black uppercase">CollegeEvent Entry Ticket</h1>
           <p className="text-xs text-gray-500">Present this QR code at the registration desk</p>
         </div>
 

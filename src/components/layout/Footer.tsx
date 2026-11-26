@@ -10,8 +10,8 @@ export function Footer() {
           {/* Brand Col */}
           <div className="col-span-2 lg:col-span-1">
             <Link href="/" className="flex items-center gap-[10px] font-archivo font-bold text-[19px]">
-              <Image src="/logo-mark.png" alt="CollegeEvents logo" width={30} height={30} className="logo-mark w-[30px] h-[30px]" />
-              CollegeEvents
+              <Image src="/logo-mark.png" alt="CollegeEvent logo" width={30} height={30} className="logo-mark w-[30px] h-[30px]" />
+              CollegeEvent
             </Link>
             <p className="text-[var(--color-text-faint)] text-[14px] my-4 max-w-[280px] leading-[1.6]">
               The platform where students discover, register for, and live campus life across every university.
@@ -52,7 +52,7 @@ export function Footer() {
         </div>
 
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pt-[26px] border-t border-[var(--color-border)] text-[13px] text-[var(--color-text-faint)] gap-4">
-          <span>© 2026 CollegeEvents. Made for every campus.</span>
+          <span>© 2026 CollegeEvent. Made for every campus.</span>
           <span>Built for students, by students.</span>
         </div>
       </div>

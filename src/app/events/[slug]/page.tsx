@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: EventDetailPageProps): Promis
   const event = await getEvent(slug);
 
   if (!event) {
-    return { title: "Event not found — CollegeEvents", robots: { index: false, follow: true } };
+    return { title: "Event not found — CollegeEvent", robots: { index: false, follow: true } };
   }
 
   const heroImage = event.images.find((i) => i.isHero)?.url || event.images[0]?.url;
@@ -37,7 +37,7 @@ export async function generateMetadata({ params }: EventDetailPageProps): Promis
   const path = `/events/${event.slug}`;
 
   return {
-    title: `${event.title}${college && !event.title.toLowerCase().includes(college.toLowerCase().split(" ")[0]) ? ` — ${college}` : ""} | CollegeEvents`,
+    title: `${event.title}${college && !event.title.toLowerCase().includes(college.toLowerCase().split(" ")[0]) ? ` — ${college}` : ""} | CollegeEvent`,
     description,
     alternates: { canonical: path },
     // Drafts / cancelled / archived are organizer-only previews: never index them
@@ -230,7 +230,7 @@ function eventJsonLd(event: EventForLd, details: unknown) {
         ...(campus ? { url: absoluteUrl(`/colleges/${campus.slug}`) } : {}),
       },
       isAccessibleForFree: true,
-      // Registration on CollegeEvents is free; only advertise an offer while it can actually be used
+      // Registration on CollegeEvent is free; only advertise an offer while it can actually be used
       ...(upcoming
         ? {
             offers: {

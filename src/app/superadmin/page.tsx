@@ -97,7 +97,7 @@ export default async function SuperAdminOverview() {
     <div className="space-y-8">
       <header>
         <h1 className="font-anton text-[34px] sm:text-[40px] uppercase tracking-wide leading-none">Platform overview</h1>
-        <p className="text-white/50 text-[14px] mt-2">Welcome, {me.name}. Here&apos;s how CollegeEvents is doing right now.</p>
+        <p className="text-white/50 text-[14px] mt-2">Welcome, {me.name}. Here&apos;s how CollegeEvent is doing right now.</p>
       </header>
 
       <section aria-label="Key numbers" className="grid grid-cols-2 lg:grid-cols-4 gap-4">

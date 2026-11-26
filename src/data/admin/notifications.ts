@@ -40,7 +40,7 @@ export const MOCK_NOTIFICATIONS: AdminNotification[] = [
   {
     id: "notif-5",
     title: "Platform Maintenance Completed",
-    message: "CollegeEvents team successfully updated the checkout experience and server routes for faster ticketing.",
+    message: "CollegeEvent team successfully updated the checkout experience and server routes for faster ticketing.",
     category: "SYSTEM",
     date: "2026-07-11T04:00:00Z",
     isRead: true,

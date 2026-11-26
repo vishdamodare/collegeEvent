@@ -3,7 +3,7 @@ import { OrganizerProfileForm } from "./OrganizerProfileForm";
 import { redirect } from "next/navigation";
 
 export const metadata = {
-  title: "Profile — CollegeEvents Admin",
+  title: "Profile — CollegeEvent Admin",
 };
 
 export default async function ProfilePage() {

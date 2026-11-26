@@ -80,7 +80,7 @@ export function ContactSection() {
     },
     {
       label: "LinkedIn",
-      value: "CollegeEvents",
+      value: "CollegeEvent",
       href: "https://www.linkedin.com/in/collage-events-67b194452",
       icon: (
         <svg className="w-5 h-5 text-[var(--color-lime)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">

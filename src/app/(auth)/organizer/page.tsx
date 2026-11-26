@@ -138,7 +138,7 @@ export default function OrganizerAuthPage() {
           <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-cobalt)]" /> For organizers
         </span>
         <h2 className="text-[26px] sm:text-[28px] font-anton uppercase tracking-tight leading-[1.05] mb-2">
-          {tab === "signup" ? "Host events on CollegeEvents" : "Organizer log in"}
+          {tab === "signup" ? "Host events on CollegeEvent" : "Organizer log in"}
         </h2>
         <p className="text-[14px] text-text-muted">
           {tab === "signup"

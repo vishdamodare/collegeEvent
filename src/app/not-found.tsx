@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export const metadata = { title: "Page not found — CollegeEvents" };
+export const metadata = { title: "Page not found — CollegeEvent" };
 
 export default function NotFound() {
   return (

@@ -111,12 +111,12 @@ const emailWrapper = (title: string, content: string) => `
 <body>
   <div class="container">
     <div class="card">
-      <span class="logo">🎓 CollegeEvents</span>
+      <span class="logo">🎓 CollegeEvent</span>
       <h1>${title}</h1>
       ${content}
     </div>
     <div class="footer">
-      &copy; 2026 CollegeEvents. All rights reserved.
+      &copy; 2026 CollegeEvent. All rights reserved.
     </div>
   </div>
 </body>
@@ -125,38 +125,38 @@ const emailWrapper = (title: string, content: string) => `
 
 export async function sendVerificationEmail(to: string, url: string) {
   const content = `
-    <p>Welcome to CollegeEvents! Verify your email address to activate your account and start discovering amazing events.</p>
+    <p>Welcome to CollegeEvent! Verify your email address to activate your account and start discovering amazing events.</p>
     <a href="${url}" class="btn" style="color: #FFFFFF;">Verify Email Address</a>
     <p style="margin-top: 30px; font-size: 14px; color: #555555;">This link will expire in 24 hours.</p>
   `;
   return sendEmail({
     to,
-    subject: "Verify your email address - CollegeEvents",
+    subject: "Verify your email address - CollegeEvent",
     html: emailWrapper("Verify Your Email", content),
   });
 }
 
 export async function sendPasswordResetEmail(to: string, url: string) {
   const content = `
-    <p>You requested a password reset for your CollegeEvents account. Click the button below to set a new password.</p>
+    <p>You requested a password reset for your CollegeEvent account. Click the button below to set a new password.</p>
     <a href="${url}" class="btn" style="color: #FFFFFF;">Reset Password</a>
     <p style="margin-top: 30px; font-size: 14px; color: #555555;">If you did not request this, you can safely ignore this email.</p>
   `;
   return sendEmail({
     to,
-    subject: "Reset your password - CollegeEvents",
+    subject: "Reset your password - CollegeEvent",
     html: emailWrapper("Reset Your Password", content),
   });
 }
 
 export async function sendWelcomeEmail(to: string, name: string) {
   const content = `
-    <p>Hey ${name}, welcome to CollegeEvents! Your student account is fully active. Start browsing tech fests, hackathons, and cultural events near you.</p>
+    <p>Hey ${name}, welcome to CollegeEvent! Your student account is fully active. Start browsing tech fests, hackathons, and cultural events near you.</p>
     <a href="${appUrl}/dashboard" class="btn" style="color: #FFFFFF;">Go to Dashboard</a>
   `;
   return sendEmail({
     to,
-    subject: "Welcome to CollegeEvents!",
+    subject: "Welcome to CollegeEvent!",
     html: emailWrapper(`Welcome, ${name}!`, content),
   });
 }
@@ -168,7 +168,7 @@ export async function sendOrganizerApprovedEmail(to: string, name: string) {
   `;
   return sendEmail({
     to,
-    subject: "Account Approved - CollegeEvents Organizer",
+    subject: "Account Approved - CollegeEvent Organizer",
     html: emailWrapper("Your Account has been Approved!", content),
   });
 }
@@ -180,7 +180,7 @@ export async function sendOrganizerRejectedEmail(to: string, name: string) {
   `;
   return sendEmail({
     to,
-    subject: "Application Status - CollegeEvents Organizer",
+    subject: "Application Status - CollegeEvent Organizer",
     html: emailWrapper("Application Declined", content),
   });
 }
@@ -208,7 +208,7 @@ export async function sendTicketConfirmationEmail({
   `;
   return sendEmail({
     to,
-    subject: `Ticket Confirmed: ${eventTitle} - CollegeEvents`,
+    subject: `Ticket Confirmed: ${eventTitle} - CollegeEvent`,
     html: emailWrapper("Registration Confirmed 🎉", content),
   });
 }
@@ -228,7 +228,7 @@ export async function sendCertificateIssuedEmail({
   `;
   return sendEmail({
     to,
-    subject: `Certificate Issued: ${eventTitle} - CollegeEvents`,
+    subject: `Certificate Issued: ${eventTitle} - CollegeEvent`,
     html: emailWrapper("Participation Certificate Issued 🏆", content),
   });
 }
