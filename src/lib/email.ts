@@ -4,43 +4,52 @@ interface SendEmailArgs {
   to: string;
   subject: string;
   html: string;
+  text?: string;
+  attachments?: { filename: string; content: Buffer }[];
 }
 
-export async function sendEmail({ to, subject, html }: SendEmailArgs) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.EMAIL_FROM || "onboarding@resend.dev";
+/** "CollegeEvent <tickets@collegeevent.in>" or a bare address -> Brevo's { name, email } sender. */
+function parseSender(from: string) {
+  const m = from.match(/^\s*(?:"?([^"<]*?)"?\s*)?<([^>]+)>\s*$/);
+  return m ? { name: m[1]?.trim() || "CollegeEvent", email: m[2].trim() } : { name: "CollegeEvent", email: from.trim() };
+}
 
-  if (!apiKey) {
-    console.warn("⚠️ RESEND_API_KEY is not defined. Email dispatch skipped. Logged email content:");
-    console.log(`To: ${to}\nSubject: ${subject}\nHTML Preview: ${subject}`);
-    return { success: false, error: "API key missing" };
+/**
+ * Sends one transactional email through Brevo (https://developers.brevo.com/reference/sendtransacemail).
+ * Needs BREVO_API_KEY and EMAIL_FROM, and EMAIL_FROM must be a sender/domain verified in Brevo.
+ * Never throws: callers get { success } so a mail problem can't break registration or sign-up.
+ */
+export async function sendEmail({ to, subject, html, text, attachments }: SendEmailArgs) {
+  const apiKey = process.env.BREVO_API_KEY;
+  const from = process.env.EMAIL_FROM;
+
+  if (!apiKey || !from) {
+    console.warn(`⚠️ Email skipped (set BREVO_API_KEY and EMAIL_FROM). To: ${to} | Subject: ${subject}`);
+    return { success: false, error: "Email is not configured" };
   }
 
   try {
-    const res = await fetch("https://api.resend.com/emails", {
+    const res = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
+      headers: { "api-key": apiKey, "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({
-        from,
-        to,
+        sender: parseSender(from),
+        to: [{ email: to }],
         subject,
-        html,
+        htmlContent: html,
+        ...(text ? { textContent: text } : {}),
+        ...(attachments?.length ? { attachment: attachments.map((a) => ({ name: a.filename, content: a.content.toString("base64") })) } : {}),
       }),
     });
 
     if (!res.ok) {
       const errText = await res.text();
-      console.error(`Resend API Error: ${res.status} - ${errText}`);
+      console.error(`Brevo API error: ${res.status} - ${errText}`);
       return { success: false, error: errText };
     }
-
-    const data = await res.json();
-    return { success: true, data };
+    return { success: true, data: await res.json() };
   } catch (error) {
-    console.error("Resend delivery failed:", error);
+    console.error("Brevo delivery failed:", error);
     return { success: false, error };
   }
 }
@@ -185,31 +194,89 @@ export async function sendOrganizerRejectedEmail(to: string, name: string) {
   });
 }
 
-export async function sendTicketConfirmationEmail({
-  to,
-  studentName,
-  eventTitle,
-  eventDate,
-  ticketNumber,
-}: {
+const esc = (v: string) => v.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+
+export interface TicketEmailArgs {
   to: string;
   studentName: string;
   eventTitle: string;
-  eventDate: string;
+  eventDate: Date;
+  venue: string;
+  college?: string | null;
+  organizerName?: string | null;
+  category?: string | null;
+  teamName?: string | null;
+  ticketId: string;
   ticketNumber: string;
-}) {
-  const content = `
-    <p>Congratulations ${studentName}! Your registration for <strong>${eventTitle}</strong> on ${eventDate} is confirmed.</p>
-    <div style="background-color: #1E1E1E; border: 1px solid #333; padding: 20px; border-radius: 12px; margin: 20px 0; text-align: center;">
-      <span style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px;">Official Ticket Number</span>
-      <h2 style="color: #FF4B50; margin: 5px 0 0 0; font-size: 22px; font-family: monospace;">${ticketNumber}</h2>
-    </div>
-    <a href="${appUrl}/dashboard/tickets" class="btn" style="color: #FFFFFF;">View Digital Ticket Pass</a>
-  `;
+  verificationToken: string;
+}
+
+/** Registration confirmation with the event details and the entry QR (shown from /api/ticket-qr, and attached as a file). */
+export async function sendTicketConfirmationEmail(a: TicketEmailArgs) {
+  const tz = "Asia/Kolkata";
+  const day = a.eventDate.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: tz });
+  const time = a.eventDate.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: tz }).toUpperCase();
+  const first = a.studentName.trim().split(/\s+/)[0] || "there";
+  const ticketUrl = `${appUrl}/dashboard/tickets`;
+  const qrUrl = `${appUrl}/api/ticket-qr?id=${encodeURIComponent(a.ticketId)}&t=${encodeURIComponent(a.verificationToken)}`;
+  const hostedBy = [a.college, a.organizerName].filter(Boolean).join(", ");
+
+  const rows: [string, string][] = [
+    ["Date", day],
+    ["Time", `${time} IST`],
+    ["Venue", a.venue],
+    ...(hostedBy ? ([["Hosted by", hostedBy]] as [string, string][]) : []),
+    ...(a.category ? ([["Category", a.category]] as [string, string][]) : []),
+    ...(a.teamName ? ([["Team", a.teamName]] as [string, string][]) : []),
+  ];
+  const detailRows = rows
+    .map(
+      ([k, v]) => `<tr>
+        <td style="padding:8px 16px 8px 0;font-size:13px;color:#5A6382;white-space:nowrap;vertical-align:top;">${esc(k)}</td>
+        <td style="padding:8px 0;font-size:15px;color:#0A1024;font-weight:600;">${esc(v)}</td>
+      </tr>`
+    )
+    .join("");
+
+  const brand = a.college ? `${esc(a.college)} <span style="color:#DC2229;">&times;</span> CollegeEvent` : "CollegeEvent";
+  const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#0A0A0A;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">You're registered for ${esc(a.eventTitle)}. Your entry QR is inside.</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0A0A0A;"><tr><td align="center" style="padding:32px 16px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;">
+      <tr><td style="padding:0 4px 20px;color:#FFFFFF;font-size:15px;font-weight:700;letter-spacing:.2px;">🎓 ${brand}</td></tr>
+      <tr><td style="background:#F3F5FB;border-radius:20px;padding:32px 28px;">
+        <p style="margin:0 0 6px;font-size:14px;color:#5A6382;">You're in, ${esc(first)}!</p>
+        <h1 style="margin:0 0 20px;font-size:26px;line-height:1.25;color:#0A1024;">${esc(a.eventTitle)}</h1>
+        <table role="presentation" cellpadding="0" cellspacing="0" style="border-top:1px solid #D9DEEE;width:100%;">${detailRows}</table>
+
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;"><tr><td align="center" style="background:#FFFFFF;border:1px dashed #B7BFD8;border-radius:16px;padding:22px 16px;">
+          <img src="${qrUrl}" width="220" height="220" alt="Entry QR code for ${esc(a.ticketNumber)}" style="display:block;margin:0 auto;border:0;">
+          <p style="margin:14px 0 2px;font-size:12px;color:#5A6382;">Show this QR at the entry gate</p>
+          <p style="margin:0;font-family:'SFMono-Regular',Menlo,Consolas,monospace;font-size:18px;font-weight:700;color:#DC2229;letter-spacing:1px;">${esc(a.ticketNumber)}</p>
+        </td></tr></table>
+
+        <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px auto 0;"><tr><td style="background:#DC2229;border-radius:12px;">
+          <a href="${ticketUrl}" style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:700;color:#FFFFFF;text-decoration:none;">View your ticket</a>
+        </td></tr></table>
+        <p style="margin:18px 0 0;text-align:center;font-size:12px;color:#5A6382;">Can't see the QR? Open it any time in your CollegeEvent dashboard.</p>
+      </td></tr>
+      <tr><td style="padding:20px 4px 0;text-align:center;font-size:12px;color:#7A7A7A;">&copy; ${new Date().getFullYear()} CollegeEvent. Keep this email, it is your entry pass.</td></tr>
+    </table>
+  </td></tr></table>
+</body></html>`;
+
+  const text = `You're in, ${first}!\n\n${a.eventTitle}\n${rows.map(([k, v]) => `${k}: ${v}`).join("\n")}\n\nTicket number: ${a.ticketNumber}\nOpen your QR ticket: ${ticketUrl}\n\nCollegeEvent`;
+
+  const { generateQRCodePng } = await import("@/lib/ticket-generator");
+  const qr = await generateQRCodePng(a.ticketId, a.verificationToken);
   return sendEmail({
-    to,
-    subject: `Ticket Confirmed: ${eventTitle} - CollegeEvent`,
-    html: emailWrapper("Registration Confirmed 🎉", content),
+    to: a.to,
+    subject: `You're registered: ${a.eventTitle}`,
+    html,
+    text,
+    attachments: [{ filename: `ticket-${a.ticketNumber}.png`, content: qr }], // also attached, so the QR is there even if images are blocked
   });
 }
 

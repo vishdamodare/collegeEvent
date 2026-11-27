@@ -36,9 +36,9 @@ export default function OrganizerAuthPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [college, setCollege] = useState("");
-  const [colleges, setColleges] = useState<string[]>([]);
+  const [colleges, setColleges] = useState<string[] | null>(null); // null = still loading
   useEffect(() => {
-    listColleges().then(setColleges).catch(() => {});
+    listColleges().then(setColleges).catch(() => setColleges([]));
   }, []);
   const [department, setDepartment] = useState("");
   const [position, setPosition] = useState("");
@@ -186,8 +186,8 @@ export default function OrganizerAuthPage() {
             aria-label="College or university"
             className={cn(inputClass, "appearance-none cursor-pointer", !college && "text-text-faint")}
           >
-            <option value="" disabled>{colleges.length ? "Select your college" : "No colleges registered yet"}</option>
-            {colleges.map((c) => (
+            <option value="" disabled>{colleges === null ? "Loading colleges…" : colleges.length ? "Select your college" : "No colleges registered yet"}</option>
+            {(colleges ?? []).map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
           </select>

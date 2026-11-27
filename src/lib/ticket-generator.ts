@@ -50,3 +50,13 @@ export async function generateQRCodeDataUrl(ticketId: string, verificationToken:
     throw new Error("Failed to generate QR code");
   }
 }
+
+/** Same payload as the on-screen QR, as a PNG buffer sized for email (attached inline, since mail apps block data: images). */
+export async function generateQRCodePng(ticketId: string, verificationToken: string): Promise<Buffer> {
+  return QRCode.toBuffer(`${ticketId}:${verificationToken}`, {
+    errorCorrectionLevel: "M",
+    margin: 4,
+    width: 480,
+    color: { dark: "#000000", light: "#ffffff" },
+  });
+}

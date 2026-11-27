@@ -88,6 +88,8 @@ export async function registerForFreeEvent(
     const event = await prisma.event.findUnique({
       where: { id: eventId },
       include: {
+        category: { select: { name: true } },
+        organizer: { select: { name: true, organizerProfile: { select: { college: true } } } },
         _count: {
           select: { registrations: { where: { status: { not: RegistrationStatus.CANCELLED } } } },
         },
@@ -194,8 +196,12 @@ export async function registerForFreeEvent(
       members.forEach((m, i) => (m.email = emails[i]));
     }
 
+    // Everyone who got a ticket (captain + team members) gets their own email once the transaction has committed
+    const ticketEmails: { to: string; studentName: string; ticketId: string; ticketNumber: string; verificationToken: string }[] = [];
+
     // Transaction to create registration, generate ticket, and notify
     const result = await prisma.$transaction(async (tx) => {
+      ticketEmails.length = 0;
       // 1. Lock the event row for updates to prevent parallel registration capacity race conditions
       const lockedEvent = await tx.$queryRaw<Array<{ capacity: number; isClosed: boolean; status: string }>>`
         SELECT capacity, "isClosed", status 
@@ -437,6 +443,8 @@ export async function registerForFreeEvent(
             },
           });
 
+          ticketEmails.push({ to: member.email, studentName: member.name, ticketId: memberTicketId, ticketNumber: memberTicketNumber, verificationToken: memberVerificationToken });
+
           // Create Member Notification
           await tx.notification.create({
             data: {
@@ -461,6 +469,14 @@ export async function registerForFreeEvent(
         throw new Error("Event capacity has been reached. Unable to complete registration.");
       }
 
+      ticketEmails.unshift({
+        to: studentProfile.user.email,
+        studentName: studentProfile.user.name,
+        ticketId: captainTicket.id,
+        ticketNumber: captainTicket.ticketNumber,
+        verificationToken: captainTicket.verificationToken,
+      });
+
       return { registration: captainReg, ticket: captainTicket };
     }, { timeout: 20000, maxWait: 10000 });
 
@@ -471,14 +487,22 @@ export async function registerForFreeEvent(
     revalidatePath("/dashboard/events");
     revalidatePath("/dashboard/notifications");
 
-    // Dispatch ticket confirmation email asynchronously
-    sendTicketConfirmationEmail({
-      to: studentProfile.user.email,
-      studentName: studentProfile.user.name,
-      eventTitle: event.title,
-      eventDate: new Date(event.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-      ticketNumber: result.ticket.ticketNumber,
-    }).catch((err) => console.error("Ticket email dispatch error:", err));
+    // Email each ticket holder their event details and entry QR. after() keeps the serverless function alive until
+    // the emails are sent (a bare un-awaited promise can be frozen when the response returns); a failure never affects registration.
+    after(async () => {
+      for (const t of ticketEmails) {
+        await sendTicketConfirmationEmail({
+          ...t,
+          eventTitle: event.title,
+          eventDate: new Date(event.date),
+          venue: event.location,
+          college: event.organizer.organizerProfile?.college,
+          organizerName: event.organizer.name,
+          category: event.category.name,
+          teamName: eventType === "TEAM" ? params?.teamName : null,
+        }).catch((err) => console.error("Ticket email dispatch error:", err));
+      }
+    });
 
     return {
       success: true,
