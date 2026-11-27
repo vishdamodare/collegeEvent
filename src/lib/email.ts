@@ -1,4 +1,5 @@
 import { appUrl } from "@/lib/app-url";
+import { campusFor } from "@/lib/campuses";
 
 interface SendEmailArgs {
   to: string;
@@ -54,7 +55,32 @@ export async function sendEmail({ to, subject, html, text, attachments }: SendEm
   }
 }
 
-const emailWrapper = (title: string, content: string) => `
+/** Logo chip: white rounded square so a dark logo stays visible on any background (Outlook ignores object-fit, so size by height). */
+const logoChip = (src: string, alt: string) =>
+  `<span style="display:inline-block;background:#FFFFFF;border:1px solid #E2E6F3;border-radius:10px;padding:4px 6px;vertical-align:middle;margin-right:10px;line-height:0;"><img src="${src}" alt="${alt}" height="30" style="height:30px;width:auto;max-width:64px;border:0;"></span>`;
+
+/**
+ * Brand header: [institute logo] Institute name x [CollegeEvent logo] CollegeEvent.
+ * No college given (or unknown logo) still reads well: only ours, or initials in place of the institute logo.
+ * tone "dark" is for the dark email backdrop (white text), "light" for the paper card.
+ */
+function brandHeader(college: string | null | undefined, tone: "dark" | "light") {
+  const campus = campusFor(college);
+  const name = (campus?.name ?? college ?? "").trim();
+  const ink = tone === "dark" ? "#FFFFFF" : "#0A1024";
+  const word = tone === "dark" ? "#FFFFFF" : "#DC2229";
+  let inst = "";
+  if (name) {
+    const initials = name.split(/\s+/).filter((w) => /^[a-z]/i.test(w)).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "CE";
+    const mark = campus?.logo
+      ? logoChip(`${appUrl}${campus.logo}`, esc(name))
+      : `<span style="display:inline-block;width:38px;height:38px;line-height:38px;background:#FFFFFF;border:1px solid #E2E6F3;border-radius:10px;color:#DC2229;font-weight:700;font-size:14px;text-align:center;vertical-align:middle;margin-right:10px;">${esc(initials)}</span>`;
+    inst = `${mark}<span style="vertical-align:middle;color:${ink};">${esc(name)}</span><span style="vertical-align:middle;color:#DC2229;margin:0 12px;font-weight:700;">&times;</span>`;
+  }
+  return `${inst}${logoChip(`${appUrl}/logo-mark.png`, "CollegeEvent")}<span style="vertical-align:middle;color:${word};">CollegeEvent</span>`;
+}
+
+const emailWrapper = (title: string, content: string, college?: string | null) => `
 <!DOCTYPE html>
 <html>
 <head>
@@ -73,16 +99,15 @@ const emailWrapper = (title: string, content: string) => `
       padding: 40px 20px;
     }
     .card {
-      background-color: #141414;
-      border: 1px solid #2A2A2A;
-      border-radius: 24px;
-      padding: 40px;
+      background-color: #F3F5FB;
+      border-radius: 20px;
+      padding: 36px 28px;
       text-align: center;
     }
     .logo {
       font-size: 24px;
       font-weight: bold;
-      color: #FF4B50;
+      color: #DC2229;
       text-decoration: none;
       margin-bottom: 30px;
       display: inline-block;
@@ -91,10 +116,10 @@ const emailWrapper = (title: string, content: string) => `
       font-size: 26px;
       font-weight: 800;
       margin-bottom: 20px;
-      color: #FFFFFF;
+      color: #0A1024;
     }
     p {
-      color: #A0A0A0;
+      color: #3A4262;
       font-size: 16px;
       line-height: 1.6;
       margin-bottom: 30px;
@@ -111,7 +136,7 @@ const emailWrapper = (title: string, content: string) => `
     }
     .footer {
       margin-top: 40px;
-      color: #555555;
+      color: #7A7A7A;
       font-size: 12px;
       text-align: center;
     }
@@ -120,7 +145,7 @@ const emailWrapper = (title: string, content: string) => `
 <body>
   <div class="container">
     <div class="card">
-      <span class="logo">🎓 CollegeEvent</span>
+      <div style="margin-bottom:26px;font-size:17px;font-weight:700;line-height:1.3;">${brandHeader(college, "light")}</div>
       <h1>${title}</h1>
       ${content}
     </div>
@@ -158,15 +183,74 @@ export async function sendPasswordResetEmail(to: string, url: string) {
   });
 }
 
-export async function sendWelcomeEmail(to: string, name: string) {
+const firstName = (name: string) => name.trim().split(/\s+/)[0] || "there";
+
+/** Numbered how-it-works list (a real sequence), inline-styled for email clients. */
+const steps = (items: string[]) =>
+  `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 28px;text-align:left;max-width:440px;">${items
+    .map(
+      (t, i) => `<tr>
+        <td style="vertical-align:top;padding:6px 14px 6px 0;"><span style="display:inline-block;width:26px;height:26px;line-height:26px;border-radius:13px;background:#DC2229;color:#FFFFFF;font-weight:700;font-size:13px;text-align:center;">${i + 1}</span></td>
+        <td style="padding:6px 0;font-size:15px;line-height:1.5;color:#0A1024;">${t}</td>
+      </tr>`
+    )
+    .join("")}</table>`;
+
+/** Welcome for a new student: personal greeting, their college's page if we list it, and what to do first. */
+export async function sendWelcomeEmail(to: string, name: string, college?: string | null) {
+  const first = esc(firstName(name));
+  const campus = campusFor(college);
+  const where = college?.trim() ? ` from <strong>${esc(college.trim())}</strong>` : "";
   const content = `
-    <p>Hey ${name}, welcome to CollegeEvent! Your student account is fully active. Start browsing tech fests, hackathons, and cultural events near you.</p>
-    <a href="${appUrl}/dashboard" class="btn" style="color: #FFFFFF;">Go to Dashboard</a>
+    <p style="margin-bottom:22px;">Thank you for joining CollegeEvent, ${first}. Your student account${where} is ready, and every fest, hackathon and workshop near you is one tap away.</p>
+    ${steps([
+      "<strong>Find an event.</strong> Browse fests, hackathons, workshops and competitions.",
+      "<strong>Register in seconds.</strong> It's free, and teams can add their members.",
+      "<strong>Get your QR ticket.</strong> We email it the moment you register. Show it at the gate.",
+    ])}
+    <a href="${appUrl}/events" class="btn" style="color: #FFFFFF;">Explore events</a>
+    ${campus ? `<p style="margin:26px 0 0;font-size:14px;">Or see what's on at <a href="${appUrl}/colleges/${campus.slug}" style="color:#DC2229;font-weight:600;">${esc(campus.name)}</a>.</p>` : ""}
   `;
   return sendEmail({
     to,
-    subject: "Welcome to CollegeEvent!",
-    html: emailWrapper(`Welcome, ${name}!`, content),
+    subject: `Welcome to CollegeEvent, ${firstName(name)}!`,
+    html: emailWrapper(`Welcome aboard, ${first}!`, content, college),
+    text: `Welcome to CollegeEvent, ${firstName(name)}!\n\nYour student account is ready. Browse events: ${appUrl}/events\nRegister for free and we'll email your QR ticket instantly.`,
+  });
+}
+
+/** Congratulations for a new organizer: names their college, role and department, and the first steps as an organizer. */
+export async function sendOrganizerWelcomeEmail({
+  to,
+  name,
+  college,
+  department,
+  position,
+}: {
+  to: string;
+  name: string;
+  college: string;
+  department?: string | null;
+  position?: string | null;
+}) {
+  const first = esc(firstName(name));
+  const role = [position, department].filter(Boolean).map((v) => esc(v as string)).join(", ");
+  const campus = campusFor(college);
+  const content = `
+    <p style="margin-bottom:22px;">Thank you for choosing CollegeEvent to host events for <strong>${esc(college)}</strong>${role ? ` (${role})` : ""}. Your organizer account is live and ready to use.</p>
+    ${steps([
+      "<strong>Create your first event.</strong> Add the title, date, venue, capacity and any questions you want to ask.",
+      "<strong>Publish it.</strong> It appears on CollegeEvent and your college page, and students can register right away.",
+      "<strong>Check guests in.</strong> Scan the QR on each student's ticket at the gate from your console.",
+    ])}
+    <a href="${appUrl}/admin" class="btn" style="color: #FFFFFF;">Open organizer console</a>
+    ${campus ? `<p style="margin:26px 0 0;font-size:14px;">Your college page: <a href="${appUrl}/colleges/${campus.slug}" style="color:#DC2229;font-weight:600;">${esc(campus.name)}</a></p>` : ""}
+  `;
+  return sendEmail({
+    to,
+    subject: `Congratulations, ${firstName(name)}! Your organizer account is live`,
+    html: emailWrapper(`Congratulations, ${first}! 🎉`, content, college),
+    text: `Congratulations, ${firstName(name)}!\n\nYour organizer account for ${college} is live. Create your first event: ${appUrl}/admin\nThank you for choosing CollegeEvent.`,
   });
 }
 
@@ -238,14 +322,13 @@ export async function sendTicketConfirmationEmail(a: TicketEmailArgs) {
     )
     .join("");
 
-  const brand = a.college ? `${esc(a.college)} <span style="color:#DC2229;">&times;</span> CollegeEvent` : "CollegeEvent";
   const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#0A0A0A;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
   <div style="display:none;max-height:0;overflow:hidden;opacity:0;">You're registered for ${esc(a.eventTitle)}. Your entry QR is inside.</div>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0A0A0A;"><tr><td align="center" style="padding:32px 16px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;">
-      <tr><td style="padding:0 4px 20px;color:#FFFFFF;font-size:15px;font-weight:700;letter-spacing:.2px;">🎓 ${brand}</td></tr>
+      <tr><td style="padding:0 4px 20px;color:#FFFFFF;font-size:15px;font-weight:700;line-height:1.5;">${brandHeader(a.college, "dark")}</td></tr>
       <tr><td style="background:#F3F5FB;border-radius:20px;padding:32px 28px;">
         <p style="margin:0 0 6px;font-size:14px;color:#5A6382;">You're in, ${esc(first)}!</p>
         <h1 style="margin:0 0 20px;font-size:26px;line-height:1.25;color:#0A1024;">${esc(a.eventTitle)}</h1>
@@ -260,7 +343,7 @@ export async function sendTicketConfirmationEmail(a: TicketEmailArgs) {
         <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px auto 0;"><tr><td style="background:#DC2229;border-radius:12px;">
           <a href="${ticketUrl}" style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:700;color:#FFFFFF;text-decoration:none;">View your ticket</a>
         </td></tr></table>
-        <p style="margin:18px 0 0;text-align:center;font-size:12px;color:#5A6382;">Can't see the QR? Open it any time in your CollegeEvent dashboard.</p>
+        <p style="margin:18px 0 0;text-align:center;font-size:12px;color:#5A6382;">Your PDF ticket is attached, with the same QR. You can also open it any time in your CollegeEvent dashboard.</p>
       </td></tr>
       <tr><td style="padding:20px 4px 0;text-align:center;font-size:12px;color:#7A7A7A;">&copy; ${new Date().getFullYear()} CollegeEvent. Keep this email, it is your entry pass.</td></tr>
     </table>
@@ -269,14 +352,22 @@ export async function sendTicketConfirmationEmail(a: TicketEmailArgs) {
 
   const text = `You're in, ${first}!\n\n${a.eventTitle}\n${rows.map(([k, v]) => `${k}: ${v}`).join("\n")}\n\nTicket number: ${a.ticketNumber}\nOpen your QR ticket: ${ticketUrl}\n\nCollegeEvent`;
 
-  const { generateQRCodePng } = await import("@/lib/ticket-generator");
-  const qr = await generateQRCodePng(a.ticketId, a.verificationToken);
+  // PDF ticket with both logos + QR attached. If the PDF can't be built for any reason, fall back to the plain QR image so the email still carries a scannable ticket.
+  let attachments: { filename: string; content: Buffer }[];
+  try {
+    const { generateTicketPdf } = await import("@/lib/ticket-pdf");
+    attachments = [{ filename: `ticket-${a.ticketNumber}.pdf`, content: await generateTicketPdf({ ...a, studentName: a.studentName }) }];
+  } catch (err) {
+    console.error("Ticket PDF failed, attaching QR image instead:", err);
+    const { generateQRCodePng } = await import("@/lib/ticket-generator");
+    attachments = [{ filename: `ticket-${a.ticketNumber}.png`, content: await generateQRCodePng(a.ticketId, a.verificationToken) }];
+  }
   return sendEmail({
     to: a.to,
     subject: `You're registered: ${a.eventTitle}`,
     html,
     text,
-    attachments: [{ filename: `ticket-${a.ticketNumber}.png`, content: qr }], // also attached, so the QR is there even if images are blocked
+    attachments,
   });
 }
 

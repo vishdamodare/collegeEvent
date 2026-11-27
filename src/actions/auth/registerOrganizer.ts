@@ -2,6 +2,8 @@
 
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { after } from "next/server";
+import { sendOrganizerWelcomeEmail } from "@/lib/email";
 import { organizerSignupSchema } from "@/validators/organizerSignupSchema";
 
 /** Registered colleges for the organizer sign-up dropdown. */
@@ -94,6 +96,8 @@ export async function registerOrganizerAction(formData: unknown) {
       });
       throw transactionError;
     }
+
+    after(() => sendOrganizerWelcomeEmail({ to: email, name, college, department, position }).catch((err) => console.error("Organizer welcome email failed:", err)));
 
     return {
       success: true,

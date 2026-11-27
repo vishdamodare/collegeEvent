@@ -3,6 +3,8 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { after } from "next/server";
+import { sendWelcomeEmail } from "@/lib/email";
 
 export async function checkOAuthUserStatusAction() {
   try {
@@ -78,18 +80,16 @@ export async function ensureStudentProfileAction() {
     });
     if (!account || account.role !== "STUDENT" || account.organizerProfile) return { success: false };
 
-    await prisma.studentProfile.upsert({
-      where: { userId: session.user.id },
-      create: {
-        userId: session.user.id,
-        college: "",
-        branch: "",
-        academicYear: "",
-        interests: [],
-        profileImage: session.user.image || null,
-      },
-      update: {},
+    // createMany + skipDuplicates is atomic: count is 1 only for the call that actually created the profile, so a
+    // double-fired callback can't send two welcome emails.
+    const { count } = await prisma.studentProfile.createMany({
+      data: [{ userId: session.user.id, college: "", branch: "", academicYear: "", interests: [], profileImage: session.user.image || null }],
+      skipDuplicates: true,
     });
+    if (count === 1) {
+      const { name, email } = session.user;
+      after(() => sendWelcomeEmail(email, name).catch((err) => console.error("Welcome email failed:", err)));
+    }
     return { success: true };
   } catch (error) {
     console.error("Failed to create student profile:", error);
@@ -130,6 +130,8 @@ export async function completeOAuthStudentOnboardingAction(input: {
       return { success: false, error: "Please enter your college." };
     }
 
+    const hadProfile = !!(await prisma.studentProfile.findUnique({ where: { userId: session.user.id }, select: { id: true } }));
+
     await prisma.$transaction([
       prisma.user.update({
         where: { id: session.user.id },
@@ -158,6 +160,11 @@ export async function completeOAuthStudentOnboardingAction(input: {
         },
       }),
     ]);
+
+    if (!hadProfile) {
+      const { name, email } = session.user;
+      after(() => sendWelcomeEmail(email, name, data.college).catch((err) => console.error("Welcome email failed:", err)));
+    }
 
     return { success: true };
   } catch (error) {

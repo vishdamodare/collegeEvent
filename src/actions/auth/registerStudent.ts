@@ -2,6 +2,8 @@
 
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { after } from "next/server";
+import { sendWelcomeEmail } from "@/lib/email";
 import { studentSignupSchema } from "@/validators/studentSignupSchema";
 
 export async function registerStudentAction(formData: unknown) {
@@ -78,6 +80,9 @@ export async function registerStudentAction(formData: unknown) {
       });
       throw transactionError;
     }
+
+    // Welcome email once the account exists. after() keeps the function alive until it is sent; a mail problem never fails sign-up.
+    after(() => sendWelcomeEmail(email, name, college).catch((err) => console.error("Welcome email failed:", err)));
 
     return {
       success: true,

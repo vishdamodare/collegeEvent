@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { RegistrationStatusBadge } from "@/components/shared/RegistrationStatusBadge";
 import { toast } from "sonner";
+import { campusFor } from "@/lib/campuses";
 import { incrementTicketDownloadCount, recordTicketShared } from "@/actions/registrations";
 import { EventGridCard } from "@/components/events/EventGridCard";
 import { CheckInWatcher } from "@/components/dashboard/CheckInWatcher";
@@ -70,6 +71,8 @@ export function TicketDetailClient({ ticket, moreEvents = [] }: TicketDetailClie
   const heroImage = ticket.event.images[0]?.url;
   const eventOrganizerName = ticket.event.organizer?.name || "Host";
   const eventOrganizerCollege = ticket.event.organizer?.organizerProfile?.college || "Campus";
+
+  const campus = campusFor(eventOrganizerCollege); // official logo + name for the institutes we list
 
   const eventDate = new Date(ticket.event.date);
 
@@ -153,9 +156,21 @@ export function TicketDetailClient({ ticket, moreEvents = [] }: TicketDetailClie
         style={{ contentVisibility: "auto" }}
       >
         {/* Print Only Title */}
-        <div className="hidden print:block text-center py-4 border-b border-gray-200">
-          <h1 className="text-xl font-bold text-black uppercase">CollegeEvent Entry Ticket</h1>
-          <p className="text-xs text-gray-500">Present this QR code at the registration desk</p>
+        <div className="hidden print:flex items-center justify-between gap-4 px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Plain <img>: next/image lazy-loads, and the print dialog can open before it has loaded */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            {campus?.logo && <img src={campus.logo} alt="" className="h-12 w-auto max-w-[72px] object-contain" />}
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-black truncate">{campus?.name ?? eventOrganizerCollege}</p>
+              <p className="text-[11px] text-gray-500">Entry ticket. Show this QR at the gate.</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-mark.png" alt="" className="h-10 w-10" />
+            <span className="text-base font-bold text-black">CollegeEvent</span>
+          </div>
         </div>
 
         {/* Hero image header */}
