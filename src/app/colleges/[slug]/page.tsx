@@ -185,9 +185,6 @@ export default async function CollegeDetailPage({ params }: CollegePageProps) {
       {/* Header */}
       <header className="sticky top-0 z-30 border-b border-[color:var(--c-line)] bg-[color-mix(in_srgb,var(--c-bg)_92%,transparent)] backdrop-blur">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-3 flex flex-wrap items-center gap-x-6 gap-y-2">
-          <Link href="/colleges" aria-label="Back to all colleges" className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[color:var(--c-line2)] w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 text-sm font-medium text-[color:var(--c-muted)] hover:border-[var(--d)] hover:text-[var(--dt)] shrink-0">
-            <ArrowLeft className="w-4 h-4" /> <span className="hidden sm:inline">Back</span>
-          </Link>
           <a href="#top" className="flex items-center gap-3 min-w-0 flex-1 md:flex-none">
             <span className="relative w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-lg bg-white overflow-hidden">
               {logo ? (
@@ -216,6 +213,11 @@ export default async function CollegeDetailPage({ params }: CollegePageProps) {
       </header>
 
       <main id="top">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 pt-4">
+          <Link href="/colleges" className="group inline-flex items-center gap-2 rounded-full border border-[color:var(--c-line2)] bg-[color:var(--c-soft)] pl-3 pr-4 h-9 text-sm font-semibold text-[color:var(--c-fg)] transition-colors hover:border-[var(--d)] hover:text-[var(--dt)] active:scale-95">
+            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" /> All colleges
+          </Link>
+        </div>
         {/* Hero */}
         <section className="relative">
           <div className="max-w-7xl mx-auto grid lg:grid-cols-[1fr_1.05fr]">

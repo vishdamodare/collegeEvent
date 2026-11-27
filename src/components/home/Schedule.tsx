@@ -90,7 +90,7 @@ function Day({
   const reached = useInView(ref, { margin: "0px 0px -40% 0px", once: true });
 
   return (
-    <li ref={ref} className="relative pl-7 md:pl-0 md:grid md:grid-cols-[132px_1fr] md:gap-10 pb-10 last:pb-0">
+    <li ref={ref} className="relative pl-7 md:pl-0 md:grid md:grid-cols-[132px_minmax(0,1fr)] md:gap-10 pb-10 last:pb-0">
       <span
         aria-hidden
         className={`absolute left-0 md:left-[167px] top-[14px] w-[11px] h-[11px] rounded-full ring-4 ring-[var(--color-background)] transition-all duration-500 ${
@@ -103,7 +103,7 @@ function Day({
         <div className="font-anton text-[40px] md:text-[56px] leading-none tracking-tight">{day}</div>
       </div>
 
-      <div className="md:pl-10 space-y-3">
+      <div className="md:pl-10 space-y-3 overflow-x-clip">
         {events.map((event, i) => (
           <motion.button
             key={event.id}
