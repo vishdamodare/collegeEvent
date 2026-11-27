@@ -138,3 +138,24 @@ export async function deleteInquiryAsSuperAdmin(inquiryId: string) {
     return { error: "Could not delete the inquiry." };
   }
 }
+
+/** Register a college so organizers can sign up under it. Super admin only. */
+export async function registerCollege(name: string) {
+  try {
+    await requireSuperAdmin("throw");
+  } catch {
+    return { error: "Not allowed." };
+  }
+  const clean = name.trim().replace(/\s+/g, " ");
+  if (clean.length < 3 || clean.length > 150) return { error: "Enter the college's full name (3–150 characters)." };
+  try {
+    const dupe = await prisma.college.findFirst({ where: { name: { equals: clean, mode: "insensitive" } }, select: { id: true } });
+    if (dupe) return { error: "This college is already registered." };
+    await prisma.college.create({ data: { name: clean } });
+    revalidatePath("/superadmin", "layout");
+    return { success: true };
+  } catch (err) {
+    console.error("registerCollege failed:", err);
+    return { error: "Could not register the college. Please try again." };
+  }
+}

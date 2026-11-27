@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { AuthCard } from "@/components/auth/AuthCard";
-import { registerOrganizerAction } from "@/actions/auth/registerOrganizer";
+import { listColleges, registerOrganizerAction } from "@/actions/auth/registerOrganizer";
 import { loginAction } from "@/actions/auth/login";
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/utils/cn";
@@ -36,6 +36,10 @@ export default function OrganizerAuthPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [college, setCollege] = useState("");
+  const [colleges, setColleges] = useState<string[]>([]);
+  useEffect(() => {
+    listColleges().then(setColleges).catch(() => {});
+  }, []);
   const [department, setDepartment] = useState("");
   const [position, setPosition] = useState("");
   const [password, setPassword] = useState("");
@@ -176,7 +180,18 @@ export default function OrganizerAuthPage() {
           <input type="text" placeholder="Full name" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} className={inputClass} aria-label="Full name" />
           <input type="email" placeholder="Official email" autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} aria-label="Official email" />
           <input type="tel" placeholder="Phone number" autoComplete="tel" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className={inputClass} aria-label="Phone number" />
-          <input type="text" placeholder="College / University" autoComplete="organization" value={college} onChange={(e) => setCollege(e.target.value)} className={inputClass} aria-label="College or university" />
+          <select
+            value={college}
+            onChange={(e) => setCollege(e.target.value)}
+            aria-label="College or university"
+            className={cn(inputClass, "appearance-none cursor-pointer", !college && "text-text-faint")}
+          >
+            <option value="" disabled>{colleges.length ? "Select your college" : "No colleges registered yet"}</option>
+            {colleges.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+          <p className="text-[12px] text-text-faint -mt-1.5">College not listed? It must be registered with CollegeEvent first. Contact us to get it added.</p>
           <input type="text" placeholder="Department / Club (e.g. Coding Club, CSE Dept)" value={department} onChange={(e) => setDepartment(e.target.value)} className={inputClass} aria-label="Department or club" />
           <select
             value={position}

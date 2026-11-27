@@ -1,5 +1,6 @@
 "use server";
 
+import { fuzzyRank } from "@/lib/fuzzy";
 import { prisma } from "@/lib/prisma";
 import { getAdminUser } from "@/lib/admin-auth";
 import { notifySearchEngines } from "@/lib/indexnow";
@@ -447,13 +448,6 @@ export async function getAdminEvents(options?: {
     where.status = status as EventStatus;
   }
 
-  if (search) {
-    where.OR = [
-      { title: { contains: search, mode: "insensitive" } },
-      { location: { contains: search, mode: "insensitive" } },
-    ];
-  }
-
   const orderBy = (() => {
     switch (sortBy) {
       case "newest": return { createdAt: "desc" as const };
@@ -464,18 +458,21 @@ export async function getAdminEvents(options?: {
     }
   })();
 
+  const include = {
+    category: true,
+    images: { where: { isHero: true }, take: 1 },
+    _count: { select: { registrations: { where: { status: { not: "CANCELLED" } } } } },
+  } satisfies Prisma.EventInclude;
+
+  if (search?.trim()) {
+    // Typo-tolerant search: rank this organizer's events (a few hundred at most) in memory, best match first, then page the result
+    const all = await prisma.event.findMany({ where, include, orderBy, take: 1000 });
+    const ranked = fuzzyRank(all, search, (e) => [{ text: e.title, weight: 2 }, e.location, e.category.name, { text: e.description, weight: 0.5 }]);
+    return { events: ranked.slice(skip, skip + perPage), total: ranked.length, hasMore: skip + perPage < ranked.length };
+  }
+
   const [events, total] = await Promise.all([
-    prisma.event.findMany({
-      where,
-      include: {
-        category: true,
-        images: { where: { isHero: true }, take: 1 },
-        _count: { select: { registrations: { where: { status: { not: "CANCELLED" } } } } },
-      },
-      orderBy,
-      take: perPage,
-      skip,
-    }),
+    prisma.event.findMany({ where, include, orderBy, take: perPage, skip }),
     prisma.event.count({ where }),
   ]);
 
@@ -1008,16 +1005,7 @@ export async function getAdminAttendanceAction(options?: { eventId?: string; sea
     where.checkedIn = false;
   }
 
-  if (search) {
-    where.OR = [
-      { student: { user: { name: { contains: search, mode: "insensitive" } } } },
-      { student: { user: { email: { contains: search, mode: "insensitive" } } } },
-      { student: { college: { contains: search, mode: "insensitive" } } },
-      { event: { title: { contains: search, mode: "insensitive" } } },
-    ];
-  }
-
-  const [registrations, events] = await Promise.all([
+  const [allRegistrations, events] = await Promise.all([
     prisma.registration.findMany({
       where,
       include: {
@@ -1036,6 +1024,11 @@ export async function getAdminAttendanceAction(options?: { eventId?: string; sea
       select: { id: true, title: true },
       orderBy: { title: "asc" },
     }),
+  ]);
+
+  // Typo-tolerant search (lower case, misspellings, partial words) ranked best-first
+  const registrations = fuzzyRank(allRegistrations, search ?? "", (r) => [
+    { text: r.student.user.name, weight: 2 }, r.student.user.email, r.student.college, { text: r.event.title, weight: 1.5 }, r.ticket?.ticketNumber,
   ]);
 
   const totalCount = registrations.length;
@@ -1086,17 +1079,7 @@ export async function getAdminTicketsAction(options?: { eventId?: string; search
     where.status = status;
   }
 
-  if (search) {
-    where.OR = [
-      { ticketNumber: { contains: search, mode: "insensitive" } },
-      { verificationToken: { contains: search, mode: "insensitive" } },
-      { student: { user: { name: { contains: search, mode: "insensitive" } } } },
-      { student: { user: { email: { contains: search, mode: "insensitive" } } } },
-      { event: { title: { contains: search, mode: "insensitive" } } },
-    ];
-  }
-
-  const [tickets, events] = await Promise.all([
+  const [allTickets, events] = await Promise.all([
     prisma.ticket.findMany({
       where,
       include: {
@@ -1115,6 +1098,10 @@ export async function getAdminTicketsAction(options?: { eventId?: string; search
       select: { id: true, title: true },
       orderBy: { title: "asc" },
     }),
+  ]);
+
+  const tickets = fuzzyRank(allTickets, search ?? "", (t) => [
+    t.ticketNumber, t.verificationToken, { text: t.student.user.name, weight: 2 }, t.student.user.email, t.student.college, { text: t.event.title, weight: 1.5 },
   ]);
 
   return {
@@ -1200,18 +1187,7 @@ export async function getAdminRegistrationsAction(options?: {
     }
   }
 
-  if (search) {
-    where.OR = [
-      { student: { user: { name: { contains: search, mode: "insensitive" } } } },
-      { student: { user: { email: { contains: search, mode: "insensitive" } } } },
-      { student: { college: { contains: search, mode: "insensitive" } } },
-      { student: { studentId: { contains: search, mode: "insensitive" } } },
-      { event: { title: { contains: search, mode: "insensitive" } } },
-      { ticket: { ticketNumber: { contains: search, mode: "insensitive" } } },
-    ];
-  }
-
-  const [registrations, events] = await Promise.all([
+  const [allRegistrations, events] = await Promise.all([
     prisma.registration.findMany({
       where,
       include: {
@@ -1248,6 +1224,10 @@ export async function getAdminRegistrationsAction(options?: {
       },
       orderBy: { title: "asc" },
     }),
+  ]);
+
+  const registrations = fuzzyRank(allRegistrations, search ?? "", (r) => [
+    { text: r.student.user.name, weight: 2 }, r.student.user.email, r.student.college, r.student.studentId, { text: r.event.title, weight: 1.5 }, r.ticket?.ticketNumber,
   ]);
 
   const totalCount = registrations.length;

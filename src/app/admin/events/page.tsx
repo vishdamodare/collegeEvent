@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
+import { fuzzyRank } from "@/lib/fuzzy";
 import Link from "next/link";
 import { 
   PlusCircle, 
@@ -84,10 +85,12 @@ export default function AdminEventsPage() {
   }, []);
 
   // Filter Logic
-  const filteredEvents = events.filter((evt) => {
-    // 1. Search Query Filter
-    const matchesSearch = 
-      evt.basic.title.toLowerCase().includes(searchQuery.toLowerCase());
+  // Search is typo-tolerant and ranked best match first; the filters below then narrow it down
+  const searchedEvents = fuzzyRank(events, searchQuery, (evt) => [
+    { text: evt.basic.title, weight: 2 }, evt.basic.category, evt.basic.shortDescription, evt.basic.venue, evt.basic.tags?.join(" "),
+  ]);
+  const filteredEvents = searchedEvents.filter((evt) => {
+    const matchesSearch = true;
 
     // 2. Category Filter
     const matchesCategory = categoryFilter === "ALL" || evt.basic.category === categoryFilter;

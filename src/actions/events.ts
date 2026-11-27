@@ -1,7 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { EventStatus } from "@prisma/client";
+import { EventStatus, type Prisma } from "@prisma/client";
+import { fuzzyRank } from "@/lib/fuzzy";
 import { auth } from "@/lib/auth";
 import { CAMPUSES, campusFor } from "@/lib/campuses";
 import { headers } from "next/headers";
@@ -54,14 +55,6 @@ export async function getPublishedEvents(options?: {
     where.category = { slug: categorySlug };
   }
 
-  if (search) {
-    where.OR = [
-      { title: { contains: search, mode: "insensitive" } },
-      { description: { contains: search, mode: "insensitive" } },
-      { location: { contains: search, mode: "insensitive" } },
-    ];
-  }
-
   const orderBy = (() => {
     switch (sortBy) {
       case "newest": return { createdAt: "desc" as const };
@@ -72,19 +65,30 @@ export async function getPublishedEvents(options?: {
     }
   })();
 
+  const include = {
+    category: true,
+    images: { where: { isHero: true }, take: 1 },
+    organizer: { select: { id: true, name: true, image: true, organizerProfile: { select: { college: true } } } },
+    _count: { select: { registrations: { where: { status: { not: "CANCELLED" } } }, savedBy: true } },
+  } satisfies Prisma.EventInclude;
+
+  if (search?.trim()) {
+    // Typo-tolerant search: rank the published events in memory (lower case, misspellings, partial words, "tech fest" = "techfest"),
+    // best match first, then page the result. The list is small (published events only), so this stays fast.
+    const all = await prisma.event.findMany({ where, include, orderBy, take: 1000 });
+    const ranked = fuzzyRank(all, search, (e) => [
+      { text: e.title, weight: 2 },
+      { text: e.category.name, weight: 1.2 },
+      e.location,
+      e.organizer.organizerProfile?.college,
+      e.organizer.name,
+      { text: e.description, weight: 0.5 },
+    ]);
+    return { events: ranked.slice(skip, skip + take), total: ranked.length, hasMore: skip + take < ranked.length };
+  }
+
   const [events, total] = await Promise.all([
-    prisma.event.findMany({
-      where,
-      include: {
-        category: true,
-        images: { where: { isHero: true }, take: 1 },
-        organizer: { select: { id: true, name: true, image: true } },
-        _count: { select: { registrations: { where: { status: { not: "CANCELLED" } } }, savedBy: true } },
-      },
-      orderBy,
-      take,
-      skip,
-    }),
+    prisma.event.findMany({ where, include, orderBy, take, skip }),
     prisma.event.count({ where }),
   ]);
 

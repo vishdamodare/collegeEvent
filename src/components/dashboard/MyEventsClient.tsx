@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { fuzzyRank } from "@/lib/fuzzy";
 import Image from "next/image";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -72,12 +73,7 @@ export function MyEventsClient({ registrations }: MyEventsClientProps) {
   });
 
   // Filter by Search Query
-  const searched = tabFiltered.filter((reg) => {
-    const titleMatch = reg.event.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const locationMatch = reg.event.location.toLowerCase().includes(searchQuery.toLowerCase());
-    const categoryMatch = reg.event.category.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return titleMatch || locationMatch || categoryMatch;
-  });
+  const searched = fuzzyRank(tabFiltered, searchQuery, (reg) => [{ text: reg.event.title, weight: 2 }, reg.event.location, reg.event.category.name]);
 
   // Sort
   const sorted = [...searched].sort((a, b) => {

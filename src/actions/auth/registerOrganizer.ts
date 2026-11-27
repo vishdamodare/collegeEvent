@@ -4,6 +4,12 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { organizerSignupSchema } from "@/validators/organizerSignupSchema";
 
+/** Registered colleges for the organizer sign-up dropdown. */
+export async function listColleges() {
+  const rows = await prisma.college.findMany({ select: { name: true }, orderBy: { name: "asc" } });
+  return rows.map((r) => r.name);
+}
+
 export async function registerOrganizerAction(formData: unknown) {
   // 1. Server-side validation
   const validation = organizerSignupSchema.safeParse(formData);
@@ -14,9 +20,19 @@ export async function registerOrganizerAction(formData: unknown) {
     };
   }
 
-  const { name, email, phone, password, college, department, position, verificationDocument } = validation.data;
+  const { name, email, phone, password, college: collegeInput, department, position, verificationDocument } = validation.data;
 
   try {
+    // Only colleges registered by a super admin can have organizer accounts
+    const registered = await prisma.college.findFirst({
+      where: { name: { equals: collegeInput, mode: "insensitive" } },
+      select: { name: true },
+    });
+    if (!registered) {
+      return { success: false, error: "This college isn't registered yet. Ask your college to get registered with CollegeEvent first." };
+    }
+    const college = registered.name;
+
     // 2. Check for duplicate email
     const existingUser = await prisma.user.findUnique({
       where: { email },

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
+import { fuzzyRank } from "@/lib/fuzzy";
 import {
   Bell,
   Search,
@@ -38,11 +39,7 @@ export default function NotificationsPage() {
     });
   }, []);
 
-  const filtered = notifications.filter((n) => {
-    const matchesSearch = n.message.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRead = showUnread ? !n.read : true;
-    return matchesSearch && matchesRead;
-  });
+  const filtered = fuzzyRank(notifications, searchQuery, (n) => [n.message]).filter((n) => (showUnread ? !n.read : true));
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 

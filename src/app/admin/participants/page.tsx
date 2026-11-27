@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
+import { fuzzyRank } from "@/lib/fuzzy";
 import { 
   Search, 
   Download, 
@@ -30,13 +31,12 @@ export default function ParticipantsPage() {
   }, []);
 
   // Filters
-  const filtered = participants.filter((p) => {
-    const matchesSearch = 
-      p.participantName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.college.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.ticketNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.eventName.toLowerCase().includes(searchQuery.toLowerCase());
+  // Typo-tolerant search first (ranked best match first), then the attendance filter
+  const ranked = fuzzyRank(participants, searchQuery, (p) => [
+    { text: p.participantName, weight: 2 }, p.college, p.email, p.ticketNumber, { text: p.eventName, weight: 1.5 },
+  ]);
+  const filtered = ranked.filter((p) => {
+    const matchesSearch = true;
 
     let matchesAttendance = true;
     if (attendanceFilter === "PRESENT") matchesAttendance = p.checkedIn === true;

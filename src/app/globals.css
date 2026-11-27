@@ -518,3 +518,24 @@ html[data-theme="dark"] .college-theme {
   --dt: var(--dl);
   color-scheme: dark;
 }
+
+
+/* ───────── Super admin theme tokens ─────────
+   Dark by default; adding .sa-light to #sa-root (see SuperTheme) swaps them. `inline` so utilities read the live variable. */
+@theme inline {
+  --color-sa-fg: var(--sa-fg);
+  --color-sa-bg: var(--sa-bg);
+  --color-sa-card: var(--sa-card);
+  --color-sa-side: var(--sa-side);
+  --color-sa-input: var(--sa-input);
+}
+:root { --sa-fg: #ffffff; --sa-bg: #0a0a0a; --sa-card: #121212; --sa-side: #0d0d0d; --sa-input: #181818; }
+.sa-light { --sa-fg: #15151a; --sa-bg: #f5f5f2; --sa-card: #ffffff; --sa-side: #ffffff; --sa-input: #ffffff; }
+/* Light-surface contrast for the pastel status colours made for dark backgrounds */
+.sa-light .text-green-400 { color: #15803d; }
+.sa-light .text-amber-300 { color: #b45309; }
+.sa-light .text-red-400 { color: #b91c1c; }
+.sa-light .text-blue-300 { color: #1d4ed8; }
+.sa-light .text-\[\#FF8A8E\] { color: #b91c1c; }
+.sa-light .shadow-card { box-shadow: 0 1px 2px rgb(0 0 0 / 0.06); }
+.sa-light .sa-logo { filter: none !important; } /* the white outline is only for dark surfaces */

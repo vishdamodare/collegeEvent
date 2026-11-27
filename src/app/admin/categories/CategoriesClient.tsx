@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { fuzzyRank } from "@/lib/fuzzy";
 import { useRouter } from "next/navigation";
 import { Plus, Tag, Search, Archive, Trash2, Edit, X, Save, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
@@ -32,9 +33,7 @@ export function CategoriesClient({ initialCategories }: CategoriesClientProps) {
   const [description, setDescription] = useState("");
   const [color, setColor] = useState("#DC2229");
 
-  const filteredCategories = initialCategories.filter((c) =>
-    c.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredCategories = fuzzyRank(initialCategories, searchQuery, (c) => [{ text: c.name, weight: 2 }, c.description]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();

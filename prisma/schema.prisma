@@ -140,6 +140,13 @@ model StudentProfile {
   @@index([userId])
 }
 
+// Colleges registered by a super admin. Organizer sign-up is only allowed for a college in this table.
+model College {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+}
+
 model OrganizerProfile {
   id                   String    @id @default(uuid())
   userId               String    @unique
