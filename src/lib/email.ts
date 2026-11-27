@@ -17,12 +17,13 @@ function parseSender(from: string) {
 
 /**
  * Sends one transactional email through Brevo (https://developers.brevo.com/reference/sendtransacemail).
- * Needs BREVO_API_KEY and EMAIL_FROM, and EMAIL_FROM must be a sender/domain verified in Brevo.
+ * Needs BREVO_API_KEY and EMAIL_FROM (a sender/domain verified in Brevo); EMAIL_REPLY_TO is optional.
  * Never throws: callers get { success } so a mail problem can't break registration or sign-up.
  */
 export async function sendEmail({ to, subject, html, text, attachments }: SendEmailArgs) {
   const apiKey = process.env.BREVO_API_KEY;
   const from = process.env.EMAIL_FROM;
+  const replyTo = process.env.EMAIL_REPLY_TO; // optional: where a student's reply should land (the From address has no inbox of its own)
 
   if (!apiKey || !from) {
     console.warn(`⚠️ Email skipped (set BREVO_API_KEY and EMAIL_FROM). To: ${to} | Subject: ${subject}`);
@@ -35,6 +36,7 @@ export async function sendEmail({ to, subject, html, text, attachments }: SendEm
       headers: { "api-key": apiKey, "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({
         sender: parseSender(from),
+        ...(replyTo ? { replyTo: parseSender(replyTo) } : {}),
         to: [{ email: to }],
         subject,
         htmlContent: html,
